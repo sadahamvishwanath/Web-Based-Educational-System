@@ -446,7 +446,7 @@ Add application screenshots to `docs/screenshots/` and update the image paths be
 
 | Schematic Diagram | IOT Device |
 |---|---|
-| ![Schematic Diagram](docs/screenshots/Schematic Diagram.png) |  ![IOT Device](docs/screenshots/device.jpeg) |
+| ![Schematic Diagram](docs/screenshots/Schematic-Diagram.png) |  ![IOT Device](docs/screenshots/device.jpeg) |
 ---
 
 
