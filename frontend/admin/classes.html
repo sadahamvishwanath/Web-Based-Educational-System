@@ -1,0 +1,439 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Classes — Apex Institute</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Plus+Jakarta+Sans:wght@500;600;700;800&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="../shared/css/tokens.css">
+  <link rel="stylesheet" href="../shared/css/base.css">
+  <link rel="stylesheet" href="../shared/css/layout.css">
+  <link rel="stylesheet" href="../shared/css/components.css">
+  <style>
+    .cls-toolbar { display:flex; gap:var(--sp-3); margin-bottom:var(--sp-5); align-items:center; flex-wrap:wrap; }
+    .filter-pills { display:flex; gap:6px; flex-wrap:wrap; }
+    .filter-pill { padding:7px 14px; border-radius:100px; border:1px solid var(--border); background:var(--surface);
+      font-family:'Plus Jakarta Sans',sans-serif; font-size:12.5px; font-weight:600; color:var(--text-dim);
+      cursor:pointer; transition:all var(--dur-fast) var(--ease); }
+    .filter-pill:hover { border-color:var(--border-strong); color:var(--navy); }
+    .filter-pill.active { background:var(--navy); border-color:var(--navy); color:#fff; }
+    .filter-pill .count { opacity:.55; margin-left:5px; font-weight:500; }
+    .filter-pill.active .count { opacity:.8; }
+
+    .cls-grid { display:grid; grid-template-columns:repeat(3,1fr); gap:var(--sp-4); }
+    @media (max-width:1100px) { .cls-grid { grid-template-columns:repeat(2,1fr); } }
+    @media (max-width:700px) { .cls-grid { grid-template-columns:1fr; } }
+
+    .cls-card { background:var(--surface); border:1px solid var(--border); border-radius:var(--r-lg);
+      box-shadow:var(--shadow-xs); overflow:hidden; display:flex; flex-direction:column;
+      transition:all var(--dur) var(--ease); position:relative; }
+    .cls-card:hover { box-shadow:var(--shadow-md); border-color:var(--border-strong); }
+    .cls-card::before { content:''; position:absolute; top:0; left:0; right:0; height:4px; background:var(--accent); }
+    .cls-card.inactive { opacity:.6; }
+
+    .cc-body { padding:var(--sp-5); display:flex; flex-direction:column; gap:var(--sp-4); }
+
+    .cc-head { display:flex; align-items:flex-start; gap:var(--sp-3); }
+    .cc-icon { width:44px; height:44px; border-radius:var(--r-md); display:grid; place-items:center; flex-shrink:0;
+      background:var(--accent-bg); color:var(--accent); }
+    .cc-icon svg { width:20px; height:20px; }
+    .cc-head-body { flex:1; min-width:0; }
+    .cc-title { font-family:'Plus Jakarta Sans',sans-serif; font-size:15px; font-weight:800; color:var(--navy);
+      letter-spacing:-.015em; margin-bottom:3px; line-height:1.25; }
+    .cc-sub { font-size:12.5px; color:var(--text-dim); }
+
+    .cc-stats { display:grid; grid-template-columns:1fr 1fr; gap:var(--sp-3); padding:var(--sp-4);
+      background:var(--surface-alt); border:1px solid var(--border); border-radius:var(--r-md); }
+    .cc-stat-label { font-size:10.5px; font-weight:700; color:var(--text-dim); text-transform:uppercase;
+      letter-spacing:.08em; margin-bottom:4px; }
+    .cc-stat-value { font-family:'Plus Jakarta Sans',sans-serif; font-size:20px; font-weight:800; color:var(--navy);
+      letter-spacing:-.02em; line-height:1; }
+    .cc-stat-value small { font-size:11px; color:var(--text-dim); font-weight:600; margin-left:2px; }
+
+    .cc-actions { display:grid; grid-template-columns:1fr 1fr; gap:6px; padding:var(--sp-4) var(--sp-5);
+      border-top:1px solid var(--border); }
+    .cc-btn { padding:9px 8px; border-radius:var(--r-md); border:1px solid var(--border); background:var(--surface);
+      color:var(--navy); font-family:'Plus Jakarta Sans',sans-serif; font-size:12px; font-weight:700;
+      text-align:center; text-decoration:none; display:inline-flex; align-items:center; justify-content:center;
+      gap:5px; transition:all var(--dur-fast) var(--ease); cursor:pointer; }
+    .cc-btn:hover { border-color:var(--navy); background:var(--navy); color:#fff; }
+    .cc-btn svg { width:13px; height:13px; }
+    .cc-btn.danger { color:var(--danger); border-color:rgba(180,35,24,.3); }
+    .cc-btn.danger:hover { background:var(--danger); border-color:var(--danger); color:#fff; }
+
+    .cls-empty { grid-column:1 / -1; padding:var(--sp-8) var(--sp-5); text-align:center;
+      background:var(--surface); border:1px dashed var(--border-strong); border-radius:var(--r-lg); }
+    .cls-empty-icon { width:56px; height:56px; margin:0 auto var(--sp-4); border-radius:50%;
+      background:var(--bg); display:grid; place-items:center; color:var(--text-faint); }
+    .cls-empty-icon svg { width:26px; height:26px; }
+    .cls-empty h3 { font-size:16px; color:var(--navy); margin-bottom:6px; }
+    .cls-empty p { font-size:13px; color:var(--text-dim); }
+  </style>
+</head>
+<body>
+
+<script src="../shared/js/utils.js"></script>
+<script src="../shared/js/icons.js"></script>
+<script src="../shared/js/shell.js"></script>
+<script src="../shared/js/modal.js"></script>
+
+<script>
+const TOKEN = localStorage.getItem('apex_token');
+if (!TOKEN) location.href = '../login.html';
+const API_BASE = 'http://localhost:8080';
+
+let DATA = null;
+let activeGrade = 'all';
+
+Shell.render({
+  active: 'classes',
+  role: 'ADMIN',
+  content: '<div class="loading">Loading classes…</div>',
+});
+
+(async function boot() {
+  try {
+    const res = await fetch(API_BASE + '/api/admin/classes', {
+      headers: { 'Authorization': 'Bearer ' + TOKEN },
+    });
+    if (res.status === 401 || res.status === 403) {
+      localStorage.removeItem('apex_token');
+      localStorage.removeItem('apex_user');
+      location.href = '../login.html';
+      return;
+    }
+    if (!res.ok) throw new Error('Server returned ' + res.status);
+    DATA = await res.json();
+    rerender();
+  } catch (err) {
+    document.getElementById('app-main').innerHTML = `
+      <div class="error-box">
+        <h2>Could not load classes</h2>
+        <p style="color:var(--text-dim); margin:8px 0 16px;">${Utils.esc(err.message)}</p>
+        <button class="btn btn-primary" onclick="location.reload()">Try again</button>
+      </div>`;
+  }
+})();
+
+/* ============================================================
+   STYLE MAP
+   ============================================================ */
+const SUBJECT_STYLE = {
+  Mathematics: { accent: '#14213D', bg: 'rgba(20,33,61,.07)' },
+  Science:     { accent: '#198754', bg: 'rgba(25,135,84,.09)' },
+  Physics:     { accent: '#E9B949', bg: 'rgba(233,185,73,.16)' },
+  English:     { accent: '#175CD3', bg: 'rgba(23,92,211,.08)' },
+  ICT:         { accent: '#6941C6', bg: 'rgba(105,65,198,.08)' },
+  Biology:     { accent: '#0E9384', bg: 'rgba(14,147,132,.09)' },
+  Chemistry:   { accent: '#C11574', bg: 'rgba(193,21,116,.08)' },
+};
+function styleFor(s) {
+  return SUBJECT_STYLE[s] || { accent: '#14213D', bg: 'rgba(20,33,61,.07)' };
+}
+
+function filtered() {
+  return activeGrade === 'all'
+    ? DATA.classes
+    : DATA.classes.filter(c => c.grade === activeGrade);
+}
+
+/* ============================================================
+   RENDER
+   ============================================================ */
+function rerender() {
+  document.getElementById('app-main').innerHTML = renderPage();
+  wireAll();
+}
+
+function renderPage() {
+  return `
+    <header class="page-header">
+      <div>
+        <div class="page-eyebrow">Academics</div>
+        <h1 class="page-title">Classes</h1>
+        <p class="page-subtitle">
+          ${DATA.stats.total} classes ·
+          ${DATA.stats.active} active ·
+          ${DATA.stats.students} students enrolled
+        </p>
+      </div>
+      <div class="page-actions">
+        <a href="timetable.html" class="btn btn-ghost">${Icon.clock()} Timetable</a>
+        <button class="btn btn-primary" id="new-btn">${Icon.book()} New Class</button>
+      </div>
+    </header>
+
+    <div id="toolbar-host">${renderToolbar()}</div>
+    <div class="cls-grid" id="grid-host">${renderGrid()}</div>
+  `;
+}
+
+function renderToolbar() {
+  const grades = ['10','11','12','13'];
+  const counts = { all: DATA.classes.length };
+  grades.forEach(g => counts[g] = DATA.classes.filter(c => c.grade === g).length);
+
+  const pill = (key, label) => `
+    <button class="filter-pill ${activeGrade === key ? 'active' : ''}" data-grade="${key}">
+      ${label}<span class="count">${counts[key] || 0}</span>
+    </button>`;
+
+  return `
+    <div class="cls-toolbar">
+      <div class="filter-pills">
+        ${pill('all', 'All Grades')}
+        ${grades.map(g => pill(g, 'Grade ' + g)).join('')}
+      </div>
+    </div>`;
+}
+
+function renderGrid() {
+  const list = filtered();
+  if (list.length === 0) {
+    return `<div class="cls-empty">
+      <div class="cls-empty-icon">${Icon.book()}</div>
+      <h3>No classes found</h3>
+      <p>Create one to get started.</p>
+    </div>`;
+  }
+  return list.map(renderCard).join('');
+}
+
+function renderCard(c) {
+  const s = styleFor(c.subject);
+  return `
+    <div class="cls-card ${c.isActive ? '' : 'inactive'}"
+         style="--accent:${s.accent}; --accent-bg:${s.bg};">
+      <div class="cc-body">
+        <div class="cc-head">
+          <div class="cc-icon">${Icon.book()}</div>
+          <div class="cc-head-body">
+            <div class="cc-title">${Utils.esc(c.name)}</div>
+            <div class="cc-sub">Grade ${Utils.esc(c.grade)} · ${Utils.esc(c.subject)}</div>
+          </div>
+        </div>
+        <div class="cc-stats">
+          <div>
+            <div class="cc-stat-label">Enrolled</div>
+            <div class="cc-stat-value">${c.students}<small>stud.</small></div>
+          </div>
+          <div>
+            <div class="cc-stat-label">Status</div>
+            <div class="cc-stat-value" style="font-size:14px; color:${c.isActive ? 'var(--success)' : 'var(--text-dim)'};">
+              ${c.isActive ? 'Active' : 'Inactive'}
+            </div>
+          </div>
+        </div>
+      </div>
+      <div class="cc-actions">
+        <button class="cc-btn" data-toggle="${c.id}">
+          ${c.isActive ? 'Deactivate' : 'Activate'}
+        </button>
+        <button class="cc-btn danger" data-delete="${c.id}">
+          Delete
+        </button>
+      </div>
+    </div>`;
+}
+
+/* ============================================================
+   CREATE MODAL
+   ============================================================ */
+function openCreateModal() {
+  if (DATA.subjects.length === 0) {
+    showToast('Add a subject first');
+    return;
+  }
+
+  const subjectOpts = DATA.subjects.map(s => `
+    <option value="${s.id}">${Utils.esc(s.name)}</option>`).join('');
+
+  const body = `
+    <div class="form-field">
+      <label>Grade</label>
+      <select id="cc-grade">
+        <option value="10">Grade 10</option>
+        <option value="11">Grade 11</option>
+        <option value="12">Grade 12</option>
+        <option value="13">Grade 13</option>
+      </select>
+    </div>
+    <div class="form-field">
+      <label>Subject</label>
+      <select id="cc-subject">${subjectOpts}</select>
+    </div>
+    <div class="form-field">
+      <label>Class Name</label>
+      <input type="text" id="cc-name" placeholder="e.g. Grade 10 Mathematics" required>
+      <div class="form-help">Suggested from grade + subject; edit if you want a custom name.</div>
+    </div>
+    <div class="form-actions" style="margin-top: var(--sp-5);">
+      <button class="btn btn-ghost" data-cancel>Cancel</button>
+      <button class="btn btn-primary" id="cc-submit">Create Class</button>
+    </div>
+  `;
+
+  const m = Modal.open({ title: 'New Class', body, size: 'sm' });
+
+  const gradeSel = m.el.querySelector('#cc-grade');
+  const subjSel  = m.el.querySelector('#cc-subject');
+  const nameInp  = m.el.querySelector('#cc-name');
+
+  function suggestName() {
+    const gradeNum = gradeSel.value;
+    const subjName = DATA.subjects.find(x => x.id === parseInt(subjSel.value, 10))?.name || '';
+    nameInp.value = `Grade ${gradeNum} ${subjName}`;
+  }
+  gradeSel.onchange = suggestName;
+  subjSel.onchange  = suggestName;
+  suggestName();
+
+  m.el.querySelector('[data-cancel]').onclick = () => m.close();
+
+  m.el.querySelector('#cc-submit').onclick = async () => {
+    const grade = gradeSel.value;
+    const subjectId = parseInt(subjSel.value, 10);
+    const name = nameInp.value.trim();
+
+    if (!name) return showToast('Please enter a class name');
+
+    const btn = m.el.querySelector('#cc-submit');
+    btn.disabled = true;
+    btn.textContent = 'Creating…';
+
+    try {
+      const res = await fetch(API_BASE + '/api/admin/classes', {
+        method: 'POST',
+        headers: { 'Authorization': 'Bearer ' + TOKEN, 'Content-Type': 'application/json' },
+        body: JSON.stringify({ name, grade, subjectId }),
+      });
+      const data = await res.json().catch(() => ({}));
+      if (!res.ok) {
+        showToast(data.message || 'Create failed');
+        btn.disabled = false;
+        btn.textContent = 'Create Class';
+        return;
+      }
+      m.close();
+      await reload();
+      showToast(`${name} created`);
+    } catch (err) {
+      showToast('Network error: ' + err.message);
+      btn.disabled = false;
+      btn.textContent = 'Create Class';
+    }
+  };
+}
+
+/* ============================================================
+   TOGGLE
+   ============================================================ */
+async function toggleClass(id) {
+  const c = DATA.classes.find(x => x.id === id);
+  if (!c) return;
+
+  try {
+    const res = await fetch(`${API_BASE}/api/admin/classes/${id}/toggle`, {
+      method: 'PATCH',
+      headers: { 'Authorization': 'Bearer ' + TOKEN },
+    });
+    const data = await res.json().catch(() => ({}));
+    if (!res.ok) { showToast(data.message || 'Toggle failed'); return; }
+    await reload();
+    showToast(`${c.name} ${c.isActive ? 'deactivated' : 'activated'}`);
+  } catch (err) { showToast('Network error: ' + err.message); }
+}
+
+/* ============================================================
+   DELETE MODAL
+   ============================================================ */
+function openDeleteModal(id) {
+  const c = DATA.classes.find(x => x.id === id);
+  if (!c) return;
+
+  const warns = [];
+  if (c.students > 0) warns.push(`${c.students} student${c.students > 1 ? 's' : ''} currently enrolled`);
+  if (c.timetableSlots > 0) warns.push(`used in ${c.timetableSlots} timetable slot${c.timetableSlots > 1 ? 's' : ''}`);
+
+  const body = `
+    <p style="font-size:13.5px; color:var(--text-dim); line-height:1.55; margin-bottom: var(--sp-4);">
+      Delete <strong style="color:var(--navy);">${Utils.esc(c.name)}</strong>?
+      ${warns.length > 0
+        ? `<br><span style="color:var(--warning);">Cannot delete: ${warns.join(' and ')}.</span>`
+        : ''}
+    </p>
+    <div class="form-actions" style="margin-top:0;">
+      <button class="btn btn-ghost" data-cancel>Cancel</button>
+      <button class="btn" data-confirm
+              style="background:var(--danger); border-color:var(--danger); color:#fff;"
+              ${warns.length > 0 ? 'disabled style="opacity:.5;"' : ''}>
+        Delete
+      </button>
+    </div>
+  `;
+
+  const m = Modal.open({ title: 'Delete Class', body, size: 'sm' });
+
+  m.el.querySelector('[data-cancel]').onclick = () => m.close();
+
+  const confirmBtn = m.el.querySelector('[data-confirm]');
+  if (warns.length > 0) return;   // disabled anyway
+
+  confirmBtn.onclick = async () => {
+    try {
+      const res = await fetch(`${API_BASE}/api/admin/classes/${id}`, {
+        method: 'DELETE',
+        headers: { 'Authorization': 'Bearer ' + TOKEN },
+      });
+      const data = await res.json().catch(() => ({}));
+      if (!res.ok) { showToast(data.message || 'Delete failed'); return; }
+      m.close();
+      await reload();
+      showToast(`${c.name} deleted`);
+    } catch (err) { showToast('Network error: ' + err.message); }
+  };
+}
+
+/* ============================================================
+   RELOAD + WIRING
+   ============================================================ */
+async function reload() {
+  const res = await fetch(API_BASE + '/api/admin/classes', {
+    headers: { 'Authorization': 'Bearer ' + TOKEN },
+  });
+  if (res.ok) {
+    DATA = await res.json();
+    rerender();
+  }
+}
+
+function wireAll() {
+  document.getElementById('new-btn').onclick = openCreateModal;
+
+  document.querySelectorAll('.filter-pill').forEach(b => {
+    b.onclick = () => { activeGrade = b.dataset.grade; rerender(); };
+  });
+
+  document.querySelectorAll('[data-toggle]').forEach(b => {
+    b.onclick = () => toggleClass(parseInt(b.dataset.toggle, 10));
+  });
+  document.querySelectorAll('[data-delete]').forEach(b => {
+    b.onclick = () => openDeleteModal(parseInt(b.dataset.delete, 10));
+  });
+}
+
+function showToast(message) {
+  let host = document.querySelector('.toast-host');
+  if (!host) { host = document.createElement('div'); host.className = 'toast-host'; document.body.appendChild(host); }
+  const el = document.createElement('div');
+  el.className = 'toast toast-success';
+  el.textContent = message;
+  host.appendChild(el);
+  void el.offsetWidth; el.classList.add('toast-in');
+  setTimeout(() => { el.classList.remove('toast-in'); setTimeout(() => el.remove(), 200); }, 3000);
+}
+</script>
+</body>
+</html>

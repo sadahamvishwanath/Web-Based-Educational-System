@@ -1,0 +1,504 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>My Salary — Apex Institute</title>
+
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Plus+Jakarta+Sans:wght@500;600;700;800&display=swap" rel="stylesheet">
+
+  <link rel="stylesheet" href="../shared/css/tokens.css">
+  <link rel="stylesheet" href="../shared/css/base.css">
+  <link rel="stylesheet" href="../shared/css/layout.css">
+  <link rel="stylesheet" href="../shared/css/components.css">
+
+  <style>
+    /* Bar chart */
+    .chart-card {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: var(--r-lg);
+      padding: var(--sp-5);
+      box-shadow: var(--shadow-xs);
+      margin-bottom: var(--sp-5);
+    }
+    .chart-header {
+      display: flex; align-items: center; justify-content: space-between;
+      margin-bottom: var(--sp-5);
+    }
+    .chart-header h2 { font-size: 15px; font-weight: 700; }
+    .chart-header .chart-sub { font-size: 12px; color: var(--text-dim); margin-top: 3px; }
+
+    .chart-bars {
+      display: grid;
+      grid-template-columns: repeat(6, 1fr);
+      gap: var(--sp-3);
+      align-items: end;
+      height: 180px;
+      padding: 0 4px;
+    }
+    .chart-col { display: flex; flex-direction: column; align-items: center; gap: 8px; height: 100%; }
+    .chart-bar-wrap {
+      flex: 1; width: 100%; display: flex; align-items: flex-end; justify-content: center;
+    }
+    .chart-bar {
+      width: 100%; max-width: 44px;
+      border-radius: var(--r-sm) var(--r-sm) 0 0;
+      background: linear-gradient(180deg, var(--navy) 0%, var(--navy-700) 100%);
+      transition: all 300ms var(--ease);
+      position: relative;
+      min-height: 6px;
+    }
+    .chart-bar.current {
+      background: linear-gradient(180deg, var(--gold) 0%, var(--gold-hover) 100%);
+    }
+    .chart-bar.pending {
+      background: repeating-linear-gradient(
+        45deg,
+        var(--border),
+        var(--border) 6px,
+        var(--border-strong) 6px,
+        var(--border-strong) 12px
+      );
+    }
+    .chart-bar-value {
+      position: absolute; top: -22px; left: 50%; transform: translateX(-50%);
+      font-family: 'Plus Jakarta Sans', sans-serif;
+      font-size: 11px; font-weight: 800;
+      color: var(--navy);
+      white-space: nowrap;
+      font-variant-numeric: tabular-nums;
+    }
+    .chart-bar-label {
+      font-size: 11px; font-weight: 700;
+      color: var(--text-dim);
+      text-transform: uppercase;
+      letter-spacing: 0.06em;
+    }
+
+    /* Salary list */
+    .salary-list {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: var(--r-lg);
+      overflow: hidden;
+      box-shadow: var(--shadow-xs);
+    }
+    .salary-row {
+      display: grid;
+      grid-template-columns: 56px 1fr auto auto;
+      gap: var(--sp-4);
+      align-items: center;
+      padding: var(--sp-4) var(--sp-5);
+      border-bottom: 1px solid var(--border);
+      transition: background var(--dur-fast) var(--ease);
+    }
+    .salary-row:last-child { border-bottom: none; }
+    .salary-row:hover { background: var(--surface-alt); }
+
+    .sal-month {
+      width: 52px; height: 52px;
+      border-radius: var(--r-md);
+      background: var(--navy); color: #fff;
+      display: flex; flex-direction: column;
+      align-items: center; justify-content: center;
+      line-height: 1;
+      flex-shrink: 0;
+    }
+    .sal-month.paid    { background: var(--navy); }
+    .sal-month.pending { background: var(--gold); color: var(--navy); }
+    .sal-month-label {
+      font-family: 'Plus Jakarta Sans', sans-serif;
+      font-size: 14px; font-weight: 800;
+      letter-spacing: -0.02em;
+    }
+    .sal-month-year {
+      font-size: 9px; opacity: .7;
+      letter-spacing: 0.06em;
+      margin-top: 3px;
+    }
+
+    .sal-body { min-width: 0; }
+    .sal-title {
+      font-family: 'Plus Jakarta Sans', sans-serif;
+      font-size: 14px; font-weight: 700;
+      color: var(--navy);
+      margin-bottom: 3px;
+    }
+    .sal-meta {
+      font-size: 12px; color: var(--text-dim);
+      display: flex; gap: 12px; flex-wrap: wrap;
+    }
+    .sal-meta span { display: inline-flex; align-items: center; gap: 4px; }
+    .sal-meta svg { width: 12px; height: 12px; color: var(--text-faint); }
+
+    .sal-amount {
+      font-family: 'Plus Jakarta Sans', sans-serif;
+      font-size: 15px; font-weight: 800;
+      color: var(--navy);
+      font-variant-numeric: tabular-nums;
+      text-align: right;
+    }
+
+    .sal-status {
+      display: inline-flex; align-items: center; gap: 6px;
+      padding: 5px 11px;
+      border-radius: 100px;
+      font-size: 11.5px; font-weight: 700;
+    }
+    .sal-status.paid    { background: var(--success-bg); color: var(--success); }
+    .sal-status.pending { background: var(--warning-bg); color: var(--warning); }
+    .sal-status::before {
+      content: ''; width: 6px; height: 6px; border-radius: 50%; background: currentColor;
+    }
+
+    /* Detail modal */
+    .slip-hero {
+      padding: var(--sp-5);
+      background: var(--navy);
+      border-radius: var(--r-md);
+      color: #fff;
+      margin-bottom: var(--sp-5);
+    }
+    .slip-hero-label {
+      font-size: 11px; font-weight: 700;
+      color: rgba(255,255,255,.5);
+      letter-spacing: 0.1em; text-transform: uppercase;
+      margin-bottom: 8px;
+    }
+    .slip-hero-amount {
+      font-family: 'Plus Jakarta Sans', sans-serif;
+      font-size: 32px; font-weight: 800;
+      letter-spacing: -0.03em;
+      line-height: 1;
+    }
+    .slip-hero-amount small { font-size: 18px; color: rgba(255,255,255,.65); margin-right: 4px; }
+    .slip-hero-meta {
+      font-size: 13px; color: rgba(255,255,255,.7);
+      margin-top: 10px;
+      padding-top: 12px;
+      border-top: 1px solid rgba(255,255,255,.1);
+    }
+
+    .slip-row {
+      display: flex; justify-content: space-between;
+      padding: 10px 0;
+      border-bottom: 1px dashed var(--border);
+      font-size: 13px;
+    }
+    .slip-row:last-child { border-bottom: none; padding-top: 14px; margin-top: 6px; border-top: 2px solid var(--navy); }
+    .slip-row .label { color: var(--text-dim); }
+    .slip-row .value {
+      font-weight: 700; color: var(--navy);
+      font-variant-numeric: tabular-nums;
+    }
+    .slip-row.total .value {
+      font-family: 'Plus Jakarta Sans', sans-serif;
+      font-size: 18px; font-weight: 800;
+      letter-spacing: -0.02em;
+    }
+
+    /* Print */
+    @media print {
+      .app-sidebar, .app-header, .page-actions { display: none; }
+    }
+  </style>
+</head>
+<body>
+
+<script src="../shared/js/utils.js"></script>
+<script src="../shared/js/icons.js"></script>
+<script src="../shared/js/shell.js"></script>
+<script src="../shared/js/modal.js"></script>
+
+<script>
+/* ============================================================
+   AUTH + BOOT
+   ============================================================ */
+const TOKEN = localStorage.getItem('apex_token');
+if (!TOKEN) location.href = '../login.html';
+const API_BASE = 'http://localhost:8080';
+
+Shell.render({
+  active: 'salary',
+  role: 'TEACHER',
+  content: '<div class="loading">Loading salary…</div>',
+});
+
+let DATA = null;
+
+(async function loadSalary() {
+  try {
+    const res = await fetch(API_BASE + '/api/teacher/salary', {
+      headers: { 'Authorization': 'Bearer ' + TOKEN },
+    });
+
+    if (res.status === 401 || res.status === 403) {
+      localStorage.removeItem('apex_token');
+      localStorage.removeItem('apex_user');
+      location.href = '../login.html';
+      return;
+    }
+    if (!res.ok) throw new Error('Server returned ' + res.status);
+
+    DATA = await res.json();
+    document.getElementById('app-main').innerHTML = renderPage();
+    wireRows();
+
+  } catch (err) {
+    document.getElementById('app-main').innerHTML = `
+      <div class="error-box">
+        <h2>Could not load salary</h2>
+        <p style="color:var(--text-dim); margin:8px 0 16px;">${Utils.esc(err.message)}</p>
+        <button class="btn btn-primary" onclick="location.reload()">Try again</button>
+      </div>`;
+  }
+})();
+
+/* ============================================================
+   RENDER
+   ============================================================ */
+function renderPage() {
+  return `
+    <header class="page-header">
+      <div>
+        <div class="page-eyebrow">Personal</div>
+        <h1 class="page-title">My Salary</h1>
+        <p class="page-subtitle">
+          ${DATA.history.length} payment${DATA.history.length !== 1 ? 's' : ''} on record ·
+          Rs. ${DATA.stats.ytdTotal.toFixed(0)} received this year
+        </p>
+      </div>
+    </header>
+
+    ${renderSummary()}
+    ${renderChart()}
+    ${renderHistory()}
+  `;
+}
+
+/* ============================================================
+   SUMMARY TILES
+   ============================================================ */
+function renderSummary() {
+  const s = DATA.stats;
+
+  const tile = ({ accent, label, value, suffix = '', meta, metaClass = '' }) => `
+    <div class="stat-card" style="border-left: 3px solid ${accent}">
+      <div class="stat-body" style="padding-left: 4px">
+        <div class="stat-label">${Utils.esc(label)}</div>
+        <div class="stat-value">${Utils.esc(String(value))}${suffix ? `<small>${suffix}</small>` : ''}</div>
+        <div class="stat-meta ${metaClass}">${meta}</div>
+      </div>
+    </div>`;
+
+  const rateDisplay = s.monthlyRate > 0 ? 'Rs. ' + s.monthlyRate.toFixed(0) : '—';
+  const pendingDisplay = 'Rs. ' + s.pendingAmount.toFixed(0);
+
+  return `
+    <section class="stat-grid">
+      ${tile({
+        accent: 'var(--navy)',
+        label: 'Monthly Rate',
+        value: rateDisplay,
+        meta: 'Latest credited amount',
+      })}
+      ${tile({
+        accent: 'var(--success)',
+        label: 'Paid This Year',
+        value: 'Rs. ' + s.ytdTotal.toFixed(0),
+        meta: `${s.paidCount} payment${s.paidCount !== 1 ? 's' : ''}`,
+        metaClass: 'stat-meta-positive',
+      })}
+      ${tile({
+        accent: s.pendingCount > 0 ? 'var(--warning)' : 'var(--border-strong)',
+        label: 'Pending',
+        value: pendingDisplay,
+        meta: s.pendingCount > 0
+          ? `${s.pendingCount} payment${s.pendingCount !== 1 ? 's' : ''} awaited`
+          : 'All settled',
+      })}
+      ${tile({
+        accent: 'var(--gold)',
+        label: 'Total Records',
+        value: DATA.history.length,
+        meta: `${DATA.teacher.teacherCode}`,
+      })}
+    </section>`;
+}
+
+/* ============================================================
+   CHART
+   ============================================================ */
+function renderChart() {
+  const bars = DATA.chart;
+  if (bars.length === 0) return '';
+
+  const max = Math.max(...bars.map(b => b.amount), 1);
+
+  return `
+    <div class="chart-card">
+      <div class="chart-header">
+        <div>
+          <h2>Salary Trend</h2>
+          <div class="chart-sub">Last ${bars.length} month${bars.length !== 1 ? 's' : ''}</div>
+        </div>
+        <div class="chart-legend">
+          <span><span class="dot" style="background:var(--navy);"></span>Paid</span>
+          <span><span class="dot" style="background:var(--gold);"></span>Current</span>
+        </div>
+      </div>
+
+      <div class="chart-bars">
+        ${bars.map((b, i) => {
+          const height = (b.amount / max) * 100;
+          const isLast = i === bars.length - 1;
+          const cls = b.status === 'pending' ? 'pending'
+                    : isLast ? 'current' : '';
+          return `
+            <div class="chart-col">
+              <div class="chart-bar-wrap">
+                <div class="chart-bar ${cls}" style="height: ${Math.max(height, 8)}%;">
+                  <span class="chart-bar-value">${b.amount.toFixed(0)}</span>
+                </div>
+              </div>
+              <div class="chart-bar-label">${Utils.esc(b.monthShort)}</div>
+            </div>`;
+        }).join('')}
+      </div>
+    </div>`;
+}
+
+/* ============================================================
+   HISTORY
+   ============================================================ */
+function renderHistory() {
+  const list = DATA.history;
+  if (list.length === 0) {
+    return `
+      <div class="salary-list">
+        <div style="padding: var(--sp-8); text-align:center; color:var(--text-dim); font-size:13px;">
+          No salary records yet.
+        </div>
+      </div>`;
+  }
+
+  return `
+    <section class="card" style="margin-bottom: var(--sp-5);">
+      <div class="card-header">
+        <div>
+          <h2>Payment History</h2>
+          <div class="card-sub">Click any row for the full slip</div>
+        </div>
+      </div>
+    </section>
+
+    <div class="salary-list">
+      ${list.map(renderRow).join('')}
+    </div>`;
+}
+
+function renderRow(s) {
+  const monthShort = s.month.substring(0, 3);
+
+  return `
+    <div class="salary-row" data-sid="${s.id}" style="cursor:pointer;">
+      <div class="sal-month ${s.status}">
+        <div class="sal-month-label">${monthShort}</div>
+        <div class="sal-month-year">${s.year}</div>
+      </div>
+      <div class="sal-body">
+        <div class="sal-title">${Utils.esc(s.month)} ${s.year} Salary</div>
+        <div class="sal-meta">
+          ${s.paidOn
+            ? `<span>${Icon.calendar()} Paid ${Utils.esc(s.paidOn)}</span>`
+            : `<span style="color:var(--warning);">${Icon.clock()} Awaiting payment</span>`}
+          <span>${Icon.money()} ${Utils.esc(s.method)}</span>
+        </div>
+      </div>
+      <div class="sal-amount">Rs. ${s.amount.toFixed(2)}</div>
+      <span class="sal-status ${s.status}">${s.status === 'paid' ? 'Paid' : 'Pending'}</span>
+    </div>`;
+}
+
+/* ============================================================
+   SLIP MODAL
+   ============================================================ */
+function openSlip(salaryId) {
+  const s = DATA.history.find(x => x.id === salaryId);
+  if (!s) return;
+
+  const body = `
+    <div class="slip-hero">
+      <div class="slip-hero-label">Net Amount</div>
+      <div class="slip-hero-amount"><small>Rs.</small>${s.amount.toFixed(2)}</div>
+      <div class="slip-hero-meta">
+        ${Utils.esc(s.month)} ${s.year} · ${Utils.esc(s.method)}
+      </div>
+    </div>
+
+    <div style="padding: 0 4px;">
+      <div class="slip-row">
+        <span class="label">Teacher</span>
+        <span class="value">${Utils.esc(DATA.teacher.fullName)}</span>
+      </div>
+      <div class="slip-row">
+        <span class="label">Teacher ID</span>
+        <span class="value">${Utils.esc(DATA.teacher.teacherCode)}</span>
+      </div>
+      <div class="slip-row">
+        <span class="label">Period</span>
+        <span class="value">${Utils.esc(s.month)} ${s.year}</span>
+      </div>
+      <div class="slip-row">
+        <span class="label">Amount</span>
+        <span class="value">Rs. ${s.amount.toFixed(2)}</span>
+      </div>
+      <div class="slip-row total">
+        <span class="label" style="color:var(--navy); font-weight:700;">Net</span>
+        <span class="value">Rs. ${s.amount.toFixed(2)}</span>
+      </div>
+      <div class="slip-row">
+        <span class="label">Status</span>
+        <span class="value">
+          <span class="sal-status ${s.status}" style="display:inline-flex;">
+            ${s.status === 'paid' ? 'Paid' : 'Pending'}
+          </span>
+        </span>
+      </div>
+      ${s.paidOn ? `
+      <div class="slip-row">
+        <span class="label">Paid On</span>
+        <span class="value">${Utils.esc(s.paidOn)}</span>
+      </div>` : ''}
+      <div class="slip-row">
+        <span class="label">Reference</span>
+        <span class="value" style="font-family:ui-monospace,monospace; font-size:12px;">${Utils.esc(s.reference)}</span>
+      </div>
+    </div>
+
+    <div style="margin-top:var(--sp-5); display:flex; gap:8px;">
+      <button class="btn btn-ghost" data-close style="flex:1;">Close</button>
+      <button class="btn btn-primary" onclick="window.print()" style="flex:1;">
+        Print Slip
+      </button>
+    </div>
+  `;
+
+  const m = Modal.open({ title: 'Salary Slip', body, size: 'sm' });
+  m.el.querySelector('[data-close]').onclick = () => m.close();
+}
+
+/* ============================================================
+   WIRING
+   ============================================================ */
+function wireRows() {
+  document.querySelectorAll('.salary-row').forEach(row => {
+    row.onclick = () => openSlip(parseInt(row.dataset.sid, 10));
+  });
+}
+</script>
+</body>
+</html>

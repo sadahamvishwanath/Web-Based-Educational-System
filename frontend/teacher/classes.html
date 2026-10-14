@@ -1,0 +1,392 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>My Classes — Apex Institute</title>
+
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Plus+Jakarta+Sans:wght@500;600;700;800&display=swap" rel="stylesheet">
+
+  <link rel="stylesheet" href="../shared/css/tokens.css">
+  <link rel="stylesheet" href="../shared/css/base.css">
+  <link rel="stylesheet" href="../shared/css/layout.css">
+  <link rel="stylesheet" href="../shared/css/components.css">
+
+  <style>
+    .class-grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: var(--sp-5);
+    }
+    @media (max-width: 1000px) { .class-grid { grid-template-columns: 1fr; } }
+
+    .tclass {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: var(--r-lg);
+      box-shadow: var(--shadow-xs);
+      overflow: hidden;
+      display: flex; flex-direction: column;
+      transition: all var(--dur) var(--ease);
+      position: relative;
+    }
+    .tclass:hover {
+      box-shadow: var(--shadow-md);
+      border-color: var(--border-strong);
+    }
+    .tclass::before {
+      content: '';
+      position: absolute; top: 0; left: 0; right: 0;
+      height: 4px; background: var(--accent, var(--navy));
+    }
+    .tclass-body { padding: var(--sp-5); display: flex; flex-direction: column; gap: var(--sp-4); }
+
+    .tc-head {
+      display: flex; align-items: flex-start; gap: var(--sp-4);
+    }
+    .tc-icon {
+      width: 48px; height: 48px;
+      border-radius: var(--r-md);
+      display: grid; place-items: center;
+      flex-shrink: 0;
+      background: var(--accent-bg, rgba(20,33,61,.07));
+      color: var(--accent, var(--navy));
+    }
+    .tc-icon svg { width: 22px; height: 22px; }
+    .tc-head-body { flex: 1; min-width: 0; }
+    .tc-title {
+      font-family: 'Plus Jakarta Sans', sans-serif;
+      font-size: 16px; font-weight: 800;
+      color: var(--navy); letter-spacing: -0.015em;
+      margin-bottom: 3px;
+    }
+    .tc-sub { font-size: 12.5px; color: var(--text-dim); }
+
+    .tc-stats {
+      display: grid; grid-template-columns: 1fr 1fr 1fr;
+      gap: var(--sp-3);
+      padding: var(--sp-4);
+      background: var(--surface-alt);
+      border: 1px solid var(--border);
+      border-radius: var(--r-md);
+    }
+    .tc-stat { text-align: center; }
+    .tc-stat-label {
+      font-size: 10.5px; font-weight: 700;
+      color: var(--text-dim);
+      text-transform: uppercase; letter-spacing: 0.08em;
+      margin-bottom: 4px;
+    }
+    .tc-stat-value {
+      font-family: 'Plus Jakarta Sans', sans-serif;
+      font-size: 19px; font-weight: 800;
+      color: var(--navy); letter-spacing: -0.02em;
+      line-height: 1;
+    }
+    .tc-stat-value small {
+      font-size: 11px; color: var(--text-dim); font-weight: 600;
+      margin-left: 2px;
+    }
+
+    .tc-schedule {
+      display: flex; flex-wrap: wrap; gap: 6px;
+    }
+    .schedule-chip {
+      display: inline-flex; align-items: center; gap: 5px;
+      padding: 5px 10px;
+      border-radius: 100px;
+      background: var(--bg);
+      font-size: 11.5px; font-weight: 600;
+      color: var(--navy);
+    }
+    .schedule-chip svg { width: 12px; height: 12px; color: var(--text-faint); }
+
+    .tc-actions {
+      display: grid; grid-template-columns: 1fr 1fr;
+      gap: 6px;
+      padding: var(--sp-4) var(--sp-5);
+      border-top: 1px solid var(--border);
+      background: var(--surface);
+    }
+    .tc-btn {
+      padding: 9px 8px;
+      border-radius: var(--r-md);
+      border: 1px solid var(--border);
+      background: var(--surface);
+      color: var(--navy);
+      font-family: 'Plus Jakarta Sans', sans-serif;
+      font-size: 12px; font-weight: 700;
+      text-align: center; text-decoration: none;
+      display: inline-flex; align-items: center; justify-content: center; gap: 5px;
+      transition: all var(--dur-fast) var(--ease);
+    }
+    .tc-btn:hover {
+      border-color: var(--navy);
+      background: var(--navy);
+      color: #fff;
+    }
+    .tc-btn svg { width: 13px; height: 13px; }
+  </style>
+</head>
+<body>
+
+<script src="../shared/js/utils.js"></script>
+<script src="../shared/js/icons.js"></script>
+<script src="../shared/js/shell.js"></script>
+
+<script>
+/* ============================================================
+   AUTH GUARD
+   ============================================================ */
+const TOKEN = localStorage.getItem('apex_token');
+if (!TOKEN) location.href = '../login.html';
+const API_BASE = 'http://localhost:8080';
+
+/* ============================================================
+   BOOT
+   ============================================================ */
+Shell.render({
+  active: 'classes',
+  role: 'TEACHER',
+  content: '<div class="loading">Loading classes…</div>',
+});
+
+let RAW_ROWS = [];
+let CLASSES = [];
+
+(async function boot() {
+  try {
+    const res = await fetch(API_BASE + '/api/teacher/classes', {
+      headers: { 'Authorization': 'Bearer ' + TOKEN },
+    });
+
+    if (res.status === 401 || res.status === 403) {
+      localStorage.removeItem('apex_token');
+      localStorage.removeItem('apex_user');
+      location.href = '../login.html';
+      return;
+    }
+    if (!res.ok) throw new Error('Server returned ' + res.status);
+
+    const data = await res.json();
+    RAW_ROWS = data.classes || [];
+
+    // Group one row per (class, slot) into one entry per class
+    CLASSES = groupByClass(RAW_ROWS);
+
+    rerender();
+
+  } catch (err) {
+    document.getElementById('app-main').innerHTML = `
+      <div class="error-box">
+        <h2>Could not load classes</h2>
+        <p style="color:var(--text-dim); margin:8px 0 16px;">${Utils.esc(err.message)}</p>
+        <button class="btn btn-primary" onclick="location.reload()">Try again</button>
+      </div>`;
+  }
+})();
+
+/* ============================================================
+   HELPERS
+   ============================================================ */
+const SUBJECT_STYLE = {
+  Mathematics: { accent: '#14213D', bg: 'rgba(20,33,61,.07)' },
+  Science:     { accent: '#198754', bg: 'rgba(25,135,84,.09)' },
+  Physics:     { accent: '#E9B949', bg: 'rgba(233,185,73,.16)' },
+  English:     { accent: '#175CD3', bg: 'rgba(23,92,211,.08)' },
+  ICT:         { accent: '#6941C6', bg: 'rgba(105,65,198,.08)' },
+  Biology:     { accent: '#0E9384', bg: 'rgba(14,147,132,.09)' },
+  Chemistry:   { accent: '#C11574', bg: 'rgba(193,21,116,.08)' },
+};
+function styleFor(s) {
+  return SUBJECT_STYLE[s] || { accent: '#14213D', bg: 'rgba(20,33,61,.07)' };
+}
+
+/* Group (classId, slot) rows into per-class entries with a schedule list. */
+function groupByClass(rows) {
+  const map = new Map();
+  rows.forEach(r => {
+    if (!map.has(r.id)) {
+      map.set(r.id, {
+        id: r.id,
+        name: r.name,
+        subject: r.subject,
+        grade: r.grade,
+        students: r.students,
+        attendanceRate: r.attendanceRate,
+        schedule: [],
+      });
+    }
+    map.get(r.id).schedule.push({
+      day: r.day,
+      time: r.time,
+      room: r.room,
+    });
+  });
+
+  // Sort schedule chips by day order, then time
+  const DAY_ORDER = ['Monday','Tuesday','Wednesday','Thursday','Friday','Saturday','Sunday'];
+  for (const c of map.values()) {
+    c.schedule.sort((a, b) => {
+      const d = DAY_ORDER.indexOf(a.day) - DAY_ORDER.indexOf(b.day);
+      return d !== 0 ? d : a.time.localeCompare(b.time);
+    });
+  }
+
+  // Sort classes by subject, then grade
+  return Array.from(map.values()).sort((a, b) => {
+    const s = a.subject.localeCompare(b.subject);
+    return s !== 0 ? s : a.grade.localeCompare(b.grade);
+  });
+}
+
+/* ============================================================
+   RENDER
+   ============================================================ */
+function rerender() {
+  document.getElementById('app-main').innerHTML = renderPage();
+}
+
+function renderPage() {
+  return `
+    <header class="page-header">
+      <div>
+        <div class="page-eyebrow">Teaching</div>
+        <h1 class="page-title">My Classes</h1>
+        <p class="page-subtitle">
+          ${CLASSES.length} class${CLASSES.length !== 1 ? 'es' : ''} ·
+          ${CLASSES.reduce((s, c) => s + c.students, 0)} students
+        </p>
+      </div>
+      <div class="page-actions">
+        <a href="attendance.html" class="btn btn-primary">${Icon.clipboard()} Mark Attendance</a>
+      </div>
+    </header>
+
+    ${CLASSES.length === 0 ? renderEmpty() : renderSummary()}
+
+    ${CLASSES.length > 0
+      ? `<div class="class-grid">${CLASSES.map(renderClass).join('')}</div>`
+      : ''}
+  `;
+}
+
+/* ============================================================
+   EMPTY STATE (for a teacher with no classes yet)
+   ============================================================ */
+function renderEmpty() {
+  return `
+    <div class="card" style="padding: var(--sp-8) var(--sp-5); text-align:center;">
+      <div style="width:56px; height:56px; margin:0 auto var(--sp-4);
+                  border-radius:50%; background:var(--bg);
+                  display:grid; place-items:center; color:var(--text-faint);">
+        ${Icon.book()}
+      </div>
+      <div style="font-family:'Plus Jakarta Sans',sans-serif; font-size:16px;
+                  font-weight:700; color:var(--navy); margin-bottom:6px;">
+        No classes assigned yet
+      </div>
+      <p style="font-size:13px; color:var(--text-dim); max-width: 400px; margin: 0 auto; line-height: 1.6;">
+        When an admin assigns you to a class in the timetable, it will appear here.
+        You'll be able to take attendance, upload materials, create exams, and enter marks.
+      </p>
+    </div>`;
+}
+
+/* ============================================================
+   SUMMARY TILES
+   ============================================================ */
+function renderSummary() {
+  const totalStudents = CLASSES.reduce((s, c) => s + c.students, 0);
+  const avgAttendance = CLASSES.length > 0
+    ? Math.round(CLASSES.reduce((s, c) => s + c.attendanceRate, 0) / CLASSES.length)
+    : 0;
+  const weeklySessions = CLASSES.reduce((s, c) => s + c.schedule.length, 0);
+
+  const tile = ({ accent, label, value, suffix = '', meta }) => `
+    <div class="stat-card" style="border-left: 3px solid ${accent}">
+      <div class="stat-body" style="padding-left: 4px">
+        <div class="stat-label">${Utils.esc(label)}</div>
+        <div class="stat-value">${Utils.esc(String(value))}${suffix ? `<small>${suffix}</small>` : ''}</div>
+        <div class="stat-meta">${Utils.esc(meta)}</div>
+      </div>
+    </div>`;
+
+  return `
+    <section class="stat-grid">
+      ${tile({ accent: 'var(--navy)',    label: 'Classes', value: CLASSES.length,
+        meta: 'Assigned to you' })}
+      ${tile({ accent: 'var(--info)',    label: 'Students', value: totalStudents,
+        meta: 'Total enrollment' })}
+      ${tile({ accent: 'var(--success)', label: 'Avg Attendance', value: avgAttendance,
+        suffix: '%', meta: 'Across all classes' })}
+      ${tile({ accent: 'var(--gold)',    label: 'Weekly Sessions', value: weeklySessions,
+        meta: 'Scheduled slots' })}
+    </section>`;
+}
+
+/* ============================================================
+   CLASS CARD
+   ============================================================ */
+function renderClass(c) {
+  const s = styleFor(c.subject);
+  return `
+    <div class="tclass" style="--accent: ${s.accent}; --accent-bg: ${s.bg};">
+      <div class="tclass-body">
+        <div class="tc-head">
+          <div class="tc-icon">${Icon.book()}</div>
+          <div class="tc-head-body">
+            <div class="tc-title">${Utils.esc(c.name)}</div>
+            <div class="tc-sub">${Utils.esc(c.subject)} · Grade ${Utils.esc(c.grade)}</div>
+          </div>
+        </div>
+
+        <div class="tc-stats">
+          <div class="tc-stat">
+            <div class="tc-stat-label">Students</div>
+            <div class="tc-stat-value">${c.students}</div>
+          </div>
+          <div class="tc-stat">
+            <div class="tc-stat-label">Attendance</div>
+            <div class="tc-stat-value">${c.attendanceRate}<small>%</small></div>
+          </div>
+          <div class="tc-stat">
+            <div class="tc-stat-label">Weekly</div>
+            <div class="tc-stat-value">${c.schedule.length}<small>×</small></div>
+          </div>
+        </div>
+
+        <div>
+          <div class="tc-stat-label" style="margin-bottom:8px;">Weekly Schedule</div>
+          <div class="tc-schedule">
+            ${c.schedule.length === 0
+              ? `<span style="font-size:12px; color:var(--text-dim);">No sessions scheduled.</span>`
+              : c.schedule.map(sc => `
+                  <span class="schedule-chip">
+                    ${Icon.calendar()} ${Utils.esc(sc.day.slice(0,3))} ${Utils.esc(sc.time.split(' – ')[0])} · Room ${Utils.esc(sc.room)}
+                  </span>`).join('')}
+          </div>
+        </div>
+      </div>
+
+      <div class="tc-actions">
+        <a class="tc-btn" href="attendance.html?classId=${c.id}">
+          ${Icon.clipboard()} Attendance
+        </a>
+        <a class="tc-btn" href="materials.html?classId=${c.id}">
+          ${Icon.file()} Materials
+        </a>
+        <a class="tc-btn" href="exams.html?classId=${c.id}">
+          ${Icon.exam()} Exams
+        </a>
+        <a class="tc-btn" href="marks.html?classId=${c.id}">
+          ${Icon.award()} Marks
+        </a>
+      </div>
+    </div>`;
+}
+</script>
+</body>
+</html>

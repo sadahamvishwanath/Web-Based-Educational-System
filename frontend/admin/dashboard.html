@@ -1,0 +1,319 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Admin Dashboard — Apex Institute</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Plus+Jakarta+Sans:wght@500;600;700;800&display=swap" rel="stylesheet">
+
+  <link rel="stylesheet" href="../shared/css/tokens.css">
+  <link rel="stylesheet" href="../shared/css/base.css">
+  <link rel="stylesheet" href="../shared/css/layout.css">
+  <link rel="stylesheet" href="../shared/css/components.css">
+
+  <style>
+    /* Overview tiles — 6 wide */
+    .overview-grid {
+      display: grid; grid-template-columns: repeat(4, 1fr);
+      gap: var(--sp-4); margin-bottom: var(--sp-5);
+    }
+    @media (max-width: 1100px) { .overview-grid { grid-template-columns: repeat(2, 1fr); } }
+
+    .ov-tile {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: var(--r-lg);
+      padding: var(--sp-5);
+      box-shadow: var(--shadow-xs);
+      position: relative;
+      overflow: hidden;
+      transition: all var(--dur) var(--ease);
+    }
+    .ov-tile:hover { transform: translateY(-2px); box-shadow: var(--shadow-md); }
+    .ov-tile .bar {
+      position: absolute; top: 0; left: 0; right: 0;
+      height: 4px; background: var(--accent, var(--navy));
+    }
+    .ov-label {
+      font-size: 11px; font-weight: 700;
+      color: var(--text-dim); text-transform: uppercase;
+      letter-spacing: 0.08em; margin-bottom: 8px;
+    }
+    .ov-value {
+      font-family: 'Plus Jakarta Sans', sans-serif;
+      font-size: 30px; font-weight: 800;
+      color: var(--navy); letter-spacing: -0.03em;
+      line-height: 1; margin-bottom: 6px;
+    }
+    .ov-value small { font-size: 14px; color: var(--text-dim); font-weight: 600; margin-left: 2px; }
+    .ov-meta { font-size: 12px; color: var(--text-dim); }
+
+    /* Quick action grid */
+    .admin-quick-grid {
+      display: grid; grid-template-columns: 1fr 1fr; gap: var(--sp-3);
+      padding: 0 var(--sp-5) var(--sp-5);
+    }
+    .admin-quick {
+      display: flex; flex-direction: column; gap: var(--sp-3);
+      padding: var(--sp-4); border: 1px solid var(--border);
+      border-radius: var(--r-md); transition: all var(--dur) var(--ease);
+      color: var(--navy); text-decoration: none;
+    }
+    .admin-quick:hover {
+      border-color: var(--navy); background: var(--surface-alt);
+      color: var(--navy); transform: translateY(-1px);
+    }
+    .admin-quick-icon {
+      width: 32px; height: 32px; border-radius: var(--r-sm);
+      background: var(--bg); display: grid; place-items: center;
+      color: var(--navy);
+    }
+    .admin-quick-icon svg { width: 16px; height: 16px; }
+    .admin-quick span {
+      font-family: 'Plus Jakarta Sans', sans-serif;
+      font-size: 12.5px; font-weight: 700;
+    }
+
+    /* Activity feed */
+    .act-row {
+      display: flex; gap: var(--sp-3);
+      padding: var(--sp-4) var(--sp-5);
+      border-bottom: 1px solid var(--border);
+      align-items: flex-start;
+    }
+    .act-row:last-child { border-bottom: none; }
+    .act-icon {
+      width: 34px; height: 34px; border-radius: var(--r-md);
+      display: grid; place-items: center;
+      flex-shrink: 0;
+    }
+    .act-icon svg { width: 16px; height: 16px; }
+    .act-icon.add    { background: var(--success-bg); color: var(--success); }
+    .act-icon.edit   { background: var(--info-bg); color: var(--info); }
+    .act-icon.delete { background: var(--danger-bg); color: var(--danger); }
+    .act-icon.gold   { background: var(--gold-soft); color: #8F6B0F; }
+    .act-body { flex: 1; min-width: 0; }
+    .act-title {
+      font-family: 'Plus Jakarta Sans', sans-serif;
+      font-size: 13px; font-weight: 700;
+      color: var(--navy); margin-bottom: 3px;
+    }
+    .act-text {
+      font-size: 12.5px; color: var(--text-dim);
+      line-height: 1.5; display: -webkit-box;
+      line-clamp: 2; -webkit-line-clamp: 2; -webkit-box-orient: vertical;
+      overflow: hidden;
+    }
+    .act-time { font-size: 11px; color: var(--text-faint); margin-top: 5px; }
+  </style>
+</head>
+<body>
+
+<script src="../shared/js/utils.js"></script>
+<script src="../shared/js/icons.js"></script>
+<script src="../shared/js/shell.js"></script>
+
+<script>
+const TOKEN = localStorage.getItem('apex_token');
+if (!TOKEN) location.href = '../login.html';
+const API_BASE = 'http://localhost:8080';
+
+Shell.render({
+  active: 'dashboard',
+  role: 'ADMIN',
+  content: '<div class="loading">Loading dashboard…</div>',
+});
+
+(async function boot() {
+  try {
+    const res = await fetch(API_BASE + '/api/admin/dashboard', {
+      headers: { 'Authorization': 'Bearer ' + TOKEN },
+    });
+    if (res.status === 401 || res.status === 403) {
+      localStorage.removeItem('apex_token');
+      localStorage.removeItem('apex_user');
+      location.href = '../login.html';
+      return;
+    }
+    if (!res.ok) throw new Error('Server returned ' + res.status);
+    const data = await res.json();
+    document.getElementById('app-main').innerHTML = render(data);
+  } catch (err) {
+    document.getElementById('app-main').innerHTML = `
+      <div class="error-box">
+        <h2>Could not load dashboard</h2>
+        <p style="color:var(--text-dim); margin:8px 0 16px;">${Utils.esc(err.message)}</p>
+        <button class="btn btn-primary" onclick="location.reload()">Try again</button>
+      </div>`;
+  }
+})();
+
+/* ============================================================
+   RENDER
+   ============================================================ */
+function render(data) {
+  const { stats, classCapacity, activity, announcements } = data;
+
+  const today = new Date();
+  const dayName = today.toLocaleDateString('en-GB', { weekday: 'long' });
+  const dateStr = today.toLocaleDateString('en-GB', { day: 'numeric', month: 'long', year: 'numeric' });
+  const hour = today.getHours();
+  const greeting = hour < 12 ? 'Good morning' : hour < 17 ? 'Good afternoon' : 'Good evening';
+
+  return `
+    <header class="page-header">
+      <div>
+        <div class="page-eyebrow">${dayName}, ${dateStr}</div>
+        <h1 class="page-title">${greeting}, Admin.</h1>
+        <p class="page-subtitle">Everything at Apex, at a glance.</p>
+      </div>
+      <div class="page-actions">
+        <a href="users.html" class="btn btn-ghost">${Icon.user()} Manage Users</a>
+        <a href="timetable.html" class="btn btn-primary">${Icon.clock()} Build Timetable</a>
+      </div>
+    </header>
+
+    ${renderStats(stats)}
+
+    <div class="content-grid">
+      <div class="content-col">
+        ${renderActivity(activity)}
+      </div>
+      <div class="content-col">
+        ${renderQuickActions()}
+        ${renderCapacity(classCapacity)}
+      </div>
+    </div>
+  `;
+}
+
+function renderStats(s) {
+  const tile = ({ accent, label, value, suffix = '', meta }) => `
+    <div class="ov-tile" style="--accent: ${accent};">
+      <div class="bar"></div>
+      <div class="ov-label">${Utils.esc(label)}</div>
+      <div class="ov-value">${Utils.esc(String(value))}${suffix ? `<small>${suffix}</small>` : ''}</div>
+      <div class="ov-meta">${Utils.esc(meta)}</div>
+    </div>`;
+
+  return `
+    <section class="overview-grid">
+      ${tile({ accent: 'var(--navy)',    label: 'Students',   value: s.students, meta: 'Enrolled this term' })}
+      ${tile({ accent: 'var(--info)',    label: 'Teachers',   value: s.teachers, meta: 'Active staff' })}
+      ${tile({ accent: 'var(--gold)',    label: 'Classes',    value: s.classes,  meta: 'Across all grades' })}
+      ${tile({ accent: '#6941C6',        label: 'Parents',    value: s.parents,  meta: 'Linked accounts' })}
+      ${tile({ accent: 'var(--success)', label: 'Attendance', value: s.attendancePct, suffix: '%', meta: 'Institute average' })}
+      ${tile({ accent: 'var(--warning)', label: 'Revenue',    value: 'Rs. ' + s.monthRevenue.toFixed(0), meta: 'Collected this month' })}
+    </section>`;
+}
+
+function renderActivity(list) {
+  if (list.length === 0) {
+    return `
+      <section class="card">
+        <div class="card-header">
+          <div><h2>Recent Activity</h2><div class="card-sub">Nothing yet</div></div>
+        </div>
+        <div style="padding: var(--sp-6); text-align:center; color:var(--text-dim); font-size:13px;">
+          New registrations, exams, and notices will appear here.
+        </div>
+      </section>`;
+  }
+
+  return `
+    <section class="card">
+      <div class="card-header">
+        <div>
+          <h2>Recent Activity</h2>
+          <div class="card-sub">Latest events across the system</div>
+        </div>
+      </div>
+      <div>
+        ${list.map(a => {
+          const iconFn = a.kind === 'add' ? Icon.check
+                       : a.kind === 'edit' ? Icon.file
+                       : a.kind === 'gold' ? Icon.bell
+                       : Icon.award;
+          return `
+            <div class="act-row">
+              <div class="act-icon ${a.kind}">${iconFn()}</div>
+              <div class="act-body">
+                <div class="act-title">${Utils.esc(a.title)}</div>
+                <div class="act-text">${Utils.esc(a.text)}</div>
+                <div class="act-time">${Utils.esc(a.time)}</div>
+              </div>
+            </div>`;
+        }).join('')}
+      </div>
+    </section>`;
+}
+
+function renderQuickActions() {
+  return `
+    <section class="card">
+      <div class="card-header"><h2>Quick Actions</h2></div>
+      <div class="admin-quick-grid">
+        <a class="admin-quick" href="users.html">
+          <div class="admin-quick-icon">${Icon.user()}</div>
+          <span>Add User</span>
+        </a>
+        <a class="admin-quick" href="students.html">
+          <div class="admin-quick-icon">${Icon.award()}</div>
+          <span>Add Student</span>
+        </a>
+        <a class="admin-quick" href="classes.html">
+          <div class="admin-quick-icon">${Icon.book()}</div>
+          <span>New Class</span>
+        </a>
+        <a class="admin-quick" href="timetable.html">
+          <div class="admin-quick-icon">${Icon.clock()}</div>
+          <span>Timetable</span>
+        </a>
+        <a class="admin-quick" href="notifications.html">
+          <div class="admin-quick-icon">${Icon.bell()}</div>
+          <span>Notice</span>
+        </a>
+        <a class="admin-quick" href="../management/dashboard.html">
+          <div class="admin-quick-icon">${Icon.money()}</div>
+          <span>Finance</span>
+        </a>
+      </div>
+    </section>`;
+}
+
+function renderCapacity(list) {
+  if (list.length === 0) return '';
+
+  return `
+    <section class="card">
+      <div class="card-header">
+        <div>
+          <h2>Top Classes</h2>
+          <div class="card-sub">By enrollment</div>
+        </div>
+        <a href="classes.html" class="card-link">Manage ${Icon.arrowR()}</a>
+      </div>
+      <div>
+        ${list.map(c => {
+          const pct = Math.min(100, Math.round((c.students / c.capacity) * 100));
+          const tone = pct >= 80 ? 'bad' : pct >= 50 ? 'warn' : 'good';
+          const color = tone === 'bad' ? 'var(--danger)' : tone === 'warn' ? 'var(--warning)' : 'var(--success)';
+          return `
+            <div style="padding: var(--sp-4) var(--sp-5); border-bottom: 1px solid var(--border);">
+              <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:8px;">
+                <span style="font-family:'Plus Jakarta Sans',sans-serif; font-size:13.5px; font-weight:700; color:var(--navy);">${Utils.esc(c.className)}</span>
+                <span style="font-size:12px; color:var(--text-dim); font-variant-numeric:tabular-nums;">${c.students} / ${c.capacity}</span>
+              </div>
+              <div style="height:6px; background:var(--bg); border-radius:100px; overflow:hidden;">
+                <div style="height:100%; width:${pct}%; background:${color}; border-radius:100px; transition: width 800ms;"></div>
+              </div>
+            </div>`;
+        }).join('')}
+      </div>
+    </section>`;
+}
+</script>
+</body>
+</html>

@@ -1,0 +1,588 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Timetable Builder — Apex Institute</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Plus+Jakarta+Sans:wght@500;600;700;800&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="../shared/css/tokens.css">
+  <link rel="stylesheet" href="../shared/css/base.css">
+  <link rel="stylesheet" href="../shared/css/layout.css">
+  <link rel="stylesheet" href="../shared/css/components.css">
+  <style>
+    /* --- Summary tiles --- */
+    .tt-summary { display:grid; grid-template-columns:repeat(4,1fr); gap:var(--sp-4); margin-bottom:var(--sp-5); }
+    @media (max-width:900px){ .tt-summary { grid-template-columns:repeat(2,1fr); } }
+    .sum-tile { background:var(--surface); border:1px solid var(--border); border-radius:var(--r-lg);
+      padding:var(--sp-4) var(--sp-5); box-shadow:var(--shadow-xs); position:relative; overflow:hidden; }
+    .sum-tile .bar { position:absolute; top:0; left:0; width:4px; height:100%; }
+    .sum-label { font-size:11px; font-weight:700; color:var(--text-dim); text-transform:uppercase;
+      letter-spacing:.08em; margin-bottom:6px; }
+    .sum-value { font-family:'Plus Jakarta Sans',sans-serif; font-size:24px; font-weight:800; color:var(--navy);
+      letter-spacing:-.02em; line-height:1.1; }
+    .sum-value small { font-size:13px; color:var(--text-dim); font-weight:600; margin-left:3px; }
+    .sum-meta { font-size:12px; color:var(--text-dim); margin-top:4px; }
+
+    /* --- Grid --- */
+    .tt-toolbar { display:flex; align-items:center; gap:var(--sp-3); margin-bottom:var(--sp-5); flex-wrap:wrap; }
+    .tt-toolbar-hint { font-size:12.5px; color:var(--text-dim); display:inline-flex; align-items:center; gap:6px; }
+    .tt-toolbar-hint svg { width:14px; height:14px; color:var(--text-faint); }
+
+    .tt-wrap { background:var(--surface); border:1px solid var(--border); border-radius:var(--r-lg);
+      box-shadow:var(--shadow-xs); overflow:hidden; }
+    .tt-scroll { overflow-x:auto; }
+    .tt-inner { min-width:960px; }
+
+    .tt-head { display:grid; grid-template-columns:110px repeat(6,1fr); background:var(--surface-alt);
+      border-bottom:1px solid var(--border); }
+    .tt-head > div { padding:13px 8px; text-align:center; border-left:1px solid var(--border);
+      font-family:'Plus Jakarta Sans',sans-serif; font-size:12.5px; font-weight:700; color:var(--navy);
+      letter-spacing:.02em; }
+    .tt-head > div:first-child { border-left:none; color:var(--text-dim); font-size:11px; text-transform:uppercase;
+      letter-spacing:.08em; }
+    .tt-head .day-date { font-size:10.5px; color:var(--text-dim); font-weight:500; margin-top:2px; }
+    .tt-head .is-today { background:rgba(233,185,73,.08); }
+    .tt-head .is-today .day-name { color:#8F6B0F; }
+
+    .tt-row { display:grid; grid-template-columns:110px repeat(6,1fr); border-bottom:1px solid var(--border); }
+    .tt-row:last-child { border-bottom:none; }
+
+    .tt-time { padding:14px 16px; background:var(--surface-alt); border-right:1px solid var(--border);
+      display:flex; flex-direction:column; justify-content:center; }
+    .tt-time .t-from { font-family:'Plus Jakarta Sans',sans-serif; font-size:13.5px; font-weight:700;
+      color:var(--navy); letter-spacing:-.01em; }
+    .tt-time .t-to { font-size:11px; color:var(--text-dim); margin-top:2px; }
+
+    .tt-cell { padding:6px; border-left:1px solid var(--border); min-height:96px; position:relative;
+      cursor:pointer; transition:background var(--dur-fast) var(--ease); }
+    .tt-cell:hover { background:rgba(233,185,73,.04); }
+    .tt-cell:hover .cell-plus { opacity:1; }
+    .tt-cell.is-today { background:rgba(233,185,73,.03); }
+    .tt-cell.conflict { background:rgba(180,35,24,.06); }
+
+    .cell-plus { position:absolute; top:50%; left:50%; transform:translate(-50%,-50%);
+      opacity:0; transition:opacity var(--dur-fast) var(--ease); color:var(--text-faint); pointer-events:none; }
+    .cell-plus svg { width:24px; height:24px; }
+
+    .tt-slot { height:100%; padding:10px 12px; border-radius:var(--r-md); border-left:3px solid var(--accent,var(--navy));
+      background:var(--accent-bg, rgba(20,33,61,.06)); display:flex; flex-direction:column; gap:5px;
+      cursor:pointer; transition:all var(--dur) var(--ease); position:relative; }
+    .tt-slot:hover { transform:translateY(-1px); box-shadow:var(--shadow-sm); }
+    .tt-slot .s-subj { font-family:'Plus Jakarta Sans',sans-serif; font-size:12.5px; font-weight:700;
+      color:var(--navy); line-height:1.2; letter-spacing:-.005em; }
+    .tt-slot .s-teacher { font-size:11px; color:var(--text-dim); display:flex; align-items:center; gap:4px; }
+    .tt-slot .s-teacher svg { width:11px; height:11px; color:var(--text-faint); }
+    .tt-slot .s-room { margin-top:auto; display:inline-flex; align-items:center; gap:3px; align-self:flex-start;
+      padding:2px 7px; border-radius:100px; background:rgba(255,255,255,.7);
+      font-size:10px; font-weight:700; color:var(--navy); letter-spacing:.02em; }
+    .tt-slot .s-room svg { width:10px; height:10px; }
+
+    /* --- Modal --- */
+    .conflict-box { padding:12px 14px; border-radius:var(--r-md); margin-top:var(--sp-3); font-size:12.5px;
+      display:none; align-items:flex-start; gap:10px; line-height:1.5; }
+    .conflict-box.show { display:flex; }
+    .conflict-box.error { background:var(--danger-bg); color:var(--danger); border:1px solid rgba(180,35,24,.2); }
+    .conflict-box svg { width:15px; height:15px; flex-shrink:0; margin-top:1px; }
+    .conflict-box strong { font-weight:700; }
+
+    .pick-row { display:grid; grid-template-columns:1fr 1fr; gap:12px; }
+    .slot-info-banner { display:flex; align-items:center; gap:12px; padding:12px 14px; border-radius:var(--r-md);
+      background:var(--navy); color:#fff; margin-bottom:var(--sp-5); }
+    .slot-info-banner .si-icon { width:34px; height:34px; border-radius:var(--r-sm);
+      background:rgba(233,185,73,.16); color:var(--gold); display:grid; place-items:center; flex-shrink:0; }
+    .slot-info-banner .si-icon svg { width:16px; height:16px; }
+    .slot-info-banner .si-body { flex:1; min-width:0; }
+    .slot-info-banner .si-day { font-family:'Plus Jakarta Sans',sans-serif; font-size:14px; font-weight:800; }
+    .slot-info-banner .si-time { font-size:12.5px; color:rgba(255,255,255,.65); margin-top:2px; }
+
+    /* --- Legend --- */
+    .tt-legend { display:flex; flex-wrap:wrap; gap:var(--sp-4); margin-top:var(--sp-5);
+      padding:var(--sp-4) var(--sp-5); background:var(--surface); border:1px solid var(--border);
+      border-radius:var(--r-lg); box-shadow:var(--shadow-xs); }
+    .legend-label { font-family:'Plus Jakarta Sans',sans-serif; font-size:11.5px; font-weight:700;
+      color:var(--text-dim); text-transform:uppercase; letter-spacing:.06em; align-self:center; margin-right:var(--sp-2); }
+    .legend-item { display:inline-flex; align-items:center; gap:7px; font-size:12.5px; color:var(--text); font-weight:500; }
+    .legend-dot { width:10px; height:10px; border-radius:3px; }
+  </style>
+</head>
+<body>
+
+<script src="../shared/js/utils.js"></script>
+<script src="../shared/js/icons.js"></script>
+<script src="../shared/js/shell.js"></script>
+<script src="../shared/js/modal.js"></script>
+
+<script>
+/* ============================================================
+   AUTH + BOOT
+   ============================================================ */
+const TOKEN = localStorage.getItem('apex_token');
+if (!TOKEN) location.href = '../login.html';
+const API_BASE = 'http://localhost:8080';
+
+let DATA = null;
+
+Shell.render({
+  active: 'timetable',
+  role: 'ADMIN',
+  content: '<div class="loading">Loading timetable…</div>',
+});
+
+(async function boot() {
+  try {
+    const res = await fetch(API_BASE + '/api/admin/timetable', {
+      headers: { 'Authorization': 'Bearer ' + TOKEN },
+    });
+
+    if (res.status === 401 || res.status === 403) {
+      localStorage.removeItem('apex_token');
+      localStorage.removeItem('apex_user');
+      location.href = '../login.html';
+      return;
+    }
+    if (!res.ok) throw new Error('Server returned ' + res.status);
+
+    DATA = await res.json();
+    rerender();
+
+  } catch (err) {
+    document.getElementById('app-main').innerHTML = `
+      <div class="error-box">
+        <h2>Could not load timetable</h2>
+        <p style="color:var(--text-dim); margin:8px 0 16px;">${Utils.esc(err.message)}</p>
+        <button class="btn btn-primary" onclick="location.reload()">Try again</button>
+      </div>`;
+  }
+})();
+
+/* ============================================================
+   HELPERS
+   ============================================================ */
+const SUBJECT_STYLE = {
+  Mathematics: { accent: '#14213D', bg: 'rgba(20,33,61,.07)' },
+  Science:     { accent: '#198754', bg: 'rgba(25,135,84,.09)' },
+  Physics:     { accent: '#E9B949', bg: 'rgba(233,185,73,.16)' },
+  English:     { accent: '#175CD3', bg: 'rgba(23,92,211,.08)' },
+  ICT:         { accent: '#6941C6', bg: 'rgba(105,65,198,.08)' },
+  Biology:     { accent: '#0E9384', bg: 'rgba(14,147,132,.09)' },
+  Chemistry:   { accent: '#C11574', bg: 'rgba(193,21,116,.08)' },
+};
+function styleFor(s) {
+  return SUBJECT_STYLE[s] || { accent: '#14213D', bg: 'rgba(20,33,61,.07)' };
+}
+
+function isToday(day) {
+  const idx = new Date().getDay();
+  return ['Sunday','Monday','Tuesday','Wednesday','Thursday','Friday','Saturday'][idx] === day;
+}
+
+/* Find the slot at (day, start) */
+function slotAt(day, start) {
+  return DATA.entries.find(e => e.day === day && e.start === start);
+}
+
+/* ============================================================
+   RENDER
+   ============================================================ */
+function rerender() {
+  document.getElementById('app-main').innerHTML = renderPage();
+  wireGrid();
+}
+
+function renderPage() {
+  return `
+    <header class="page-header">
+      <div>
+        <div class="page-eyebrow">Academics</div>
+        <h1 class="page-title">Timetable Builder</h1>
+        <p class="page-subtitle">
+          Click any empty cell to add a class · click a filled cell to edit
+        </p>
+      </div>
+      <div class="page-actions">
+        <a href="classes.html" class="btn btn-ghost">${Icon.book()} Classes</a>
+      </div>
+    </header>
+
+    ${renderSummary()}
+
+    <div class="tt-toolbar">
+      <span class="tt-toolbar-hint">
+        ${Icon.bell()} Conflicts prevented automatically — teachers, rooms, and classes cannot double-book.
+      </span>
+    </div>
+
+    <div class="tt-wrap">
+      <div class="tt-scroll">
+        <div class="tt-inner">
+          ${renderHead()}
+          ${renderBody()}
+        </div>
+      </div>
+    </div>
+
+    ${renderLegend()}
+  `;
+}
+
+function renderSummary() {
+  const s = DATA.stats;
+  const tile = ({ accent, label, value, meta }) => `
+    <div class="sum-tile">
+      <div class="bar" style="background:${accent};"></div>
+      <div class="sum-label">${Utils.esc(label)}</div>
+      <div class="sum-value">${value}</div>
+      <div class="sum-meta">${Utils.esc(meta)}</div>
+    </div>`;
+
+  const hours = DATA.entries.reduce((sum, e) => {
+    const [h1, m1] = e.start.split(':').map(Number);
+    const [h2, m2] = e.end.split(':').map(Number);
+    return sum + (h2 + m2 / 60) - (h1 + m1 / 60);
+  }, 0);
+
+  return `
+    <div class="tt-summary">
+      ${tile({ accent: 'var(--navy)',    label: 'Weekly Slots', value: s.totalSlots,     meta: 'Total scheduled' })}
+      ${tile({ accent: 'var(--info)',    label: 'Classes',      value: s.classesUsed,    meta: `${DATA.classes.length} available` })}
+      ${tile({ accent: 'var(--gold)',    label: 'Teachers',     value: s.teachersUsed,   meta: `${DATA.teachers.length} on staff` })}
+      ${tile({ accent: 'var(--success)', label: 'Weekly Hours', value: Math.round(hours) + 'h', meta: `${s.roomsUsed} rooms used` })}
+    </div>`;
+}
+
+function renderHead() {
+  const cells = DATA.days.map(day => `
+    <div class="${isToday(day) ? 'is-today' : ''}">
+      <div class="day-name">${day.slice(0, 3)}</div>
+      <div class="day-date">${day.slice(0, 3)}</div>
+    </div>`).join('');
+  return `<div class="tt-head"><div>Time</div>${cells}</div>`;
+}
+
+function renderBody() {
+  return DATA.slots.map(slot => {
+    const cells = DATA.days.map(day => {
+      const entry = slotAt(day, slot.start);
+      const content = entry ? renderSlotBlock(entry) :
+        `<div class="cell-plus">
+           <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+             <line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/>
+           </svg>
+         </div>`;
+      return `
+        <div class="tt-cell ${isToday(day) ? 'is-today' : ''}"
+             data-day="${day}" data-start="${slot.start}" data-end="${slot.end}">
+          ${content}
+        </div>`;
+    }).join('');
+
+    return `
+      <div class="tt-row">
+        <div class="tt-time">
+          <div class="t-from">${slot.start}</div>
+          <div class="t-to">${slot.end}</div>
+        </div>
+        ${cells}
+      </div>`;
+  }).join('');
+}
+
+function renderSlotBlock(e) {
+  const st = styleFor(e.subject);
+  return `
+    <div class="tt-slot" style="--accent:${st.accent}; --accent-bg:${st.bg};"
+         data-slot="${e.id}">
+      <div class="s-subj">${Utils.esc(e.subject)} · G${Utils.esc(e.grade)}</div>
+      <div class="s-teacher">${Icon.user()} ${Utils.esc(e.teacherName)}</div>
+      <div class="s-room">${Icon.pin()} ${Utils.esc(e.roomName)}</div>
+    </div>`;
+}
+
+function renderLegend() {
+  const subjects = [...new Set(DATA.classes.map(c => c.subject))].sort();
+  return `
+    <div class="tt-legend">
+      <span class="legend-label">Subjects</span>
+      ${subjects.map(s => `
+        <span class="legend-item">
+          <span class="legend-dot" style="background:${styleFor(s).accent};"></span>
+          ${Utils.esc(s)}
+        </span>`).join('')}
+    </div>`;
+}
+
+/* ============================================================
+   SLOT EDITOR MODAL
+   ============================================================ */
+async function openSlotModal({ mode, day, start, end, slotId }) {
+  const existing = slotId ? DATA.entries.find(s => s.id === slotId) : null;
+
+  const preClass   = existing ? existing.classId   : '';
+  const preTeacher = existing ? existing.teacherId : '';
+  const preRoom    = existing ? existing.roomId    : '';
+
+  const classOpts = DATA.classes.map(c => `
+    <option value="${c.id}" ${c.id === preClass ? 'selected' : ''}>
+      ${Utils.esc(c.name)} · G${Utils.esc(c.grade)}
+    </option>`).join('');
+
+  const teacherOpts = DATA.teachers.map(t => `
+    <option value="${t.id}" ${t.id === preTeacher ? 'selected' : ''}>
+      ${Utils.esc(t.name)}
+    </option>`).join('');
+
+  const roomOpts = DATA.rooms.map(r => `
+    <option value="${r.id}" ${r.id === preRoom ? 'selected' : ''}>
+      Room ${Utils.esc(r.name)}
+    </option>`).join('');
+
+  const body = `
+    <div class="slot-info-banner">
+      <div class="si-icon">${Icon.clock()}</div>
+      <div class="si-body">
+        <div class="si-day">${Utils.esc(day)}</div>
+        <div class="si-time">${Utils.esc(start)} – ${Utils.esc(end)}</div>
+      </div>
+    </div>
+
+    <div class="form-field">
+      <label>Class</label>
+      <select id="sm-class">
+        <option value="" disabled ${!preClass ? 'selected' : ''}>Select a class…</option>
+        ${classOpts}
+      </select>
+    </div>
+
+    <div class="pick-row">
+      <div class="form-field">
+        <label>Teacher</label>
+        <select id="sm-teacher">
+          <option value="" disabled ${!preTeacher ? 'selected' : ''}>Select…</option>
+          ${teacherOpts}
+        </select>
+      </div>
+      <div class="form-field">
+        <label>Room</label>
+        <select id="sm-room">
+          <option value="" disabled ${!preRoom ? 'selected' : ''}>Select…</option>
+          ${roomOpts}
+        </select>
+      </div>
+    </div>
+
+    <div class="conflict-box" id="sm-conflict">
+      ${Icon.bell()}
+      <div id="sm-conflict-text"></div>
+    </div>
+
+    <div class="form-actions" style="margin-top: var(--sp-5); justify-content: space-between;">
+      ${mode === 'edit'
+        ? `<button class="btn" data-delete style="background:var(--danger-bg); border-color:transparent; color:var(--danger);">${Icon.logout()} Remove Slot</button>`
+        : `<button class="btn btn-ghost" data-cancel>Cancel</button>`}
+      <button class="btn btn-primary" id="sm-submit" disabled style="opacity:.5; cursor:not-allowed;">
+        ${mode === 'edit' ? 'Save Changes' : 'Add Slot'}
+      </button>
+    </div>
+  `;
+
+  const m = Modal.open({
+    title: mode === 'edit' ? 'Edit Timetable Slot' : 'Add Timetable Slot',
+    body,
+    size: 'md',
+  });
+
+  const classSel   = m.el.querySelector('#sm-class');
+  const teacherSel = m.el.querySelector('#sm-teacher');
+  const roomSel    = m.el.querySelector('#sm-room');
+  const submitBtn  = m.el.querySelector('#sm-submit');
+  const conflictEl = m.el.querySelector('#sm-conflict');
+  const conflictTx = m.el.querySelector('#sm-conflict-text');
+
+  let checkInFlight = null;
+
+  async function check() {
+    const classId   = parseInt(classSel.value, 10);
+    const teacherId = parseInt(teacherSel.value, 10);
+    const roomId    = parseInt(roomSel.value, 10);
+
+    conflictEl.classList.remove('show');
+    submitBtn.disabled = true;
+    submitBtn.style.opacity = '0.5';
+    submitBtn.style.cursor = 'not-allowed';
+
+    if (!classId || !teacherId || !roomId) return;
+
+    // Debounce: cancel previous fetch by aborting? Simpler: mark this call as latest
+    const callId = Date.now();
+    checkInFlight = callId;
+
+    try {
+      const res = await fetch(API_BASE + '/api/admin/timetable/check', {
+        method: 'POST',
+        headers: {
+          'Authorization': 'Bearer ' + TOKEN,
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          classId, teacherId, roomId, day, start, end,
+          excludeId: mode === 'edit' ? slotId : null,
+        }),
+      });
+      if (checkInFlight !== callId) return;
+
+      const data = await res.json();
+      if (data.conflicts && data.conflicts.length > 0) {
+        conflictEl.classList.add('show', 'error');
+        const lines = data.conflicts.map(c => `• ${Utils.esc(c.message)}`).join('<br>');
+        conflictTx.innerHTML = `<div style="font-weight:700; margin-bottom:4px;">Schedule conflict</div>${lines}`;
+        return;
+      }
+
+      submitBtn.disabled = false;
+      submitBtn.style.opacity = '1';
+      submitBtn.style.cursor = 'pointer';
+    } catch (err) {
+      // network error → let submit be attempted anyway
+      submitBtn.disabled = false;
+      submitBtn.style.opacity = '1';
+      submitBtn.style.cursor = 'pointer';
+    }
+  }
+
+  classSel.onchange   = check;
+  teacherSel.onchange = check;
+  roomSel.onchange    = check;
+
+  check();   // initial
+
+  m.el.querySelector('[data-cancel]')?.addEventListener('click', () => m.close());
+
+  m.el.querySelector('[data-delete]')?.addEventListener('click', async () => {
+    if (!confirm('Remove this slot from the timetable?')) return;
+    try {
+      const res = await fetch(`${API_BASE}/api/admin/timetable/${slotId}`, {
+        method: 'DELETE',
+        headers: { 'Authorization': 'Bearer ' + TOKEN },
+      });
+      const data = await res.json().catch(() => ({}));
+      if (!res.ok) { showToast(data.message || 'Delete failed'); return; }
+      m.close();
+      await reload();
+      showToast('Slot removed');
+    } catch (err) { showToast('Network error: ' + err.message); }
+  });
+
+  submitBtn.onclick = async () => {
+    const classId   = parseInt(classSel.value, 10);
+    const teacherId = parseInt(teacherSel.value, 10);
+    const roomId    = parseInt(roomSel.value, 10);
+    if (!classId || !teacherId || !roomId) return;
+
+    submitBtn.disabled = true;
+    const original = submitBtn.textContent;
+    submitBtn.textContent = mode === 'edit' ? 'Saving…' : 'Creating…';
+
+    try {
+      const url = mode === 'edit'
+        ? `${API_BASE}/api/admin/timetable/${slotId}`
+        : `${API_BASE}/api/admin/timetable`;
+      const method = mode === 'edit' ? 'PUT' : 'POST';
+
+      const res = await fetch(url, {
+        method,
+        headers: {
+          'Authorization': 'Bearer ' + TOKEN,
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          classId, teacherId, roomId, day, start, end,
+          excludeId: mode === 'edit' ? slotId : null,
+        }),
+      });
+      const data = await res.json().catch(() => ({}));
+
+      if (!res.ok) {
+        showToast(data.message || 'Save failed');
+        submitBtn.disabled = false;
+        submitBtn.textContent = original;
+        return;
+      }
+
+      m.close();
+      await reload();
+      showToast(mode === 'edit' ? 'Slot updated' : 'Slot added to timetable');
+    } catch (err) {
+      showToast('Network error: ' + err.message);
+      submitBtn.disabled = false;
+      submitBtn.textContent = original;
+    }
+  };
+}
+
+/* ============================================================
+   WIRING
+   ============================================================ */
+function wireGrid() {
+  // Empty cell → add
+  document.querySelectorAll('.tt-cell').forEach(cell => {
+    cell.onclick = (e) => {
+      if (e.target.closest('.tt-slot')) return;
+      const day = cell.dataset.day;
+      const start = cell.dataset.start;
+      const end = cell.dataset.end;
+      openSlotModal({ mode: 'add', day, start, end });
+    };
+  });
+
+  // Filled slot → edit
+  document.querySelectorAll('.tt-slot').forEach(el => {
+    el.onclick = (e) => {
+      e.stopPropagation();
+      const slotId = parseInt(el.dataset.slot, 10);
+      const entry = DATA.entries.find(x => x.id === slotId);
+      if (entry) {
+        openSlotModal({
+          mode: 'edit',
+          day: entry.day,
+          start: entry.start,
+          end: entry.end,
+          slotId,
+        });
+      }
+    };
+  });
+}
+
+async function reload() {
+  const res = await fetch(API_BASE + '/api/admin/timetable', {
+    headers: { 'Authorization': 'Bearer ' + TOKEN },
+  });
+  if (res.ok) {
+    DATA = await res.json();
+    rerender();
+  }
+}
+
+function showToast(message) {
+  let host = document.querySelector('.toast-host');
+  if (!host) {
+    host = document.createElement('div');
+    host.className = 'toast-host';
+    document.body.appendChild(host);
+  }
+  const el = document.createElement('div');
+  el.className = 'toast toast-success';
+  el.textContent = message;
+  host.appendChild(el);
+  void el.offsetWidth;
+  el.classList.add('toast-in');
+  setTimeout(() => {
+    el.classList.remove('toast-in');
+    setTimeout(() => el.remove(), 200);
+  }, 3000);
+}
+</script>
+</body>
+</html>

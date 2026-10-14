@@ -1,0 +1,404 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Invoices — Apex Institute</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Plus+Jakarta+Sans:wght@500;600;700;800&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="../shared/css/tokens.css">
+  <link rel="stylesheet" href="../shared/css/base.css">
+  <link rel="stylesheet" href="../shared/css/layout.css">
+  <link rel="stylesheet" href="../shared/css/components.css">
+  <style>
+    .inv-toolbar { display:flex; gap:var(--sp-3); margin-bottom:var(--sp-5); align-items:center; flex-wrap:wrap; }
+    .filter-pills { display:flex; gap:6px; flex-wrap:wrap; }
+    .filter-pill { padding:7px 14px; border-radius:100px; border:1px solid var(--border); background:var(--surface);
+      font-family:'Plus Jakarta Sans',sans-serif; font-size:12.5px; font-weight:600; color:var(--text-dim);
+      cursor:pointer; transition:all var(--dur-fast) var(--ease); }
+    .filter-pill:hover { border-color:var(--border-strong); color:var(--navy); }
+    .filter-pill.active { background:var(--navy); border-color:var(--navy); color:#fff; }
+    .filter-pill .count { opacity:.55; margin-left:5px; font-weight:500; }
+    .filter-pill.active .count { opacity:.8; }
+
+    .summary-grid { display:grid; grid-template-columns:repeat(3,1fr); gap:var(--sp-4); margin-bottom:var(--sp-5); }
+    .summary-tile { background:var(--surface); border:1px solid var(--border); border-radius:var(--r-lg);
+      padding:var(--sp-4) var(--sp-5); box-shadow:var(--shadow-xs); position:relative; overflow:hidden; }
+    .summary-tile .bar { position:absolute; top:0; left:0; width:4px; height:100%; }
+    .summary-label { font-size:11px; font-weight:700; color:var(--text-dim); text-transform:uppercase;
+      letter-spacing:.08em; margin-bottom:6px; }
+    .summary-value { font-family:'Plus Jakarta Sans',sans-serif; font-size:24px; font-weight:800;
+      color:var(--navy); letter-spacing:-.02em; line-height:1.1; }
+    .summary-meta { font-size:12px; color:var(--text-dim); margin-top:4px; }
+
+    .inv-list { background:var(--surface); border:1px solid var(--border);
+      border-radius:var(--r-lg); box-shadow:var(--shadow-xs); overflow:hidden; }
+    .inv-row { display:grid; grid-template-columns:44px 1fr auto auto auto;
+      align-items:center; gap:var(--sp-4);
+      padding:var(--sp-4) var(--sp-5);
+      border-bottom:1px solid var(--border);
+      transition:background var(--dur-fast) var(--ease); }
+    .inv-row:last-child { border-bottom:none; }
+    .inv-row:hover { background:var(--surface-alt); }
+
+    .inv-icon { width:44px; height:44px; border-radius:var(--r-md);
+      display:grid; place-items:center; flex-shrink:0; }
+    .inv-icon svg { width:20px; height:20px; }
+    .inv-icon.unpaid { background:var(--warning-bg); color:var(--warning); }
+    .inv-icon.paid   { background:var(--success-bg); color:var(--success); }
+
+    .inv-no { font-family:'Plus Jakarta Sans',sans-serif;
+      font-size:13.5px; font-weight:700; color:var(--navy); margin-bottom:2px; }
+    .inv-meta { font-size:12px; color:var(--text-dim);
+      display:flex; gap:12px; flex-wrap:wrap; }
+    .inv-meta span { display:inline-flex; align-items:center; gap:4px; }
+    .inv-meta svg { width:12px; height:12px; color:var(--text-faint); }
+
+    .inv-date { text-align:right; font-size:11.5px; }
+    .inv-date .label { font-weight:700; color:var(--text-dim); text-transform:uppercase;
+      letter-spacing:.06em; }
+    .inv-date .value { font-family:'Plus Jakarta Sans',sans-serif; font-weight:700;
+      color:var(--navy); margin-top:3px; font-variant-numeric:tabular-nums; }
+
+    .inv-amount { font-family:'Plus Jakarta Sans',sans-serif;
+      font-size:15px; font-weight:800; color:var(--navy);
+      font-variant-numeric:tabular-nums; text-align:right; }
+
+    .inv-status { display:inline-flex; align-items:center; gap:6px;
+      padding:5px 11px; border-radius:100px;
+      font-size:11.5px; font-weight:700; }
+    .inv-status.paid   { background:var(--success-bg); color:var(--success); }
+    .inv-status.unpaid { background:var(--warning-bg); color:var(--warning); }
+    .inv-status::before { content:''; width:6px; height:6px; border-radius:50%; background:currentColor; }
+
+    .inv-actions { display:flex; gap:6px; }
+    .row-btn { padding:6px 12px; border-radius:var(--r-sm);
+      border:1px solid var(--border); background:var(--surface);
+      color:var(--navy); font-family:'Plus Jakarta Sans',sans-serif;
+      font-size:11.5px; font-weight:700; cursor:pointer;
+      transition: all var(--dur-fast) var(--ease); }
+    .row-btn:hover { border-color:var(--navy); background:var(--bg); }
+    .row-btn.primary { background: var(--navy); border-color:var(--navy); color: #fff; }
+    .row-btn.primary:hover { background: var(--navy-700); }
+
+    .inv-empty { padding:var(--sp-8) var(--sp-5); text-align:center; }
+    .inv-empty-icon { width:56px; height:56px; margin:0 auto var(--sp-4); border-radius:50%;
+      background:var(--bg); display:grid; place-items:center; color:var(--text-faint); }
+    .inv-empty-icon svg { width:26px; height:26px; }
+    .inv-empty h3 { font-size:16px; color:var(--navy); margin-bottom:6px; }
+    .inv-empty p { font-size:13px; color:var(--text-dim); }
+
+    /* Create invoice modal line items */
+    .line-item { display:grid; grid-template-columns:1fr 130px 30px; gap:8px; margin-bottom:8px;
+      align-items: center; }
+    .line-item input {
+      padding:9px 12px; border:1px solid var(--border); border-radius:var(--r-md);
+      font-family:inherit; font-size:13px; outline:none;
+    }
+    .line-item input:focus { border-color: var(--navy); }
+    .line-remove { color:var(--text-faint); cursor:pointer; background:none; border:none;
+      padding:6px; border-radius:var(--r-sm); }
+    .line-remove:hover { color:var(--danger); background: var(--danger-bg); }
+    .line-remove svg { width:14px; height:14px; }
+    .total-box { padding: var(--sp-4); background: var(--surface-alt);
+      border: 1px solid var(--border); border-radius: var(--r-md);
+      display: flex; justify-content: space-between; align-items: center;
+      margin-top: var(--sp-3); }
+    .total-box .label { font-family:'Plus Jakarta Sans',sans-serif; font-size:13px; font-weight:700;
+      color: var(--navy); }
+    .total-box .value { font-family:'Plus Jakarta Sans',sans-serif; font-size:20px; font-weight:800;
+      color: var(--navy); letter-spacing:-.02em; font-variant-numeric:tabular-nums; }
+  </style>
+</head>
+<body>
+
+<script src="../shared/js/utils.js"></script>
+<script src="../shared/js/icons.js"></script>
+<script src="../shared/js/shell.js"></script>
+<script src="../shared/js/modal.js"></script>
+
+<script>
+const TOKEN = localStorage.getItem('apex_token');
+if (!TOKEN) location.href = '../login.html';
+const API_BASE = 'http://localhost:8080';
+
+let DATA = null;
+let activeFilter = 'all';
+
+Shell.render({
+  active: 'invoices',
+  role: Shell.currentRole ? (Shell.currentRole() || 'MANAGEMENT') : 'MANAGEMENT',
+  content: '<div class="loading">Loading invoices…</div>',
+});
+
+(async function boot() {
+  try {
+    const res = await fetch(API_BASE + '/api/management/invoices', {
+      headers: { 'Authorization': 'Bearer ' + TOKEN },
+    });
+    if (res.status === 401 || res.status === 403) {
+      localStorage.removeItem('apex_token'); localStorage.removeItem('apex_user');
+      location.href = '../login.html'; return;
+    }
+    if (!res.ok) throw new Error('Server returned ' + res.status);
+    DATA = await res.json();
+    rerender();
+  } catch (err) {
+    document.getElementById('app-main').innerHTML = `
+      <div class="error-box">
+        <h2>Could not load invoices</h2>
+        <p style="color:var(--text-dim); margin:8px 0 16px;">${Utils.esc(err.message)}</p>
+        <button class="btn btn-primary" onclick="location.reload()">Try again</button>
+      </div>`;
+  }
+})();
+
+function filtered() {
+  if (activeFilter === 'all') return DATA.invoices;
+  return DATA.invoices.filter(i => i.status === activeFilter);
+}
+
+function rerender() {
+  document.getElementById('app-main').innerHTML = renderPage();
+  wireAll();
+}
+
+function renderPage() {
+  return `
+    <header class="page-header">
+      <div>
+        <div class="page-eyebrow">Finance</div>
+        <h1 class="page-title">Invoices</h1>
+        <p class="page-subtitle">
+          ${DATA.invoices.length} invoices · ${DATA.stats.unpaidCount} awaiting payment
+        </p>
+      </div>
+      <div class="page-actions">
+        <button class="btn btn-primary" id="new-btn">${Icon.file()} New Invoice</button>
+      </div>
+    </header>
+
+    <div id="summary-host">${renderSummary()}</div>
+    <div id="toolbar-host">${renderToolbar()}</div>
+    <div id="list-host">${renderList()}</div>
+  `;
+}
+
+function renderSummary() {
+  const s = DATA.stats;
+  const tile = (accent, label, value, meta) => `
+    <div class="summary-tile" style="border-left:3px solid ${accent}">
+      <div class="summary-label">${label}</div>
+      <div class="summary-value">${value}</div>
+      <div class="summary-meta">${meta}</div>
+    </div>`;
+  return `
+    <div class="summary-grid">
+      ${tile('var(--navy)',    'Total Billed', 'Rs. ' + s.total.toFixed(0), DATA.invoices.length + ' invoices')}
+      ${tile('var(--success)', 'Collected',    'Rs. ' + s.paid.toFixed(0),  s.paidCount + ' paid')}
+      ${tile('var(--warning)', 'Outstanding',  'Rs. ' + s.unpaid.toFixed(0), s.unpaidCount + ' unpaid')}
+    </div>`;
+}
+
+function renderToolbar() {
+  const c = {
+    all: DATA.invoices.length,
+    unpaid: DATA.invoices.filter(i => i.status === 'unpaid').length,
+    paid: DATA.invoices.filter(i => i.status === 'paid').length,
+  };
+  const pill = (k, l) => `
+    <button class="filter-pill ${activeFilter === k ? 'active' : ''}" data-filter="${k}">
+      ${l}<span class="count">${c[k]}</span>
+    </button>`;
+  return `
+    <div class="inv-toolbar">
+      <div class="filter-pills">
+        ${pill('all', 'All')}
+        ${pill('unpaid', 'Unpaid')}
+        ${pill('paid', 'Paid')}
+      </div>
+    </div>`;
+}
+
+function renderList() {
+  const rows = filtered();
+  if (rows.length === 0) {
+    return `<div class="inv-list"><div style="padding:var(--sp-8); text-align:center; color:var(--text-dim); font-size:13px;">No invoices match this filter.</div></div>`;
+  }
+  return `<div class="inv-list">${rows.map(renderRow).join('')}</div>`;
+}
+
+function renderRow(inv) {
+  const isUnpaid = inv.status === 'unpaid';
+  return `
+    <div class="inv-row">
+      <div class="inv-icon ${inv.status}">${isUnpaid ? Icon.clock() : Icon.check()}</div>
+      <div>
+        <div class="inv-no">${Utils.esc(inv.invoiceNo)}</div>
+        <div class="inv-meta">
+          <span>${Icon.user()} ${Utils.esc(inv.studentName)}</span>
+          <span>${Icon.calendar()} Issued ${Utils.esc(inv.issueDate)}</span>
+        </div>
+      </div>
+      <div class="inv-date">
+        <div class="label">Due</div>
+        <div class="value">${Utils.esc(inv.dueDate)}</div>
+      </div>
+      <div class="inv-amount">Rs. ${inv.total.toFixed(2)}</div>
+      <div class="inv-actions">
+        ${isUnpaid
+          ? `<button class="row-btn" data-edit="${inv.id}">Details</button>
+             <button class="row-btn primary" data-mark="${inv.id}">Mark Paid</button>`
+          : `<span class="inv-status paid">Paid</span>`}
+      </div>
+    </div>`;
+}
+
+function openCreateModal() {
+  let items = [{ description: 'Tuition Fee', amount: 120.00 }];
+
+  const studentOpts = DATA.students.map(s => `
+    <option value="${s.id}">${Utils.esc(s.name)} · ${Utils.esc(s.studentCode)} · Grade ${s.grade}</option>
+  `).join('');
+
+  const body = `
+    <div class="form-field">
+      <label>Student</label>
+      <select id="ci-student">${studentOpts}</select>
+    </div>
+
+    <div class="form-field">
+      <label>Due Date</label>
+      <input type="date" id="ci-due" value="${new Date(Date.now()+30*86400000).toISOString().slice(0,10)}">
+    </div>
+
+    <div class="form-field">
+      <label>Line Items</label>
+      <div id="ci-items"></div>
+      <button class="btn btn-ghost" id="ci-add" style="margin-top:8px;">+ Add Line</button>
+    </div>
+
+    <div class="total-box" style="padding:12px 16px; background:var(--surface-alt); border:1px solid var(--border); border-radius:var(--r-md); display:flex; justify-content:space-between; align-items:center; margin-top:12px;">
+      <span style="font-family:'Plus Jakarta Sans',sans-serif; font-size:13px; font-weight:700; color:var(--navy);">Total</span>
+      <span id="ci-total" style="font-family:'Plus Jakarta Sans',sans-serif; font-size:18px; font-weight:800; color:var(--navy);">Rs. 0.00</span>
+    </div>
+
+    <div class="form-actions" style="margin-top:var(--sp-5);">
+      <button class="btn btn-ghost" data-cancel>Cancel</button>
+      <button class="btn btn-primary" id="ci-submit">Create Invoice</button>
+    </div>
+  `;
+
+  const m = Modal.open({ title: 'New Invoice', body, size: 'md' });
+
+  function renderItems() {
+    const host = m.el.querySelector('#ci-items');
+    host.innerHTML = items.map((it, i) => `
+      <div style="display:grid; grid-template-columns:1fr 130px 30px; gap:8px; margin-bottom:8px; align-items:center;">
+        <input type="text" data-idx="${i}" data-field="desc" value="${Utils.esc(it.description)}" placeholder="Description" style="padding:9px 12px; border:1px solid var(--border); border-radius:var(--r-md); font-size:13px;">
+        <input type="number" data-idx="${i}" data-field="amount" value="${it.amount}" min="0" step="0.01" style="padding:9px 12px; border:1px solid var(--border); border-radius:var(--r-md); font-size:13px;">
+        <button class="line-remove" data-remove="${i}" style="background:none; border:none; cursor:pointer; color:var(--text-faint); padding:6px;">
+          <svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/>
+          </svg>
+        </button>
+      </div>`).join('');
+
+    host.querySelectorAll('input').forEach(inp => {
+      inp.oninput = () => {
+        const idx = parseInt(inp.dataset.idx, 10);
+        const f = inp.dataset.field;
+        items[idx][f] = f === 'amount' ? (parseFloat(inp.value) || 0) : inp.value;
+        updateTotal();
+      };
+    });
+    host.querySelectorAll('[data-remove]').forEach(b => {
+      b.onclick = () => {
+        if (items.length === 1) return;
+        items.splice(parseInt(b.dataset.remove, 10), 1);
+        renderItems();
+      };
+    });
+    updateTotal();
+  }
+
+  function updateTotal() {
+    const total = items.reduce((s, it) => s + (parseFloat(it.amount) || 0), 0);
+    m.el.querySelector('#ci-total').textContent = 'Rs. ' + total.toFixed(2);
+  }
+
+  m.el.querySelector('#ci-add').onclick = () => { items.push({ description: '', amount: 0 }); renderItems(); };
+  m.el.querySelector('[data-cancel]').onclick = () => m.close();
+
+  m.el.querySelector('#ci-submit').onclick = async () => {
+    const studentId = parseInt(m.el.querySelector('#ci-student').value, 10);
+    const dueDate = m.el.querySelector('#ci-due').value;
+    const cleaned = items.filter(it => it.description.trim() && it.amount > 0);
+
+    if (cleaned.length === 0) return showToast('Add at least one line item');
+
+    const btn = m.el.querySelector('#ci-submit');
+    btn.disabled = true; btn.textContent = 'Creating…';
+
+    try {
+      const res = await fetch(API_BASE + '/api/management/invoices', {
+        method: 'POST',
+        headers: { 'Authorization': 'Bearer ' + TOKEN, 'Content-Type': 'application/json' },
+        body: JSON.stringify({ studentId, dueDate, items: cleaned }),
+      });
+      const data = await res.json().catch(() => ({}));
+      if (!res.ok) { showToast(data.message || 'Create failed'); btn.disabled = false; btn.textContent = 'Create Invoice'; return; }
+      m.close();
+      await reload();
+      showToast('Invoice created');
+    } catch (err) { showToast('Network error: ' + err.message); btn.disabled = false; btn.textContent = 'Create Invoice'; }
+  };
+
+  renderItems();
+}
+
+async function markPaid(id) {
+  if (!confirm('Mark this invoice as paid (records a cash payment)?')) return;
+  try {
+    const res = await fetch(`${API_BASE}/api/management/invoices/${id}/mark-paid`, {
+      method: 'PATCH',
+      headers: { 'Authorization': 'Bearer ' + TOKEN },
+    });
+    const data = await res.json().catch(() => ({}));
+    if (!res.ok) { showToast(data.message || 'Failed'); return; }
+    await reload();
+    showToast('Invoice marked paid');
+  } catch (err) { showToast('Network error: ' + err.message); }
+}
+
+async function reload() {
+  const res = await fetch(API_BASE + '/api/management/invoices', {
+    headers: { 'Authorization': 'Bearer ' + TOKEN },
+  });
+  if (res.ok) { DATA = await res.json(); rerender(); }
+}
+
+function wireAll() {
+  document.getElementById('new-btn').onclick = openCreateModal;
+  document.querySelectorAll('.filter-pill').forEach(b => {
+    b.onclick = () => { activeFilter = b.dataset.filter; rerender(); };
+  });
+  document.querySelectorAll('[data-mark]').forEach(b => {
+    b.onclick = () => markPaid(parseInt(b.dataset.mark, 10));
+  });
+}
+
+function showToast(message) {
+  let host = document.querySelector('.toast-host');
+  if (!host) { host = document.createElement('div'); host.className = 'toast-host'; document.body.appendChild(host); }
+  const el = document.createElement('div');
+  el.className = 'toast toast-success';
+  el.textContent = message;
+  host.appendChild(el);
+  void el.offsetWidth; el.classList.add('toast-in');
+  setTimeout(() => { el.classList.remove('toast-in'); setTimeout(() => el.remove(), 200); }, 3000);
+}
+</script>
+</body>
+</html>

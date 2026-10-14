@@ -1,0 +1,323 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Reports — Apex Institute</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Plus+Jakarta+Sans:wght@500;600;700;800&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="../shared/css/tokens.css">
+  <link rel="stylesheet" href="../shared/css/base.css">
+  <link rel="stylesheet" href="../shared/css/layout.css">
+  <link rel="stylesheet" href="../shared/css/components.css">
+  <style>
+    .report-grid { display:grid; grid-template-columns:1fr 1fr; gap:var(--sp-5); }
+    @media (max-width: 1000px) { .report-grid { grid-template-columns:1fr; } }
+
+    .report-card { background:var(--surface); border:1px solid var(--border); border-radius:var(--r-lg);
+      box-shadow:var(--shadow-xs); overflow:hidden; }
+    .report-header { display:flex; align-items:center; gap:var(--sp-3);
+      padding:var(--sp-5) var(--sp-5) var(--sp-4); border-bottom:1px solid var(--border); }
+    .report-icon { width:42px; height:42px; border-radius:var(--r-md);
+      display:grid; place-items:center; flex-shrink:0; }
+    .report-icon svg { width:20px; height:20px; }
+    .report-icon.navy  { background:rgba(20,33,61,.08); color:var(--navy); }
+    .report-icon.gold  { background:var(--gold-soft); color:#8F6B0F; }
+    .report-icon.success { background:var(--success-bg); color:var(--success); }
+    .report-icon.info  { background:var(--info-bg); color:var(--info); }
+    .report-title { font-family:'Plus Jakarta Sans',sans-serif;
+      font-size:15px; font-weight:700; color:var(--navy); margin-bottom:3px; }
+    .report-sub { font-size:12px; color:var(--text-dim); }
+
+    .report-body { padding: var(--sp-5); }
+
+    .kpi-grid { display:grid; grid-template-columns:1fr 1fr; gap:var(--sp-4); }
+    .kpi { padding: var(--sp-4); background: var(--surface-alt);
+      border-radius: var(--r-md); border: 1px solid var(--border); }
+    .kpi-label { font-size:11px; font-weight:700; color:var(--text-dim);
+      text-transform:uppercase; letter-spacing:.08em; margin-bottom:6px; }
+    .kpi-value { font-family:'Plus Jakarta Sans',sans-serif;
+      font-size:20px; font-weight:800; color:var(--navy);
+      letter-spacing:-.02em; font-variant-numeric:tabular-nums; }
+    .kpi-value.positive { color: var(--success); }
+    .kpi-value.warning  { color: var(--warning); }
+
+    /* Bars (small horizontal) */
+    .bar-row { display:grid; grid-template-columns: 110px 1fr 90px;
+      gap: var(--sp-3); align-items: center; margin-bottom: 10px; }
+    .bar-label { font-size:12.5px; color:var(--navy); font-weight:600; }
+    .bar-track { height:8px; background: var(--bg); border-radius:100px; overflow:hidden; }
+    .bar-fill { height: 100%; border-radius:100px; transition: width 800ms var(--ease); }
+    .bar-value { font-family:'Plus Jakarta Sans',sans-serif;
+      font-size:12.5px; font-weight:700; color:var(--navy);
+      font-variant-numeric: tabular-nums; text-align:right; }
+
+    .export-bar { display:flex; gap:8px; padding: var(--sp-4) var(--sp-5);
+      border-top: 1px solid var(--border); background: var(--surface-alt);
+      justify-content: flex-end; }
+  </style>
+</head>
+<body>
+
+<script src="../shared/js/utils.js"></script>
+<script src="../shared/js/icons.js"></script>
+<script src="../shared/js/shell.js"></script>
+
+<script>
+const TOKEN = localStorage.getItem('apex_token');
+if (!TOKEN) location.href = '../login.html';
+const API_BASE = 'http://localhost:8080';
+
+Shell.render({
+  active: 'reports',
+  role: Shell.currentRole ? (Shell.currentRole() || 'MANAGEMENT') : 'MANAGEMENT',
+  content: '<div class="loading">Loading reports…</div>',
+});
+
+(async function boot() {
+  try {
+    const res = await fetch(API_BASE + '/api/management/reports', {
+      headers: { 'Authorization': 'Bearer ' + TOKEN },
+    });
+    if (res.status === 401 || res.status === 403) {
+      localStorage.removeItem('apex_token'); localStorage.removeItem('apex_user');
+      location.href = '../login.html'; return;
+    }
+    if (!res.ok) throw new Error('Server returned ' + res.status);
+    const data = await res.json();
+    document.getElementById('app-main').innerHTML = render(data);
+    wireExports();
+  } catch (err) {
+    document.getElementById('app-main').innerHTML = `
+      <div class="error-box">
+        <h2>Could not load reports</h2>
+        <p style="color:var(--text-dim); margin:8px 0 16px;">${Utils.esc(err.message)}</p>
+        <button class="btn btn-primary" onclick="location.reload()">Try again</button>
+      </div>`;
+  }
+})();
+
+function render(data) {
+  return `
+    <header class="page-header">
+      <div>
+        <div class="page-eyebrow">Reporting</div>
+        <h1 class="page-title">Reports</h1>
+        <p class="page-subtitle">Institute-wide analytics · ${new Date().getFullYear()} academic year</p>
+      </div>
+    </header>
+
+    <div class="report-grid">
+      ${renderIncome(data.income)}
+      ${renderByGrade(data.incomeByGrade)}
+      ${renderAttendance(data.attendance)}
+      ${renderDefaulters(data.defaulters)}
+    </div>
+  `;
+}
+
+function renderIncome(income) {
+  const max = Math.max(...income.byMethod.map(m => m.amount), 1);
+  return `
+    <div class="report-card">
+      <div class="report-header">
+        <div class="report-icon navy">${Icon.money()}</div>
+        <div style="flex:1;">
+          <div class="report-title">Income Report</div>
+          <div class="report-sub">Year to date · ${new Date().getFullYear()}</div>
+        </div>
+      </div>
+      <div class="report-body">
+        <div class="kpi-grid" style="display:grid; grid-template-columns:1fr 1fr; gap:var(--sp-4); margin-bottom:var(--sp-5);">
+          <div class="kpi" style="padding:var(--sp-4); background:var(--surface-alt); border-radius:var(--r-md); border:1px solid var(--border);">
+            <div class="kpi-label" style="font-size:11px; font-weight:700; color:var(--text-dim); text-transform:uppercase; letter-spacing:.08em; margin-bottom:6px;">This Month</div>
+            <div class="kpi-value positive" style="font-family:'Plus Jakarta Sans',sans-serif; font-size:20px; font-weight:800; color:var(--success); letter-spacing:-.02em;">Rs. ${income.monthTotal.toFixed(2)}</div>
+          </div>
+          <div class="kpi" style="padding:var(--sp-4); background:var(--surface-alt); border-radius:var(--r-md); border:1px solid var(--border);">
+            <div class="kpi-label" style="font-size:11px; font-weight:700; color:var(--text-dim); text-transform:uppercase; letter-spacing:.08em; margin-bottom:6px;">Year to Date</div>
+            <div class="kpi-value" style="font-family:'Plus Jakarta Sans',sans-serif; font-size:20px; font-weight:800; color:var(--navy); letter-spacing:-.02em;">Rs. ${income.ytdTotal.toFixed(0)}</div>
+          </div>
+        </div>
+        <div>
+          <div style="font-size:11px; font-weight:700; color:var(--text-dim); text-transform:uppercase; letter-spacing:.08em; margin-bottom:10px;">By Payment Method</div>
+          ${income.byMethod.length === 0
+            ? `<div style="font-size:12.5px; color:var(--text-dim); padding: 12px 0;">No payments this year yet.</div>`
+            : income.byMethod.map((m, i) => {
+                const colors = ['#14213D', '#175CD3', '#E9B949', '#198754'];
+                return `
+                  <div style="display:grid; grid-template-columns:110px 1fr 90px; gap:var(--sp-3); align-items:center; margin-bottom:10px;">
+                    <div style="font-size:12.5px; color:var(--navy); font-weight:600;">${Utils.esc(m.method)}</div>
+                    <div style="height:8px; background:var(--bg); border-radius:100px; overflow:hidden;">
+                      <div style="height:100%; width:${(m.amount/max)*100}%; background:${colors[i % colors.length]}; border-radius:100px; transition:width 800ms;"></div>
+                    </div>
+                    <div style="font-family:'Plus Jakarta Sans',sans-serif; font-size:12.5px; font-weight:700; color:var(--navy); text-align:right; font-variant-numeric:tabular-nums;">Rs. ${m.amount.toFixed(0)}</div>
+                  </div>`;
+              }).join('')}
+        </div>
+      </div>
+      <div style="display:flex; gap:8px; padding:var(--sp-4) var(--sp-5); border-top:1px solid var(--border); background:var(--surface-alt); justify-content:flex-end;">
+        <button class="btn btn-ghost" data-export="Income Report" style="font-size:12px;">Export PDF</button>
+      </div>
+    </div>`;
+}
+
+function renderByGrade(list) {
+  const max = Math.max(...list.map(g => g.income), 1);
+  const totalStudents = list.reduce((s, g) => s + g.students, 0);
+  const totalIncome = list.reduce((s, g) => s + g.income, 0);
+  const colors = ['#14213D', '#198754', '#E9B949', '#6941C6'];
+
+  return `
+    <div class="report-card">
+      <div class="report-header">
+        <div class="report-icon gold">${Icon.book()}</div>
+        <div style="flex:1;">
+          <div class="report-title">Income by Grade</div>
+          <div class="report-sub">Annual breakdown per grade</div>
+        </div>
+      </div>
+      <div class="report-body">
+        ${list.map((g, i) => `
+          <div style="display:grid; grid-template-columns:110px 1fr 90px; gap:var(--sp-3); align-items:center; margin-bottom:10px;">
+            <div style="font-size:12.5px; color:var(--navy); font-weight:600;">Grade ${Utils.esc(g.grade)}</div>
+            <div style="height:8px; background:var(--bg); border-radius:100px; overflow:hidden;">
+              <div style="height:100%; width:${(g.income/max)*100}%; background:${colors[i % colors.length]}; border-radius:100px;"></div>
+            </div>
+            <div style="font-family:'Plus Jakarta Sans',sans-serif; font-size:12.5px; font-weight:700; color:var(--navy); text-align:right;">Rs. ${g.income.toFixed(0)}</div>
+          </div>`).join('')}
+        <div class="kpi-grid" style="display:grid; grid-template-columns:1fr 1fr; gap:var(--sp-4); margin-top:var(--sp-5);">
+          <div class="kpi" style="padding:var(--sp-4); background:var(--surface-alt); border-radius:var(--r-md); border:1px solid var(--border);">
+            <div style="font-size:11px; font-weight:700; color:var(--text-dim); text-transform:uppercase; letter-spacing:.08em; margin-bottom:6px;">Total Students</div>
+            <div style="font-family:'Plus Jakarta Sans',sans-serif; font-size:20px; font-weight:800; color:var(--navy); letter-spacing:-.02em;">${totalStudents}</div>
+          </div>
+          <div class="kpi" style="padding:var(--sp-4); background:var(--surface-alt); border-radius:var(--r-md); border:1px solid var(--border);">
+            <div style="font-size:11px; font-weight:700; color:var(--text-dim); text-transform:uppercase; letter-spacing:.08em; margin-bottom:6px;">Total Income</div>
+            <div style="font-family:'Plus Jakarta Sans',sans-serif; font-size:20px; font-weight:800; color:var(--navy); letter-spacing:-.02em;">Rs. ${totalIncome.toFixed(0)}</div>
+          </div>
+        </div>
+      </div>
+      <div style="display:flex; gap:8px; padding:var(--sp-4) var(--sp-5); border-top:1px solid var(--border); background:var(--surface-alt); justify-content:flex-end;">
+        <button class="btn btn-ghost" data-export="Income by Grade" style="font-size:12px;">Export PDF</button>
+      </div>
+    </div>`;
+}
+
+function renderAttendance(list) {
+  const avg = list.length > 0
+    ? Math.round(list.reduce((s, a) => s + a.pct, 0) / list.length)
+    : 0;
+  return `
+    <div class="report-card">
+      <div class="report-header">
+        <div class="report-icon success">${Icon.clipboard()}</div>
+        <div style="flex:1;">
+          <div class="report-title">Attendance Summary</div>
+          <div class="report-sub">Institute-wide averages by grade</div>
+        </div>
+      </div>
+      <div class="report-body">
+        ${list.map(a => {
+          const tone = a.pct >= 90 ? 'var(--success)' : a.pct >= 80 ? 'var(--warning)' : 'var(--danger)';
+          return `
+            <div style="display:grid; grid-template-columns:110px 1fr 60px; gap:var(--sp-3); align-items:center; margin-bottom:10px;">
+              <div style="font-size:12.5px; color:var(--navy); font-weight:600;">Grade ${Utils.esc(a.grade)}</div>
+              <div style="height:8px; background:var(--bg); border-radius:100px; overflow:hidden;">
+                <div style="height:100%; width:${a.pct}%; background:${tone}; border-radius:100px;"></div>
+              </div>
+              <div style="font-family:'Plus Jakarta Sans',sans-serif; font-size:12.5px; font-weight:700; color:var(--navy); text-align:right;">${a.pct}%</div>
+            </div>`;
+        }).join('')}
+        <div class="kpi-grid" style="display:grid; grid-template-columns:1fr 1fr; gap:var(--sp-4); margin-top:var(--sp-5);">
+          <div class="kpi" style="padding:var(--sp-4); background:var(--surface-alt); border-radius:var(--r-md); border:1px solid var(--border);">
+            <div style="font-size:11px; font-weight:700; color:var(--text-dim); text-transform:uppercase; letter-spacing:.08em; margin-bottom:6px;">Institute Average</div>
+            <div style="font-family:'Plus Jakarta Sans',sans-serif; font-size:20px; font-weight:800; color:var(--success); letter-spacing:-.02em;">${avg}%</div>
+          </div>
+          <div class="kpi" style="padding:var(--sp-4); background:var(--surface-alt); border-radius:var(--r-md); border:1px solid var(--border);">
+            <div style="font-size:11px; font-weight:700; color:var(--text-dim); text-transform:uppercase; letter-spacing:.08em; margin-bottom:6px;">Grades Tracked</div>
+            <div style="font-family:'Plus Jakarta Sans',sans-serif; font-size:20px; font-weight:800; color:var(--navy); letter-spacing:-.02em;">${list.length}</div>
+          </div>
+        </div>
+      </div>
+      <div style="display:flex; gap:8px; padding:var(--sp-4) var(--sp-5); border-top:1px solid var(--border); background:var(--surface-alt); justify-content:flex-end;">
+        <button class="btn btn-ghost" data-export="Attendance Summary" style="font-size:12px;">Export PDF</button>
+      </div>
+    </div>`;
+}
+
+function renderDefaulters(list) {
+  const total = list.reduce((s, d) => s + d.amount, 0);
+  return `
+    <div class="report-card">
+      <div class="report-header">
+        <div class="report-icon" style="background:var(--danger-bg); color:var(--danger);">${Icon.bell()}</div>
+        <div style="flex:1;">
+          <div class="report-title">Fee Defaulters</div>
+          <div class="report-sub">Students with outstanding balance</div>
+        </div>
+      </div>
+      <div class="report-body" style="padding:0;">
+        ${list.length === 0
+          ? `<div style="padding:var(--sp-6); text-align:center; color:var(--text-dim); font-size:13px;">No outstanding fees. 🎉</div>`
+          : `<table style="width:100%; border-collapse:collapse; font-size:13.5px;">
+              <thead>
+                <tr style="background:var(--surface-alt);">
+                  <th style="text-align:left; padding:12px var(--sp-5); font-family:'Plus Jakarta Sans',sans-serif; font-size:11px; font-weight:700; color:var(--text-dim); letter-spacing:.06em; text-transform:uppercase; border-bottom:1px solid var(--border);">Student</th>
+                  <th style="text-align:left; padding:12px var(--sp-5); font-family:'Plus Jakarta Sans',sans-serif; font-size:11px; font-weight:700; color:var(--text-dim); letter-spacing:.06em; text-transform:uppercase; border-bottom:1px solid var(--border);">Grade</th>
+                  <th style="text-align:left; padding:12px var(--sp-5); font-family:'Plus Jakarta Sans',sans-serif; font-size:11px; font-weight:700; color:var(--text-dim); letter-spacing:.06em; text-transform:uppercase; border-bottom:1px solid var(--border);">Since</th>
+                  <th style="text-align:right; padding:12px var(--sp-5); font-family:'Plus Jakarta Sans',sans-serif; font-size:11px; font-weight:700; color:var(--text-dim); letter-spacing:.06em; text-transform:uppercase; border-bottom:1px solid var(--border);">Amount</th>
+                </tr>
+              </thead>
+              <tbody>
+                ${list.map(d => `
+                  <tr style="border-bottom:1px solid var(--border);">
+                    <td style="padding:14px var(--sp-5);">
+                      <div style="font-family:'Plus Jakarta Sans',sans-serif; font-size:13px; font-weight:700; color:var(--navy);">${Utils.esc(d.studentName)}</div>
+                      <div style="font-size:11.5px; color:var(--text-dim); margin-top:2px;">${Utils.esc(d.studentCode)}</div>
+                    </td>
+                    <td style="padding:14px var(--sp-5); color:var(--text-dim);">Grade ${Utils.esc(d.grade)}</td>
+                    <td style="padding:14px var(--sp-5); color:var(--text-dim); font-size:12.5px;">${Utils.esc(d.since)}</td>
+                    <td style="padding:14px var(--sp-5); text-align:right; font-family:'Plus Jakarta Sans',sans-serif; font-size:14px; font-weight:800; color:var(--warning); font-variant-numeric:tabular-nums;">Rs. ${d.amount.toFixed(2)}</td>
+                  </tr>`).join('')}
+              </tbody>
+              <tfoot>
+                <tr>
+                  <td colspan="3" style="padding:14px var(--sp-5); text-align:right; font-family:'Plus Jakarta Sans',sans-serif; font-size:12.5px; font-weight:700; color:var(--text-dim); text-transform:uppercase; letter-spacing:.06em;">Total</td>
+                  <td style="padding:14px var(--sp-5); text-align:right; font-family:'Plus Jakarta Sans',sans-serif; font-size:16px; font-weight:800; color:var(--navy); font-variant-numeric:tabular-nums;">Rs. ${total.toFixed(2)}</td>
+                </tr>
+              </tfoot>
+            </table>`}
+      </div>
+      <div style="display:flex; gap:8px; padding:var(--sp-4) var(--sp-5); border-top:1px solid var(--border); background:var(--surface-alt); justify-content:flex-end;">
+        <button class="btn btn-ghost" data-export="Fee Defaulters" style="font-size:12px;">Export PDF</button>
+      </div>
+    </div>`;
+}
+
+function wireExports() {
+  document.querySelectorAll('[data-export]').forEach(btn => {
+    btn.onclick = () => {
+      let host = document.querySelector('.toast-host');
+      if (!host) { host = document.createElement('div'); host.className = 'toast-host'; document.body.appendChild(host); }
+      const el = document.createElement('div');
+      el.className = 'toast toast-success';
+      el.textContent = 'Preparing ' + btn.dataset.export + '.pdf…';
+      host.appendChild(el);
+      void el.offsetWidth; el.classList.add('toast-in');
+      setTimeout(() => { el.classList.remove('toast-in'); setTimeout(() => el.remove(), 200); }, 2000);
+      setTimeout(() => window.print(), 500);
+    };
+  });
+}
+</script>
+
+<style>
+  @media print {
+    .app-sidebar, .app-header, .page-actions, .report-card > div:last-child, .toast-host { display: none !important; }
+    #app-main { padding: 0 !important; }
+    .report-grid { grid-template-columns: 1fr !important; }
+    .report-card { break-inside: avoid; margin-bottom: 20px; box-shadow: none !important; }
+  }
+</style>
+</body>
+</html>

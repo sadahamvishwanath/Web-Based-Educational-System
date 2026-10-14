@@ -1,0 +1,355 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Payments — Apex Institute</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Plus+Jakarta+Sans:wght@500;600;700;800&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="../shared/css/tokens.css">
+  <link rel="stylesheet" href="../shared/css/base.css">
+  <link rel="stylesheet" href="../shared/css/layout.css">
+  <link rel="stylesheet" href="../shared/css/components.css">
+  <style>
+    .pay-toolbar { display:flex; gap:var(--sp-3); margin-bottom:var(--sp-5); align-items:center; flex-wrap:wrap; }
+    .filter-pills { display:flex; gap:6px; flex-wrap:wrap; }
+    .filter-pill { padding:7px 14px; border-radius:100px; border:1px solid var(--border); background:var(--surface);
+      font-family:'Plus Jakarta Sans',sans-serif; font-size:12.5px; font-weight:600; color:var(--text-dim);
+      cursor:pointer; transition:all var(--dur-fast) var(--ease); }
+    .filter-pill:hover { border-color:var(--border-strong); color:var(--navy); }
+    .filter-pill.active { background:var(--navy); border-color:var(--navy); color:#fff; }
+    .filter-pill .count { opacity:.55; margin-left:5px; font-weight:500; }
+
+    .summary-grid { display:grid; grid-template-columns:repeat(3,1fr); gap:var(--sp-4); margin-bottom:var(--sp-5); }
+    .summary-tile { background:var(--surface); border:1px solid var(--border); border-radius:var(--r-lg);
+      padding:var(--sp-4) var(--sp-5); box-shadow:var(--shadow-xs); position:relative; overflow:hidden; }
+    .summary-tile .bar { position:absolute; top:0; left:0; width:4px; height:100%; }
+    .summary-label { font-size:11px; font-weight:700; color:var(--text-dim); text-transform:uppercase;
+      letter-spacing:.08em; margin-bottom:6px; }
+    .summary-value { font-family:'Plus Jakarta Sans',sans-serif; font-size:24px; font-weight:800;
+      color:var(--navy); letter-spacing:-.02em; line-height:1.1; }
+    .summary-meta { font-size:12px; color:var(--text-dim); margin-top:4px; }
+
+    .pay-list { background:var(--surface); border:1px solid var(--border);
+      border-radius:var(--r-lg); box-shadow:var(--shadow-xs); overflow:hidden; }
+    .pay-row { display:grid; grid-template-columns:44px 1fr auto auto;
+      align-items:center; gap:var(--sp-4);
+      padding:var(--sp-4) var(--sp-5);
+      border-bottom:1px solid var(--border); }
+    .pay-row:last-child { border-bottom:none; }
+    .pay-row:hover { background:var(--surface-alt); }
+
+    .pay-icon { width:44px; height:44px; border-radius:var(--r-md);
+      display:grid; place-items:center; flex-shrink:0;
+      background: var(--success-bg); color: var(--success); }
+    .pay-icon svg { width:20px; height:20px; }
+
+    .pay-title { font-family:'Plus Jakarta Sans',sans-serif;
+      font-size:13.5px; font-weight:700; color:var(--navy); margin-bottom:2px; }
+    .pay-meta { font-size:12px; color:var(--text-dim);
+      display:flex; gap:12px; flex-wrap:wrap; }
+    .pay-meta span { display:inline-flex; align-items:center; gap:4px; }
+    .pay-meta svg { width:12px; height:12px; color:var(--text-faint); }
+
+    .method-chip { display:inline-flex; padding:3px 9px; border-radius:100px;
+      background: var(--bg); font-size:11px; font-weight:700; color: var(--text-dim); }
+
+    .pay-amount { font-family:'Plus Jakarta Sans',sans-serif;
+      font-size:15px; font-weight:800; color: var(--success);
+      font-variant-numeric:tabular-nums; text-align:right; }
+
+    .pay-empty { padding:var(--sp-8) var(--sp-5); text-align:center; }
+    .pay-empty-icon { width:56px; height:56px; margin:0 auto var(--sp-4); border-radius:50%;
+      background:var(--bg); display:grid; place-items:center; color:var(--text-faint); }
+    .pay-empty-icon svg { width:26px; height:26px; }
+    .pay-empty h3 { font-size:16px; color:var(--navy); margin-bottom:6px; }
+    .pay-empty p { font-size:13px; color:var(--text-dim); }
+
+    .unpaid-picker { max-height: 240px; overflow-y: auto;
+      border: 1px solid var(--border); border-radius: var(--r-md); }
+    .pick-row { display: flex; align-items: center; gap: 12px;
+      padding: 12px 14px; border-bottom: 1px solid var(--border);
+      cursor: pointer; transition: background var(--dur-fast) var(--ease); }
+    .pick-row:last-child { border-bottom: none; }
+    .pick-row:hover { background: var(--surface-alt); }
+    .pick-row.selected { background: rgba(20,33,61,.04);
+      box-shadow: inset 3px 0 0 var(--navy); }
+    .pick-body { flex: 1; min-width: 0; }
+    .pick-title { font-family:'Plus Jakarta Sans',sans-serif;
+      font-size: 13px; font-weight: 700; color: var(--navy); margin-bottom: 2px; }
+    .pick-meta { font-size: 11.5px; color: var(--text-dim); }
+    .pick-amount { font-family:'Plus Jakarta Sans',sans-serif;
+      font-size: 14px; font-weight: 800; color: var(--navy);
+      font-variant-numeric: tabular-nums; }
+  </style>
+</head>
+<body>
+
+<script src="../shared/js/utils.js"></script>
+<script src="../shared/js/icons.js"></script>
+<script src="../shared/js/shell.js"></script>
+<script src="../shared/js/modal.js"></script>
+
+<script>
+const TOKEN = localStorage.getItem('apex_token');
+if (!TOKEN) location.href = '../login.html';
+const API_BASE = 'http://localhost:8080';
+
+let DATA = null;
+let activeMethod = 'all';
+
+Shell.render({
+  active: 'payments',
+  role: Shell.currentRole ? (Shell.currentRole() || 'MANAGEMENT') : 'MANAGEMENT',
+  content: '<div class="loading">Loading payments…</div>',
+});
+
+(async function boot() {
+  try {
+    const res = await fetch(API_BASE + '/api/management/payments', {
+      headers: { 'Authorization': 'Bearer ' + TOKEN },
+    });
+    if (res.status === 401 || res.status === 403) {
+      localStorage.removeItem('apex_token'); localStorage.removeItem('apex_user');
+      location.href = '../login.html'; return;
+    }
+    if (!res.ok) throw new Error('Server returned ' + res.status);
+    DATA = await res.json();
+    rerender();
+  } catch (err) {
+    document.getElementById('app-main').innerHTML = `
+      <div class="error-box">
+        <h2>Could not load payments</h2>
+        <p style="color:var(--text-dim); margin:8px 0 16px;">${Utils.esc(err.message)}</p>
+        <button class="btn btn-primary" onclick="location.reload()">Try again</button>
+      </div>`;
+  }
+})();
+
+function filtered() {
+  if (activeMethod === 'all') return DATA.payments;
+  return DATA.payments.filter(p => p.method === activeMethod);
+}
+
+function rerender() {
+  document.getElementById('app-main').innerHTML = renderPage();
+  wireAll();
+}
+
+function renderPage() {
+  return `
+    <header class="page-header">
+      <div>
+        <div class="page-eyebrow">Finance</div>
+        <h1 class="page-title">Payments</h1>
+        <p class="page-subtitle">
+          ${DATA.payments.length} payments · Rs. ${DATA.stats.total.toFixed(0)} collected
+        </p>
+      </div>
+      <div class="page-actions">
+        <button class="btn btn-primary" id="record-btn">${Icon.money()} Record Payment</button>
+      </div>
+    </header>
+
+    ${renderSummary()}
+    ${renderToolbar()}
+    ${renderList()}
+  `;
+}
+
+function renderSummary() {
+  const s = DATA.stats;
+  const tile = (accent, label, value, meta) => `
+    <div class="summary-tile" style="border-left:3px solid ${accent}">
+      <div class="summary-label">${label}</div>
+      <div class="summary-value">${value}</div>
+      <div class="summary-meta">${meta}</div>
+    </div>`;
+  return `
+    <div class="summary-grid">
+      ${tile('var(--navy)',    'Total Received', 'Rs. ' + s.total.toFixed(0), DATA.payments.length + ' payments')}
+      ${tile('var(--success)', 'Bank / Online',  'Rs. ' + s.digitalTotal.toFixed(0), s.digitalCount + ' digital')}
+      ${tile('var(--gold)',    'Cash',           'Rs. ' + s.cashTotal.toFixed(0), s.cashCount + ' cash')}
+    </div>`;
+}
+
+function renderToolbar() {
+  const c = {
+    all: DATA.payments.length,
+    Cash: DATA.payments.filter(p => p.method === 'Cash').length,
+    'Bank Transfer': DATA.payments.filter(p => p.method === 'Bank Transfer').length,
+    Online: DATA.payments.filter(p => p.method === 'Online').length,
+  };
+  const pill = (k, l) => `
+    <button class="filter-pill ${activeMethod === k ? 'active' : ''}" data-method="${k}">
+      ${l}<span class="count">${c[k]}</span>
+    </button>`;
+  return `
+    <div class="pay-toolbar">
+      <div class="filter-pills">
+        ${pill('all', 'All')}
+        ${pill('Cash', 'Cash')}
+        ${pill('Bank Transfer', 'Bank')}
+        ${pill('Online', 'Online')}
+      </div>
+    </div>`;
+}
+
+function renderList() {
+  const rows = filtered();
+  if (rows.length === 0) {
+    return `<div class="pay-list"><div style="padding:var(--sp-8); text-align:center; color:var(--text-dim); font-size:13px;">No payments match this filter.</div></div>`;
+  }
+  return `<div class="pay-list">${rows.map(renderRow).join('')}</div>`;
+}
+
+function renderRow(p) {
+  return `
+    <div class="pay-row">
+      <div class="pay-icon">${Icon.check()}</div>
+      <div>
+        <div class="pay-title">${Utils.esc(p.invoiceNo)} — ${Utils.esc(p.studentName)}</div>
+        <div class="pay-meta">
+          <span>${Icon.calendar()} ${Utils.esc(p.date)}</span>
+          <span>${Icon.user()} ${Utils.esc(p.recordedBy || '—')}</span>
+          ${p.reference ? `<span>${Icon.file()} ${Utils.esc(p.reference)}</span>` : ''}
+        </div>
+      </div>
+      <span class="method-chip">${Utils.esc(p.method)}</span>
+      <div class="pay-amount">+ Rs. ${p.amount.toFixed(2)}</div>
+    </div>`;
+}
+
+function openRecordModal() {
+  if (DATA.unpaidInvoices.length === 0) {
+    Modal.open({
+      title: 'Record Payment',
+      body: `<p style="font-size:13.5px; color:var(--text-dim); text-align:center; padding:20px;">No unpaid invoices. All caught up!</p>
+             <div class="form-actions" style="margin-top:0; justify-content:center;">
+               <button class="btn btn-primary" onclick="document.querySelector('.modal-overlay').remove()">OK</button>
+             </div>`,
+      size: 'sm',
+    });
+    return;
+  }
+
+  let selectedId = DATA.unpaidInvoices[0].id;
+
+  const body = `
+    <div class="form-field">
+      <label>Unpaid Invoice</label>
+      <div style="max-height:200px; overflow-y:auto; border:1px solid var(--border); border-radius:var(--r-md);" id="rp-picker">
+        ${DATA.unpaidInvoices.map(inv => `
+          <div class="pick-row ${inv.id === selectedId ? 'selected' : ''}" data-id="${inv.id}"
+               style="display:flex; align-items:center; gap:12px; padding:12px 14px; border-bottom:1px solid var(--border); cursor:pointer; ${inv.id === selectedId ? 'background:rgba(20,33,61,.04); box-shadow:inset 3px 0 0 var(--navy);' : ''}">
+            <div style="flex:1; min-width:0;">
+              <div style="font-family:'Plus Jakarta Sans',sans-serif; font-size:13px; font-weight:700; color:var(--navy);">${Utils.esc(inv.invoiceNo)}</div>
+              <div style="font-size:11.5px; color:var(--text-dim);">${Utils.esc(inv.studentName)} · ${Utils.esc(inv.studentCode)}</div>
+            </div>
+            <div style="font-family:'Plus Jakarta Sans',sans-serif; font-size:14px; font-weight:800; color:var(--navy); font-variant-numeric:tabular-nums;">Rs. ${inv.total.toFixed(2)}</div>
+          </div>`).join('')}
+      </div>
+    </div>
+
+    <div style="display:grid; grid-template-columns:1fr 1fr; gap:12px;">
+      <div class="form-field">
+        <label>Amount (Rs.)</label>
+        <input type="number" id="rp-amount" step="0.01" min="0">
+      </div>
+      <div class="form-field">
+        <label>Method</label>
+        <select id="rp-method">
+          <option value="Cash">Cash</option>
+          <option value="Bank Transfer">Bank Transfer</option>
+          <option value="Online">Online</option>
+        </select>
+      </div>
+    </div>
+
+    <div class="form-field">
+      <label>Reference (optional)</label>
+      <input type="text" id="rp-ref" placeholder="e.g. BT-20260812-0034">
+    </div>
+
+    <div class="form-actions" style="margin-top:var(--sp-5);">
+      <button class="btn btn-ghost" data-cancel>Cancel</button>
+      <button class="btn btn-primary" id="rp-submit">${Icon.check()} Record Payment</button>
+    </div>
+  `;
+
+  const m = Modal.open({ title: 'Record Payment', body, size: 'md' });
+  const amount = m.el.querySelector('#rp-amount');
+
+  function setAmount() {
+    const inv = DATA.unpaidInvoices.find(i => i.id === selectedId);
+    if (inv) amount.value = inv.total.toFixed(2);
+  }
+  setAmount();
+
+  m.el.querySelector('#rp-picker').onclick = (e) => {
+    const row = e.target.closest('.pick-row');
+    if (!row) return;
+    selectedId = parseInt(row.dataset.id, 10);
+    m.el.querySelectorAll('.pick-row').forEach(r => {
+      const sel = parseInt(r.dataset.id, 10) === selectedId;
+      r.style.background = sel ? 'rgba(20,33,61,.04)' : 'transparent';
+      r.style.boxShadow = sel ? 'inset 3px 0 0 var(--navy)' : 'none';
+    });
+    setAmount();
+  };
+
+  m.el.querySelector('[data-cancel]').onclick = () => m.close();
+
+  m.el.querySelector('#rp-submit').onclick = async () => {
+    const amt = parseFloat(amount.value);
+    const method = m.el.querySelector('#rp-method').value;
+    const reference = m.el.querySelector('#rp-ref').value.trim();
+
+    if (isNaN(amt) || amt <= 0) return showToast('Please enter a valid amount');
+
+    const btn = m.el.querySelector('#rp-submit');
+    btn.disabled = true; btn.textContent = 'Recording…';
+
+    try {
+      const res = await fetch(API_BASE + '/api/management/payments', {
+        method: 'POST',
+        headers: { 'Authorization': 'Bearer ' + TOKEN, 'Content-Type': 'application/json' },
+        body: JSON.stringify({ invoiceId: selectedId, amount: amt, method, reference }),
+      });
+      const data = await res.json().catch(() => ({}));
+      if (!res.ok) { showToast(data.message || 'Record failed'); btn.disabled = false; btn.textContent = 'Record Payment'; return; }
+      m.close();
+      await reload();
+      showToast(`Payment of Rs. ${amt.toFixed(2)} recorded`);
+    } catch (err) { showToast('Network error: ' + err.message); btn.disabled = false; btn.textContent = 'Record Payment'; }
+  };
+}
+
+async function reload() {
+  const res = await fetch(API_BASE + '/api/management/payments', {
+    headers: { 'Authorization': 'Bearer ' + TOKEN },
+  });
+  if (res.ok) { DATA = await res.json(); rerender(); }
+}
+
+function wireAll() {
+  document.getElementById('record-btn').onclick = openRecordModal;
+  document.querySelectorAll('.filter-pill').forEach(b => {
+    b.onclick = () => { activeMethod = b.dataset.method; rerender(); };
+  });
+}
+
+function showToast(message) {
+  let host = document.querySelector('.toast-host');
+  if (!host) { host = document.createElement('div'); host.className = 'toast-host'; document.body.appendChild(host); }
+  const el = document.createElement('div');
+  el.className = 'toast toast-success';
+  el.textContent = message;
+  host.appendChild(el);
+  void el.offsetWidth; el.classList.add('toast-in');
+  setTimeout(() => { el.classList.remove('toast-in'); setTimeout(() => el.remove(), 200); }, 3000);
+}
+</script>
+</body>
+</html>

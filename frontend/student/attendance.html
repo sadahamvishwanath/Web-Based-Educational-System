@@ -1,0 +1,685 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Attendance — Apex Institute</title>
+
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Plus+Jakarta+Sans:wght@500;600;700;800&display=swap" rel="stylesheet">
+
+  <link rel="stylesheet" href="../shared/css/tokens.css">
+  <link rel="stylesheet" href="../shared/css/base.css">
+  <link rel="stylesheet" href="../shared/css/layout.css">
+  <link rel="stylesheet" href="../shared/css/components.css">
+
+  <style>
+    /* ============================================================
+       Summary strip
+       ============================================================ */
+    .att-summary {
+      display: grid;
+      grid-template-columns: repeat(4, 1fr);
+      gap: var(--sp-4);
+      margin-bottom: var(--sp-5);
+    }
+    @media (max-width: 900px) { .att-summary { grid-template-columns: repeat(2, 1fr); } }
+
+    .summary-tile {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: var(--r-lg);
+      padding: var(--sp-4) var(--sp-5);
+      box-shadow: var(--shadow-xs);
+      position: relative;
+      overflow: hidden;
+    }
+    .summary-tile .bar-accent {
+      position: absolute;
+      top: 0; left: 0;
+      width: 4px;
+      height: 100%;
+    }
+    .summary-label {
+      font-size: 11px;
+      font-weight: 700;
+      color: var(--text-dim);
+      text-transform: uppercase;
+      letter-spacing: 0.08em;
+      margin-bottom: 6px;
+    }
+    .summary-value {
+      font-family: 'Plus Jakarta Sans', sans-serif;
+      font-size: 24px;
+      font-weight: 800;
+      color: var(--navy);
+      letter-spacing: -0.02em;
+      line-height: 1.1;
+    }
+    .summary-value small {
+      font-size: 13px;
+      font-weight: 600;
+      color: var(--text-dim);
+      margin-left: 3px;
+    }
+    .summary-meta { font-size: 12px; color: var(--text-dim); margin-top: 4px; }
+    .summary-meta.positive { color: var(--success); font-weight: 600; }
+    .summary-meta.warning  { color: var(--warning); font-weight: 600; }
+
+    /* ============================================================
+       Layout grid
+       ============================================================ */
+    .att-grid {
+      display: grid;
+      grid-template-columns: 1fr 1.15fr;
+      gap: var(--sp-5);
+    }
+    @media (max-width: 1000px) { .att-grid { grid-template-columns: 1fr; } }
+
+    /* ============================================================
+       Hero card with SVG ring
+       ============================================================ */
+    .att-hero {
+      background: var(--navy);
+      border-radius: var(--r-lg);
+      padding: var(--sp-6);
+      color: #fff;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      position: relative;
+      overflow: hidden;
+      box-shadow: var(--shadow-md);
+    }
+    .att-hero::before {
+      content: '';
+      position: absolute;
+      top: -50%; right: -50%;
+      width: 100%; height: 200%;
+      background: radial-gradient(circle, rgba(233,185,73,.12), transparent 60%);
+      pointer-events: none;
+    }
+    .att-hero-label {
+      font-size: 11px;
+      font-weight: 700;
+      color: rgba(255,255,255,.55);
+      letter-spacing: 0.14em;
+      text-transform: uppercase;
+      margin-bottom: var(--sp-5);
+    }
+
+    .ring-wrap {
+      position: relative;
+      width: 200px;
+      height: 200px;
+      margin-bottom: var(--sp-5);
+    }
+    .ring-svg { transform: rotate(-90deg); width: 100%; height: 100%; }
+    .ring-track { fill: none; stroke: rgba(255,255,255,.08); stroke-width: 14; }
+    .ring-fill {
+      fill: none;
+      stroke: var(--gold);
+      stroke-width: 14;
+      stroke-linecap: round;
+      transition: stroke-dashoffset 900ms cubic-bezier(.4,0,.2,1);
+    }
+    .ring-content {
+      position: absolute;
+      inset: 0;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+    }
+    .ring-value {
+      font-family: 'Plus Jakarta Sans', sans-serif;
+      font-size: 52px;
+      font-weight: 800;
+      letter-spacing: -0.04em;
+      line-height: 1;
+      color: #fff;
+    }
+    .ring-value small {
+      font-size: 22px;
+      font-weight: 600;
+      color: rgba(255,255,255,.65);
+      margin-left: 2px;
+    }
+    .ring-caption {
+      font-size: 12px;
+      font-weight: 600;
+      color: var(--gold);
+      letter-spacing: 0.08em;
+      text-transform: uppercase;
+      margin-top: 8px;
+    }
+
+    .att-hero-foot {
+      display: flex;
+      gap: var(--sp-6);
+      padding-top: var(--sp-5);
+      border-top: 1px solid rgba(255,255,255,.1);
+      width: 100%;
+      justify-content: center;
+    }
+    .hero-stat { text-align: center; }
+    .hero-stat-value {
+      font-family: 'Plus Jakarta Sans', sans-serif;
+      font-size: 20px;
+      font-weight: 800;
+      color: #fff;
+      letter-spacing: -0.02em;
+      line-height: 1;
+    }
+    .hero-stat-label {
+      font-size: 10.5px;
+      font-weight: 600;
+      color: rgba(255,255,255,.5);
+      letter-spacing: 0.1em;
+      text-transform: uppercase;
+      margin-top: 6px;
+    }
+
+    /* ============================================================
+       Per-class breakdown
+       ============================================================ */
+    .breakdown-card { height: 100%; display: flex; flex-direction: column; }
+    .breakdown-list { display: flex; flex-direction: column; }
+
+    .class-row {
+      padding: var(--sp-4) var(--sp-5);
+      border-bottom: 1px solid var(--border);
+      display: flex;
+      flex-direction: column;
+      gap: var(--sp-3);
+    }
+    .class-row:last-child { border-bottom: none; }
+
+    .cr-head {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: var(--sp-3);
+    }
+    .cr-subject {
+      display: flex;
+      align-items: center;
+      gap: var(--sp-3);
+      min-width: 0;
+    }
+    .cr-icon {
+      width: 36px;
+      height: 36px;
+      border-radius: var(--r-md);
+      display: grid;
+      place-items: center;
+      flex-shrink: 0;
+      background: var(--accent-bg, rgba(20,33,61,.07));
+      color: var(--accent, var(--navy));
+    }
+    .cr-icon svg { width: 17px; height: 17px; }
+    .cr-body { min-width: 0; }
+    .cr-title {
+      font-family: 'Plus Jakarta Sans', sans-serif;
+      font-size: 14px;
+      font-weight: 700;
+      color: var(--navy);
+      letter-spacing: -0.005em;
+      margin-bottom: 2px;
+    }
+    .cr-meta { font-size: 12px; color: var(--text-dim); }
+
+    .cr-pct {
+      font-family: 'Plus Jakarta Sans', sans-serif;
+      font-size: 17px;
+      font-weight: 800;
+      letter-spacing: -0.02em;
+      font-variant-numeric: tabular-nums;
+      flex-shrink: 0;
+    }
+    .cr-pct.good { color: var(--success); }
+    .cr-pct.warn { color: var(--warning); }
+    .cr-pct.bad  { color: var(--danger); }
+
+    .cr-bar-row {
+      display: flex;
+      align-items: center;
+      gap: var(--sp-3);
+    }
+    .cr-bar {
+      flex: 1;
+      height: 7px;
+      background: var(--bg);
+      border-radius: 100px;
+      overflow: hidden;
+    }
+    .cr-bar-fill {
+      height: 100%;
+      border-radius: 100px;
+      transition: width 800ms var(--ease);
+    }
+    .cr-bar-fill.good { background: var(--success); }
+    .cr-bar-fill.warn { background: var(--warning); }
+    .cr-bar-fill.bad  { background: var(--danger); }
+
+    .cr-counts {
+      font-size: 11.5px;
+      color: var(--text-dim);
+      font-variant-numeric: tabular-nums;
+      white-space: nowrap;
+      display: flex;
+      gap: 8px;
+    }
+    .cr-counts .dot {
+      display: inline-block;
+      width: 6px; height: 6px;
+      border-radius: 50%;
+      margin-right: 3px;
+    }
+    .dot-present { background: var(--success); }
+    .dot-absent  { background: var(--danger); }
+    .dot-late    { background: var(--warning); }
+
+    /* ============================================================
+       Recent log
+       ============================================================ */
+    .log-list { display: flex; flex-direction: column; }
+    .log-row {
+      display: grid;
+      grid-template-columns: 56px 1fr auto;
+      align-items: center;
+      gap: var(--sp-4);
+      padding: 14px var(--sp-5);
+      border-bottom: 1px solid var(--border);
+      transition: background var(--dur-fast) var(--ease);
+    }
+    .log-row:last-child { border-bottom: none; }
+    .log-row:hover { background: var(--surface-alt); }
+
+    .log-date {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      line-height: 1;
+    }
+    .log-day {
+      font-family: 'Plus Jakarta Sans', sans-serif;
+      font-size: 18px;
+      font-weight: 800;
+      color: var(--navy);
+      letter-spacing: -0.02em;
+    }
+    .log-mon {
+      font-size: 10px;
+      font-weight: 600;
+      color: var(--text-dim);
+      letter-spacing: 0.06em;
+      text-transform: uppercase;
+      margin-top: 3px;
+    }
+
+    .log-body { min-width: 0; }
+    .log-subject {
+      font-family: 'Plus Jakarta Sans', sans-serif;
+      font-size: 13.5px;
+      font-weight: 700;
+      color: var(--navy);
+      letter-spacing: -0.005em;
+      margin-bottom: 2px;
+    }
+    .log-meta {
+      font-size: 12px;
+      color: var(--text-dim);
+      display: flex;
+      align-items: center;
+      gap: var(--sp-3);
+      flex-wrap: wrap;
+    }
+    .log-meta span { display: inline-flex; align-items: center; gap: 4px; }
+    .log-meta svg { width: 12px; height: 12px; color: var(--text-faint); }
+
+    .log-status {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      padding: 5px 11px;
+      border-radius: 100px;
+      font-size: 11.5px;
+      font-weight: 700;
+      letter-spacing: 0.01em;
+      white-space: nowrap;
+    }
+    .log-status.present { background: var(--success-bg); color: var(--success); }
+    .log-status.absent  { background: var(--danger-bg);  color: var(--danger); }
+    .log-status.late    { background: var(--warning-bg); color: var(--warning); }
+    .log-status::before {
+      content: '';
+      width: 6px; height: 6px;
+      border-radius: 50%;
+      background: currentColor;
+    }
+
+    /* Section heading inside cards */
+    .sub-heading {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: var(--sp-5) var(--sp-5) var(--sp-4);
+      border-bottom: 1px solid var(--border);
+    }
+    .sub-heading h2 { font-size: 15px; font-weight: 700; }
+    .sub-heading .sub { font-size: 12px; color: var(--text-dim); margin-top: 3px; }
+  </style>
+</head>
+<body>
+
+<script src="../shared/js/utils.js"></script>
+<script src="../shared/js/icons.js"></script>
+<script src="../shared/js/shell.js"></script>
+
+<script>
+/* ============================================================
+   AUTH GUARD
+   ============================================================ */
+const TOKEN = localStorage.getItem('apex_token');
+if (!TOKEN) location.href = '../login.html';
+
+/* ============================================================
+   BOOT
+   ============================================================ */
+Shell.render({
+  active: 'attendance',
+  role: 'STUDENT',
+  content: '<div class="loading">Loading attendance…</div>',
+});
+
+(async function loadAttendance() {
+  try {
+    const res = await fetch('http://localhost:8080/api/student/attendance', {
+      headers: { 'Authorization': 'Bearer ' + TOKEN },
+    });
+
+    if (res.status === 401 || res.status === 403) {
+      localStorage.removeItem('apex_token');
+      localStorage.removeItem('apex_user');
+      location.href = '../login.html';
+      return;
+    }
+    if (!res.ok) throw new Error('Server returned ' + res.status);
+
+    const data = await res.json();
+    document.getElementById('app-main').innerHTML = renderPage(data);
+    animateRing();
+  } catch (err) {
+    document.getElementById('app-main').innerHTML = `
+      <div class="error-box">
+        <h2>Could not load attendance</h2>
+        <p style="color:var(--text-dim); margin:8px 0 16px;">${Utils.esc(err.message)}</p>
+        <button class="btn btn-primary" onclick="location.reload()">Try again</button>
+      </div>`;
+  }
+})();
+
+/* ============================================================
+   HELPERS
+   ============================================================ */
+const SUBJECT_STYLE = {
+  Mathematics: { accent: '#14213D', bg: 'rgba(20,33,61,.07)' },
+  Science:     { accent: '#198754', bg: 'rgba(25,135,84,.09)' },
+  Physics:     { accent: '#E9B949', bg: 'rgba(233,185,73,.16)' },
+  English:     { accent: '#175CD3', bg: 'rgba(23,92,211,.08)' },
+  ICT:         { accent: '#6941C6', bg: 'rgba(105,65,198,.08)' },
+  Biology:     { accent: '#0E9384', bg: 'rgba(14,147,132,.09)' },
+  Chemistry:   { accent: '#C11574', bg: 'rgba(193,21,116,.08)' },
+};
+function styleFor(s) {
+  return SUBJECT_STYLE[s] || { accent: '#14213D', bg: 'rgba(20,33,61,.07)' };
+}
+
+/* ============================================================
+   RENDER
+   ============================================================ */
+function renderPage(data) {
+  const { student, stats, bySubject, recent } = data;
+
+  const status = stats.pct >= 90 ? 'Excellent'
+                : stats.pct >= 75 ? 'Good standing'
+                : stats.pct >= 50 ? 'Needs attention'
+                : 'At risk';
+
+  return `
+    <header class="page-header">
+      <div>
+        <div class="page-eyebrow">Attendance Record</div>
+        <h1 class="page-title">My Attendance</h1>
+        <p class="page-subtitle">
+          ${stats.present} of ${stats.total} session${stats.total !== 1 ? 's' : ''} ·
+          ${stats.pct}% overall ·
+          ${stats.streak > 0 ? `${stats.streak} present in a row` : 'no active streak'}
+        </p>
+      </div>
+    </header>
+
+    ${renderSummary(stats)}
+
+    <div class="att-grid" style="margin-bottom: var(--sp-5);">
+      ${renderHero(stats, status)}
+      ${renderBreakdown(bySubject)}
+    </div>
+
+    ${renderLog(recent)}
+  `;
+}
+
+/* ============================================================
+   SUMMARY TILES
+   ============================================================ */
+function renderSummary(s) {
+  const tone = s.pct >= 85 ? 'positive' : 'warning';
+
+  return `
+    <div class="att-summary">
+      <div class="summary-tile">
+        <div class="bar-accent" style="background:var(--navy)"></div>
+        <div class="summary-label">Overall</div>
+        <div class="summary-value">${s.pct}<small>%</small></div>
+        <div class="summary-meta ${tone}">
+          ${s.pct >= 85 ? 'Above target' : 'Watch out'}
+        </div>
+      </div>
+      <div class="summary-tile">
+        <div class="bar-accent" style="background:var(--success)"></div>
+        <div class="summary-label">Present</div>
+        <div class="summary-value">${s.present}</div>
+        <div class="summary-meta">of ${s.total} sessions</div>
+      </div>
+      <div class="summary-tile">
+        <div class="bar-accent" style="background:var(--danger)"></div>
+        <div class="summary-label">Absences</div>
+        <div class="summary-value">${s.absent}</div>
+        <div class="summary-meta ${s.late > 0 ? 'warning' : ''}">
+          ${s.late} late arrival${s.late !== 1 ? 's' : ''}
+        </div>
+      </div>
+      <div class="summary-tile">
+        <div class="bar-accent" style="background:var(--gold)"></div>
+        <div class="summary-label">Current Streak</div>
+        <div class="summary-value">${s.streak}</div>
+        <div class="summary-meta ${s.streak > 0 ? 'positive' : ''}">
+          ${s.streak > 0 ? 'Consecutive present' : 'Start a streak'}
+        </div>
+      </div>
+    </div>`;
+}
+
+/* ============================================================
+   HERO RING
+   ============================================================ */
+function renderHero(s, status) {
+  const r = 76;
+  const circ = 2 * Math.PI * r;
+  const offset = circ * (1 - s.pct / 100);
+
+  return `
+    <div class="att-hero">
+      <div class="att-hero-label">Attendance Record</div>
+
+      <div class="ring-wrap">
+        <svg class="ring-svg" viewBox="0 0 200 200">
+          <circle class="ring-track" cx="100" cy="100" r="${r}"/>
+          <circle class="ring-fill" cx="100" cy="100" r="${r}"
+                  stroke-dasharray="${circ}"
+                  stroke-dashoffset="${circ}"
+                  data-target="${offset}"/>
+        </svg>
+        <div class="ring-content">
+          <div class="ring-value">${Math.round(s.pct)}<small>%</small></div>
+          <div class="ring-caption">${status}</div>
+        </div>
+      </div>
+
+      <div class="att-hero-foot">
+        <div class="hero-stat">
+          <div class="hero-stat-value">${s.present}</div>
+          <div class="hero-stat-label">Present</div>
+        </div>
+        <div class="hero-stat">
+          <div class="hero-stat-value">${s.absent}</div>
+          <div class="hero-stat-label">Absent</div>
+        </div>
+        <div class="hero-stat">
+          <div class="hero-stat-value">${s.late}</div>
+          <div class="hero-stat-label">Late</div>
+        </div>
+        <div class="hero-stat">
+          <div class="hero-stat-value">${s.total}</div>
+          <div class="hero-stat-label">Total</div>
+        </div>
+      </div>
+    </div>`;
+}
+
+/* ============================================================
+   PER-SUBJECT BREAKDOWN
+   ============================================================ */
+function renderBreakdown(list) {
+  if (list.length === 0) {
+    return `
+      <div class="card breakdown-card">
+        <div class="sub-heading">
+          <div><h2>By Subject</h2><div class="sub">No attendance recorded yet</div></div>
+        </div>
+        <div style="padding: var(--sp-6); text-align:center; color:var(--text-dim); font-size:13px;">
+          Once your teachers mark attendance, this breakdown appears here.
+        </div>
+      </div>`;
+  }
+
+  return `
+    <div class="card breakdown-card">
+      <div class="sub-heading">
+        <div>
+          <h2>By Subject</h2>
+          <div class="sub">${list.length} subject${list.length !== 1 ? 's' : ''} · sorted by performance</div>
+        </div>
+      </div>
+      <div class="breakdown-list">
+        ${list.map(renderBreakdownRow).join('')}
+      </div>
+    </div>`;
+}
+
+function renderBreakdownRow(item) {
+  const s = styleFor(item.subject);
+  const tone = item.pct >= 85 ? 'good' : item.pct >= 65 ? 'warn' : 'bad';
+
+  return `
+    <div class="class-row">
+      <div class="cr-head">
+        <div class="cr-subject">
+          <div class="cr-icon" style="background:${s.bg}; color:${s.accent};">
+            ${Icon.book()}
+          </div>
+          <div class="cr-body">
+            <div class="cr-title">${Utils.esc(item.subject)}</div>
+            <div class="cr-meta">${item.total} session${item.total !== 1 ? 's' : ''}</div>
+          </div>
+        </div>
+        <div class="cr-pct ${tone}">${item.pct}%</div>
+      </div>
+      <div class="cr-bar-row">
+        <div class="cr-bar">
+          <div class="cr-bar-fill ${tone}" style="width:${item.pct}%"></div>
+        </div>
+        <div class="cr-counts">
+          <span><span class="dot dot-present"></span>${item.present}</span>
+          ${item.late   ? `<span><span class="dot dot-late"></span>${item.late}</span>` : ''}
+          ${item.absent ? `<span><span class="dot dot-absent"></span>${item.absent}</span>` : ''}
+        </div>
+      </div>
+    </div>`;
+}
+
+/* ============================================================
+   RECENT LOG
+   ============================================================ */
+function renderLog(recent) {
+  if (recent.length === 0) {
+    return `
+      <div class="card">
+        <div class="sub-heading">
+          <div><h2>Recent Activity</h2><div class="sub">No records</div></div>
+        </div>
+        <div style="padding: var(--sp-8); text-align:center; color:var(--text-dim); font-size:13px;">
+          Nothing to show yet.
+        </div>
+      </div>`;
+  }
+
+  return `
+    <div class="card">
+      <div class="sub-heading">
+        <div>
+          <h2>Recent Activity</h2>
+          <div class="sub">Last ${recent.length} session${recent.length !== 1 ? 's' : ''}</div>
+        </div>
+      </div>
+      <div class="log-list">
+        ${recent.map(renderLogRow).join('')}
+      </div>
+    </div>`;
+}
+
+function renderLogRow(r) {
+  const statusClass = r.status.toLowerCase();
+  return `
+    <div class="log-row">
+      <div class="log-date">
+        <span class="log-day">${Utils.esc(r.day)}</span>
+        <span class="log-mon">${Utils.esc(r.mon)}</span>
+      </div>
+      <div class="log-body">
+        <div class="log-subject">${Utils.esc(r.subject)}</div>
+        <div class="log-meta">
+          <span>${Icon.user()} ${Utils.esc(r.teacher)}</span>
+        </div>
+      </div>
+      <span class="log-status ${statusClass}">${Utils.esc(r.status)}</span>
+    </div>`;
+}
+
+/* ============================================================
+   RING ANIMATION
+   ============================================================ */
+function animateRing() {
+  const ring = document.querySelector('.ring-fill');
+  if (!ring) return;
+  setTimeout(() => {
+    ring.style.strokeDashoffset = ring.dataset.target;
+  }, 80);
+}
+</script>
+</body>
+</html>

@@ -1,0 +1,223 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Finance Dashboard — Apex Institute</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Plus+Jakarta+Sans:wght@500;600;700;800&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="../shared/css/tokens.css">
+  <link rel="stylesheet" href="../shared/css/base.css">
+  <link rel="stylesheet" href="../shared/css/layout.css">
+  <link rel="stylesheet" href="../shared/css/components.css">
+  <style>
+    .fin-grid { display:grid; grid-template-columns:repeat(4,1fr); gap:var(--sp-4); margin-bottom:var(--sp-5); }
+    @media (max-width:1100px) { .fin-grid { grid-template-columns:repeat(2,1fr); } }
+
+    .fin-tile { background:var(--surface); border:1px solid var(--border); border-radius:var(--r-lg);
+      padding:var(--sp-5); box-shadow:var(--shadow-xs); position:relative; overflow:hidden; }
+    .fin-tile .bar { position:absolute; top:0; left:0; width:4px; height:100%; }
+    .fin-label { font-size:11px; font-weight:700; color:var(--text-dim); text-transform:uppercase;
+      letter-spacing:.08em; margin-bottom:8px; }
+    .fin-value { font-family:'Plus Jakarta Sans',sans-serif; font-size:26px; font-weight:800; color:var(--navy);
+      letter-spacing:-.025em; line-height:1.1; margin-bottom:4px; }
+    .fin-value small { font-size:13px; font-weight:600; color:var(--text-dim); margin-left:2px; }
+    .fin-meta { font-size:12px; color:var(--text-dim); }
+    .fin-meta.positive { color:var(--success); font-weight:600; }
+    .fin-meta.warning  { color:var(--warning); font-weight:600; }
+
+    /* Chart */
+    .chart-card { background:var(--surface); border:1px solid var(--border); border-radius:var(--r-lg);
+      padding:var(--sp-5); box-shadow:var(--shadow-xs); margin-bottom:var(--sp-5); }
+    .chart-header { display:flex; align-items:center; justify-content:space-between; margin-bottom:var(--sp-5); }
+    .chart-header h2 { font-size:15px; font-weight:700; }
+    .chart-header .sub { font-size:12px; color:var(--text-dim); margin-top:3px; }
+    .chart-legend { display:flex; gap:16px; font-size:12px; color:var(--text-dim); align-items:center; }
+    .chart-legend span { display:inline-flex; align-items:center; gap:6px; }
+    .chart-legend .dot { width:10px; height:10px; border-radius:3px; }
+
+    .chart-bars { display:grid; grid-template-columns:repeat(6,1fr); gap:var(--sp-3); align-items:end; height:200px; padding:0 4px; }
+    .chart-col { display:flex; flex-direction:column; align-items:center; gap:8px; height:100%; }
+    .chart-bar-wrap { flex:1; width:100%; display:flex; align-items:flex-end; justify-content:center; }
+    .chart-stack { width:100%; max-width:52px; display:flex; flex-direction:column; justify-content:flex-end; height:100%; }
+    .chart-segment { width:100%; transition:all 300ms var(--ease); }
+    .chart-segment.income  { background:linear-gradient(180deg,var(--navy) 0%,var(--navy-700) 100%); border-radius:6px 6px 0 0; }
+    .chart-segment.expense { background:var(--gold); }
+    .chart-label { font-size:11px; font-weight:700; color:var(--text-dim); text-transform:uppercase; letter-spacing:.06em; }
+    .chart-value { position:absolute; top:-22px; left:50%; transform:translateX(-50%);
+      font-family:'Plus Jakarta Sans',sans-serif; font-size:11px; font-weight:800; color:var(--navy);
+      font-variant-numeric:tabular-nums; white-space:nowrap; }
+
+    /* Recent list */
+    .recent-row { display:flex; align-items:center; gap:var(--sp-3);
+      padding:var(--sp-4) var(--sp-5); border-bottom:1px solid var(--border); }
+    .recent-row:last-child { border-bottom:none; }
+    .recent-icon { width:36px; height:36px; border-radius:var(--r-md); display:grid; place-items:center; flex-shrink:0; }
+    .recent-icon svg { width:16px; height:16px; }
+    .recent-icon.income  { background:var(--success-bg); color:var(--success); }
+    .recent-icon.expense { background:var(--warning-bg); color:var(--warning); }
+    .recent-body { flex:1; min-width:0; }
+    .recent-title { font-family:'Plus Jakarta Sans',sans-serif; font-size:13px; font-weight:700;
+      color:var(--navy); margin-bottom:2px; }
+    .recent-meta { font-size:11.5px; color:var(--text-dim); }
+    .recent-amount { font-family:'Plus Jakarta Sans',sans-serif; font-size:14px; font-weight:800;
+      font-variant-numeric:tabular-nums; }
+    .recent-amount.positive { color:var(--success); }
+    .recent-amount.negative { color:var(--warning); }
+  </style>
+</head>
+<body>
+
+<script src="../shared/js/utils.js"></script>
+<script src="../shared/js/icons.js"></script>
+<script src="../shared/js/shell.js"></script>
+
+<script>
+/* ============================================================
+   MOCK DATA
+   ============================================================ */
+const stats = {
+  monthIncome:  4250.00,
+  monthExpense: 2400.00,
+  outstanding:   450.00,
+  outstandingCount: 3,
+};
+
+const monthly = [
+  { month:'Apr', income: 3200, expense: 2100 },
+  { month:'May', income: 3600, expense: 2200 },
+  { month:'Jun', income: 3450, expense: 2100 },
+  { month:'Jul', income: 3900, expense: 2300 },
+  { month:'Aug', income: 4100, expense: 2400 },
+  { month:'Sep', income: 4250, expense: 2400 },
+];
+
+const recent = [
+  { kind:'income',  title:'Payment received — INV-2026-002',
+    meta:'John Smith · Bank Transfer', amount:150.00 },
+  { kind:'income',  title:'Payment received — INV-2026-014',
+    meta:'Sarah Smith · Online',       amount:150.00 },
+  { kind:'expense', title:'Salary paid — Mr. David Wilson',
+    meta:'August 2026 · Bank Transfer', amount:1200.00 },
+  { kind:'income',  title:'Payment received — INV-2026-018',
+    meta:'Emma Johnson · Cash',         amount:150.00 },
+  { kind:'expense', title:'Salary paid — Dr. Emily Carter',
+    meta:'August 2026 · Bank Transfer', amount:900.00 },
+];
+
+/* ============================================================
+   RENDER
+   ============================================================ */
+function renderSummary() {
+  const net = stats.monthIncome - stats.monthExpense;
+  const tile = ({ accent, label, value, suffix='', meta, metaClass='' }) => `
+    <div class="fin-tile">
+      <div class="bar" style="background:${accent};"></div>
+      <div class="fin-label">${Utils.esc(label)}</div>
+      <div class="fin-value">${Utils.esc(String(value))}${suffix ? `<small>${suffix}</small>` : ''}</div>
+      <div class="fin-meta ${metaClass}">${meta}</div>
+    </div>`;
+
+  return `
+    <div class="fin-grid">
+      ${tile({ accent:'var(--success)', label:'Income (Sep)', value:'Rs. ' + stats.monthIncome.toFixed(0),
+        meta:`${Icon.arrowUp()} +3.7% vs Aug`, metaClass:'positive' })}
+      ${tile({ accent:'var(--warning)', label:'Expenses (Sep)', value:'Rs. ' + stats.monthExpense.toFixed(0),
+        meta:'Salaries + operations' })}
+      ${tile({ accent:'var(--navy)',    label:'Net Position',   value:'Rs. ' + net.toFixed(0),
+        meta: net >= 0 ? 'Surplus this month' : 'Deficit this month',
+        metaClass: net >= 0 ? 'positive' : 'warning' })}
+      ${tile({ accent:'var(--danger)', label:'Outstanding',
+        value:'Rs. ' + stats.outstanding.toFixed(0),
+        meta:`${stats.outstandingCount} unpaid invoices`, metaClass:'warning' })}
+    </div>`;
+}
+
+function renderChart() {
+  const max = Math.max(...monthly.map(m => m.income), ...monthly.map(m => m.expense));
+  return `
+    <div class="chart-card">
+      <div class="chart-header">
+        <div>
+          <h2>Income vs Expenses</h2>
+          <div class="sub">Last 6 months · in Rs.</div>
+        </div>
+        <div class="chart-legend">
+          <span><span class="dot" style="background:var(--navy);"></span>Income</span>
+          <span><span class="dot" style="background:var(--gold);"></span>Expenses</span>
+        </div>
+      </div>
+      <div class="chart-bars">
+        ${monthly.map(m => {
+          const incH = (m.income / max) * 100;
+          const expH = (m.expense / max) * 100;
+          return `
+            <div class="chart-col">
+              <div class="chart-bar-wrap">
+                <div class="chart-stack">
+                  <div class="chart-segment income"  style="height:${incH * 0.75}%; position:relative;">
+                    <span class="chart-value">${m.income}</span>
+                  </div>
+                  <div class="chart-segment expense" style="height:${expH * 0.75}%;"></div>
+                </div>
+              </div>
+              <div class="chart-label">${m.month}</div>
+            </div>`;
+        }).join('')}
+      </div>
+    </div>`;
+}
+
+function renderRecent() {
+  return `
+    <section class="card">
+      <div class="card-header">
+        <div>
+          <h2>Recent Transactions</h2>
+          <div class="card-sub">Last 5 movements</div>
+        </div>
+        <a href="payments.html" class="card-link">View all ${Icon.arrowR()}</a>
+      </div>
+      <div>
+        ${recent.map(r => `
+          <div class="recent-row">
+            <div class="recent-icon ${r.kind}">${r.kind === 'income' ? Icon.trend() : Icon.user()}</div>
+            <div class="recent-body">
+              <div class="recent-title">${Utils.esc(r.title)}</div>
+              <div class="recent-meta">${Utils.esc(r.meta)}</div>
+            </div>
+            <div class="recent-amount ${r.kind === 'income' ? 'positive' : 'negative'}">
+              ${r.kind === 'income' ? '+' : '−'} Rs. ${r.amount.toFixed(2)}
+            </div>
+          </div>`).join('')}
+      </div>
+    </section>`;
+}
+
+const now = new Date();
+const dayName = now.toLocaleDateString('en-GB', { weekday:'long' });
+const dateStr = now.toLocaleDateString('en-GB', { day:'numeric', month:'long', year:'numeric' });
+
+const content = `
+  <header class="page-header">
+    <div>
+      <div class="page-eyebrow">${dayName}, ${dateStr}</div>
+      <h1 class="page-title">Finance Overview</h1>
+      <p class="page-subtitle">Income, expenses, and outstanding fees — all in one view.</p>
+    </div>
+    <div class="page-actions">
+      <a href="invoices.html" class="btn btn-ghost">${Icon.file()} Invoices</a>
+      <a href="payments.html" class="btn btn-primary">${Icon.money()} Record Payment</a>
+    </div>
+  </header>
+
+  ${renderSummary()}
+  ${renderChart()}
+  ${renderRecent()}
+`;
+
+Shell.render({ active: 'dashboard', role: Shell.currentRole() || 'MANAGEMENT', content });
+</script>
+</body>
+</html>

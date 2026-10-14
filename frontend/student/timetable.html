@@ -1,0 +1,430 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Timetable — Apex Institute</title>
+
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Plus+Jakarta+Sans:wght@500;600;700;800&display=swap" rel="stylesheet">
+
+  <link rel="stylesheet" href="../shared/css/tokens.css">
+  <link rel="stylesheet" href="../shared/css/base.css">
+  <link rel="stylesheet" href="../shared/css/layout.css">
+  <link rel="stylesheet" href="../shared/css/components.css">
+
+  <style>
+    /* ============================================================
+       Timetable grid
+       ============================================================ */
+    .tt-actions { display:flex; gap:var(--sp-2); }
+
+    /* Horizontal scroll wrapper for small screens */
+    .tt-scroll { overflow-x:auto; padding-bottom:var(--sp-2); }
+    .tt-wrap {
+      background:var(--surface);
+      border:1px solid var(--border);
+      border-radius:var(--r-lg);
+      box-shadow:var(--shadow-xs);
+      overflow:hidden;
+      min-width:940px;
+    }
+
+    /* Header row */
+    .tt-head {
+      display:grid;
+      grid-template-columns:110px repeat(6,1fr);
+      background:var(--surface-alt);
+      border-bottom:1px solid var(--border);
+    }
+    .tt-head > div {
+      padding:14px 10px;
+      text-align:center;
+      border-left:1px solid var(--border);
+      font-family:'Plus Jakarta Sans',sans-serif;
+    }
+    .tt-head > div:first-child { border-left:none; }
+    .tt-head .day-name {
+      font-size:12.5px;
+      font-weight:700;
+      color:var(--navy);
+      letter-spacing:.02em;
+    }
+    .tt-head .day-date {
+      font-size:10.5px;
+      color:var(--text-dim);
+      font-weight:500;
+      margin-top:2px;
+    }
+    .tt-head .is-today {
+      background:rgba(233,185,73,.08);
+      position:relative;
+    }
+    .tt-head .is-today .day-name { color:#8F6B0F; }
+    .tt-head .is-today::after {
+      content:'';
+      position:absolute; left:0; right:0; bottom:-1px;
+      height:2px; background:var(--gold);
+    }
+
+    /* Body rows */
+    .tt-row {
+      display:grid;
+      grid-template-columns:110px repeat(6,1fr);
+      border-bottom:1px solid var(--border);
+    }
+    .tt-row:last-child { border-bottom:none; }
+
+    /* Time column */
+    .tt-time {
+      padding:14px 16px;
+      background:var(--surface-alt);
+      border-right:1px solid var(--border);
+      display:flex;
+      flex-direction:column;
+      justify-content:center;
+    }
+    .tt-time .t-from {
+      font-family:'Plus Jakarta Sans',sans-serif;
+      font-size:13.5px;
+      font-weight:700;
+      color:var(--navy);
+      letter-spacing:-.01em;
+    }
+    .tt-time .t-to {
+      font-size:11px;
+      color:var(--text-dim);
+      margin-top:2px;
+    }
+
+    /* Day cells */
+    .tt-cell {
+      padding:8px;
+      border-left:1px solid var(--border);
+      min-height:104px;
+      position:relative;
+    }
+    .tt-cell.is-today { background:rgba(233,185,73,.03); }
+
+    /* Class block */
+    .tt-slot {
+      height:100%;
+      padding:11px 13px;
+      border-radius:var(--r-md);
+      border-left:3px solid var(--navy);
+      background:rgba(20,33,61,.06);
+      display:flex;
+      flex-direction:column;
+      gap:6px;
+      cursor:pointer;
+      transition:all var(--dur) var(--ease);
+    }
+    .tt-slot:hover {
+      transform:translateY(-1px);
+      box-shadow:var(--shadow-sm);
+    }
+
+    /* Accent variants */
+    .tt-slot.navy    { border-left-color:var(--navy);    background:rgba(20,33,61,.06); }
+    .tt-slot.gold    { border-left-color:var(--gold);    background:rgba(233,185,73,.12); }
+    .tt-slot.info    { border-left-color:var(--info);    background:rgba(23,92,211,.07); }
+    .tt-slot.success { border-left-color:var(--success); background:rgba(25,135,84,.08); }
+    .tt-slot.purple  { border-left-color:#6941C6;        background:rgba(105,65,198,.07); }
+
+    .tt-slot .s-subject {
+      font-family:'Plus Jakarta Sans',sans-serif;
+      font-size:13.5px;
+      font-weight:700;
+      color:var(--navy);
+      line-height:1.2;
+      letter-spacing:-.005em;
+    }
+    .tt-slot .s-meta {
+      font-size:11.5px;
+      color:var(--text-dim);
+      display:flex;
+      align-items:center;
+      gap:5px;
+    }
+    .tt-slot .s-meta svg { width:12px; height:12px; color:var(--text-faint); flex-shrink:0; }
+
+    .tt-slot .s-room {
+      margin-top:auto;
+      display:inline-flex;
+      align-items:center;
+      gap:4px;
+      align-self:flex-start;
+      padding:2px 8px;
+      border-radius:100px;
+      background:rgba(255,255,255,.7);
+      font-size:10.5px;
+      font-weight:600;
+      color:var(--navy);
+      letter-spacing:.02em;
+    }
+
+    /* Live class pulse */
+    .tt-slot.is-live {
+      box-shadow:0 0 0 2px var(--gold);
+    }
+    .tt-slot.is-live::after {
+      content:'LIVE';
+      position:absolute;
+      top:6px; right:8px;
+      font-family:'Plus Jakarta Sans',sans-serif;
+      font-size:9px;
+      font-weight:800;
+      letter-spacing:.08em;
+      color:#8F6B0F;
+      background:var(--gold-soft);
+      padding:2px 6px;
+      border-radius:100px;
+    }
+
+    /* Empty cell hover */
+    .tt-cell:not(:has(.tt-slot)):hover::after {
+      content:'';
+      position:absolute;
+      inset:8px;
+      border:1px dashed var(--border-strong);
+      border-radius:var(--r-md);
+      opacity:.5;
+    }
+
+    /* Legend */
+    .tt-legend {
+      display:flex;
+      flex-wrap:wrap;
+      gap:var(--sp-4);
+      margin-top:var(--sp-5);
+      padding:var(--sp-4) var(--sp-5);
+      background:var(--surface);
+      border:1px solid var(--border);
+      border-radius:var(--r-lg);
+      box-shadow:var(--shadow-xs);
+    }
+    .tt-legend .legend-label {
+      font-family:'Plus Jakarta Sans',sans-serif;
+      font-size:11.5px;
+      font-weight:700;
+      color:var(--text-dim);
+      text-transform:uppercase;
+      letter-spacing:.06em;
+      align-self:center;
+      margin-right:var(--sp-2);
+    }
+    .legend-item {
+      display:inline-flex;
+      align-items:center;
+      gap:7px;
+      font-size:12.5px;
+      color:var(--text);
+      font-weight:500;
+    }
+    .legend-dot {
+      width:10px; height:10px; border-radius:3px;
+    }
+    .legend-dot.navy    { background:var(--navy); }
+    .legend-dot.gold    { background:var(--gold); }
+    .legend-dot.info    { background:var(--info); }
+    .legend-dot.success { background:var(--success); }
+    .legend-dot.purple  { background:#6941C6; }
+  </style>
+</head>
+<body>
+
+<script src="../shared/js/utils.js"></script>
+<script src="../shared/js/icons.js"></script>
+<script src="../shared/js/shell.js"></script>
+
+<script>
+/* ============================================================
+   AUTH GUARD
+   ============================================================ */
+const TOKEN = localStorage.getItem('apex_token');
+if (!TOKEN) {
+  location.href = '../login.html';
+}
+
+/* ============================================================
+   BOOT: shell + loading, then fetch real data
+   ============================================================ */
+Shell.render({
+  active: 'timetable',
+  role: 'STUDENT',
+  content: '<div class="loading">Loading timetable…</div>',
+});
+
+(async function loadTimetable() {
+  try {
+    const res = await fetch('http://localhost:8080/api/student/timetable', {
+      headers: { 'Authorization': 'Bearer ' + TOKEN },
+    });
+
+    if (res.status === 401 || res.status === 403) {
+      localStorage.removeItem('apex_token');
+      localStorage.removeItem('apex_user');
+      location.href = '../login.html';
+      return;
+    }
+    if (!res.ok) throw new Error('Server returned ' + res.status);
+
+    const data = await res.json();
+    document.getElementById('app-main').innerHTML = renderPage(data);
+
+  } catch (err) {
+    document.getElementById('app-main').innerHTML = `
+      <div class="error-box">
+        <h2>Could not load timetable</h2>
+        <p style="color:var(--text-dim); margin:8px 0 16px;">${Utils.esc(err.message)}</p>
+        <button class="btn btn-primary" onclick="location.reload()">Try again</button>
+      </div>`;
+  }
+})();
+
+/* ============================================================
+   HELPERS
+   ============================================================ */
+function isToday(day) {
+  const idx = new Date().getDay();
+  return ['Sunday','Monday','Tuesday','Wednesday','Thursday','Friday','Saturday'][idx] === day;
+}
+
+function initials(name) {
+  return name.split(' ').filter(Boolean).slice(0, 2).map(w => w[0].toUpperCase()).join('');
+}
+
+/* Assign a stable accent per subject so colors stay consistent across pages */
+const SUBJECT_STYLE = {
+  Mathematics: { accent:'#14213D', bg:'rgba(20,33,61,.07)' },
+  Science:     { accent:'#198754', bg:'rgba(25,135,84,.09)' },
+  Physics:     { accent:'#E9B949', bg:'rgba(233,185,73,.16)' },
+  English:     { accent:'#175CD3', bg:'rgba(23,92,211,.08)' },
+  ICT:         { accent:'#6941C6', bg:'rgba(105,65,198,.08)' },
+  Biology:     { accent:'#0E9384', bg:'rgba(14,147,132,.09)' },
+  Chemistry:   { accent:'#C11574', bg:'rgba(193,21,116,.08)' },
+};
+function styleFor(subject) {
+  return SUBJECT_STYLE[subject] || { accent:'#14213D', bg:'rgba(20,33,61,.07)' };
+}
+
+/* ============================================================
+   RENDER
+   ============================================================ */
+function renderPage(data) {
+  const { student, days, slots, entries } = data;
+
+  // Compute summary numbers
+  const totalHours = entries.reduce((sum, e) => {
+    const [h1,m1] = e.start.split(':').map(Number);
+    const [h2,m2] = e.end.split(':').map(Number);
+    return sum + (h2 + m2/60) - (h1 + m1/60);
+  }, 0);
+  const subjectCount = new Set(entries.map(e => e.subject)).size;
+  const todayName = ['Sunday','Monday','Tuesday','Wednesday','Thursday','Friday','Saturday'][new Date().getDay()];
+  const todayCount = entries.filter(e => e.day === todayName).length;
+
+  return `
+    <header class="page-header">
+      <div>
+        <div class="page-eyebrow">Weekly Schedule</div>
+        <h1 class="page-title">My Timetable</h1>
+        <p class="page-subtitle">
+          ${entries.length} class${entries.length !== 1 ? 'es' : ''} ·
+          ${Math.round(totalHours)} hours ·
+          ${subjectCount} subject${subjectCount !== 1 ? 's' : ''}
+          ${todayCount ? ` · <strong style="color:var(--navy)">${todayCount} today</strong>` : ''}
+        </p>
+      </div>
+      <div class="page-actions">
+        <button class="btn btn-ghost" onclick="window.print()">${Icon.file()} Print</button>
+        <a href="dashboard.html" class="btn btn-primary">${Icon.dashboard()} Dashboard</a>
+      </div>
+    </header>
+
+    ${entries.length === 0
+      ? renderEmpty()
+      : `
+        <div class="tt-scroll">
+          <div class="tt-wrap">
+            ${renderHead(days)}
+            ${renderBody(days, slots, entries)}
+          </div>
+        </div>
+        ${renderLegend(entries)}`
+    }
+  `;
+}
+
+/* ============================================================
+   RENDER — grid
+   ============================================================ */
+function renderHead(days) {
+  const cells = days.map(day => `
+    <div class="${isToday(day) ? 'is-today' : ''}">
+      <div class="day-name">${day.slice(0,3)}</div>
+      <div class="day-date">${day.slice(0,3)}</div>
+    </div>`).join('');
+  return `<div class="tt-head"><div>Time</div>${cells}</div>`;
+}
+
+function renderBody(days, slots, entries) {
+  return slots.map(slot => {
+    const cells = days.map(day => {
+      // Match on day + start; entries are already "HH:MM"
+      const cls = entries.find(e => e.day === day && e.start === slot.start);
+      return `
+        <div class="tt-cell ${isToday(day) ? 'is-today' : ''}">
+          ${cls ? renderSlot(cls) : ''}
+        </div>`;
+    }).join('');
+
+    return `
+      <div class="tt-row">
+        <div class="tt-time">
+          <div class="t-from">${slot.start}</div>
+          <div class="t-to">${slot.end}</div>
+        </div>
+        ${cells}
+      </div>`;
+  }).join('');
+}
+
+function renderSlot(e) {
+  const st = styleFor(e.subject);
+  return `
+    <div class="tt-slot" style="--accent:${st.accent}; --accent-bg:${st.bg};">
+      <div class="s-subject">${Utils.esc(e.subject)}</div>
+      <div class="s-meta">${Icon.user()} ${Utils.esc(e.teacher)}</div>
+      <div class="s-room">${Utils.esc(e.room)}</div>
+    </div>`;
+}
+
+function renderLegend(entries) {
+  const subjects = [...new Set(entries.map(e => e.subject))].sort();
+  return `
+    <div class="tt-legend">
+      <span class="legend-label">Subjects</span>
+      ${subjects.map(s => `
+        <span class="legend-item">
+          <span class="legend-dot" style="background:${styleFor(s).accent}"></span>
+          ${Utils.esc(s)}
+        </span>`).join('')}
+    </div>`;
+}
+
+function renderEmpty() {
+  return `
+    <div class="tt-wrap" style="padding: var(--sp-8); text-align: center;">
+      <div style="font-family:'Plus Jakarta Sans',sans-serif; font-size:16px; font-weight:700; color:var(--navy); margin-bottom:6px;">
+        No classes scheduled
+      </div>
+      <p style="font-size:13px; color:var(--text-dim);">
+        You aren't enrolled in any classes with timetable slots yet.
+      </p>
+    </div>`;
+}
+</script>
+</body>
+</html>

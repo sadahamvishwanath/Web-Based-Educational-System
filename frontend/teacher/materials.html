@@ -1,0 +1,592 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Materials — Apex Institute</title>
+
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Plus+Jakarta+Sans:wght@500;600;700;800&display=swap" rel="stylesheet">
+
+  <link rel="stylesheet" href="../shared/css/tokens.css">
+  <link rel="stylesheet" href="../shared/css/base.css">
+  <link rel="stylesheet" href="../shared/css/layout.css">
+  <link rel="stylesheet" href="../shared/css/components.css">
+
+  <style>
+    /* Toolbar */
+    .mat-toolbar {
+      display: flex; align-items: center; gap: var(--sp-3);
+      margin-bottom: var(--sp-5); flex-wrap: wrap;
+    }
+    .filter-pills { display: flex; gap: 6px; flex-wrap: wrap; }
+    .filter-pill {
+      padding: 7px 14px; border-radius: 100px;
+      border: 1px solid var(--border);
+      background: var(--surface);
+      font-family: 'Plus Jakarta Sans', sans-serif;
+      font-size: 12.5px; font-weight: 600;
+      color: var(--text-dim); cursor: pointer;
+      transition: all var(--dur-fast) var(--ease);
+    }
+    .filter-pill:hover { border-color: var(--border-strong); color: var(--navy); }
+    .filter-pill.active { background: var(--navy); border-color: var(--navy); color: #fff; }
+    .filter-pill .count { opacity: .55; margin-left: 5px; font-weight: 500; }
+    .filter-pill.active .count { opacity: .8; }
+
+    .mat-search {
+      position: relative; margin-left: auto;
+      min-width: 260px; flex: 1; max-width: 340px;
+    }
+    .mat-search input {
+      width: 100%; padding: 9px 12px 9px 38px;
+      border: 1px solid var(--border);
+      background: var(--surface);
+      border-radius: var(--r-md);
+      font-family: inherit; font-size: 13px; outline: none;
+      transition: all var(--dur) var(--ease);
+    }
+    .mat-search input:focus {
+      border-color: var(--navy);
+      box-shadow: 0 0 0 3px rgba(20,33,61,.08);
+    }
+    .mat-search svg {
+      position: absolute; left: 12px; top: 50%; transform: translateY(-50%);
+      width: 16px; height: 16px; color: var(--text-faint); pointer-events: none;
+    }
+
+    /* Grid */
+    .mat-grid {
+      display: grid; grid-template-columns: repeat(3, 1fr); gap: var(--sp-4);
+    }
+    @media (max-width: 1100px) { .mat-grid { grid-template-columns: repeat(2, 1fr); } }
+    @media (max-width: 700px)  { .mat-grid { grid-template-columns: 1fr; } }
+
+    /* Card */
+    .mat-card {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: var(--r-lg);
+      padding: var(--sp-5);
+      display: flex; flex-direction: column; gap: var(--sp-4);
+      transition: all var(--dur) var(--ease);
+      box-shadow: var(--shadow-xs);
+      position: relative;
+    }
+    .mat-card:hover {
+      transform: translateY(-3px);
+      box-shadow: var(--shadow-md);
+      border-color: var(--border-strong);
+    }
+    .mat-top {
+      display: flex; align-items: center; justify-content: space-between;
+    }
+    .mat-type {
+      width: 44px; height: 44px; border-radius: var(--r-md);
+      display: grid; place-items: center; flex-shrink: 0;
+    }
+    .mat-type svg { width: 22px; height: 22px; }
+    .mat-type.pdf   { background: #FEECEC; color: #B42318; }
+    .mat-type.video { background: #EAF1FE; color: #175CD3; }
+
+    .mat-menu {
+      width: 30px; height: 30px; border-radius: var(--r-sm);
+      display: grid; place-items: center;
+      color: var(--text-dim);
+      transition: all var(--dur-fast) var(--ease);
+      cursor: pointer;
+    }
+    .mat-menu:hover { background: var(--bg); color: var(--navy); }
+    .mat-menu svg { width: 16px; height: 16px; }
+
+    .mat-name {
+      font-family: 'Plus Jakarta Sans', sans-serif;
+      font-size: 14px; font-weight: 700;
+      color: var(--navy);
+      line-height: 1.35;
+      word-break: break-word;
+      letter-spacing: -0.01em;
+    }
+    .mat-class {
+      font-size: 12.5px; color: var(--text-dim);
+      margin-top: 4px;
+    }
+
+    .mat-foot {
+      display: flex; align-items: center; justify-content: space-between;
+      gap: var(--sp-3);
+      padding-top: var(--sp-3);
+      border-top: 1px solid var(--border);
+      margin-top: auto;
+      font-size: 11.5px; color: var(--text-dim);
+    }
+    .mat-date { color: var(--text-faint); }
+
+    /* Upload modal */
+    .upload-drop {
+      border: 2px dashed var(--border-strong);
+      border-radius: var(--r-md);
+      padding: var(--sp-6) var(--sp-4);
+      text-align: center;
+      cursor: pointer;
+      transition: all var(--dur) var(--ease);
+      margin-bottom: var(--sp-4);
+    }
+    .upload-drop:hover { border-color: var(--navy); background: var(--surface-alt); }
+    .upload-drop.has-file {
+      border-color: var(--success);
+      background: var(--success-bg);
+      border-style: solid;
+    }
+    .upload-drop-icon {
+      width: 44px; height: 44px;
+      margin: 0 auto var(--sp-3);
+      border-radius: 50%;
+      background: var(--bg);
+      display: grid; place-items: center;
+      color: var(--navy);
+    }
+    .upload-drop-icon svg { width: 20px; height: 20px; }
+    .upload-drop h4 {
+      font-family: 'Plus Jakarta Sans', sans-serif;
+      font-size: 13.5px; font-weight: 700;
+      color: var(--navy); margin-bottom: 4px;
+    }
+    .upload-drop p { font-size: 12px; color: var(--text-dim); }
+
+    .file-chip {
+      display: inline-flex; align-items: center; gap: 8px;
+      padding: 6px 12px;
+      background: var(--surface);
+      border: 1px solid var(--success);
+      border-radius: 100px;
+      font-size: 12.5px;
+      font-weight: 600;
+      color: var(--success);
+      margin-top: var(--sp-3);
+    }
+    .file-chip svg { width: 14px; height: 14px; }
+
+    /* Empty */
+    .mat-empty {
+      grid-column: 1 / -1;
+      padding: var(--sp-8) var(--sp-5);
+      text-align: center;
+      background: var(--surface);
+      border: 1px dashed var(--border-strong);
+      border-radius: var(--r-lg);
+    }
+    .mat-empty-icon {
+      width: 56px; height: 56px; margin: 0 auto var(--sp-4);
+      border-radius: 50%; background: var(--bg);
+      display: grid; place-items: center;
+      color: var(--text-faint);
+    }
+    .mat-empty-icon svg { width: 26px; height: 26px; }
+    .mat-empty h3 { font-size: 16px; color: var(--navy); margin-bottom: 6px; }
+    .mat-empty p  { font-size: 13px; color: var(--text-dim); }
+  </style>
+</head>
+<body>
+
+<script src="../shared/js/utils.js"></script>
+<script src="../shared/js/icons.js"></script>
+<script src="../shared/js/shell.js"></script>
+<script src="../shared/js/modal.js"></script>
+
+<script>
+/* ============================================================
+   AUTH + BOOT
+   ============================================================ */
+const TOKEN = localStorage.getItem('apex_token');
+if (!TOKEN) location.href = '../login.html';
+const API_BASE = 'http://localhost:8080';
+
+let DATA = null;
+let CLASSES = [];
+let activeClass = 'all';
+let query = '';
+
+/* ---------- file icons ---------- */
+const FileIcon = {
+  note: () => `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="9" y1="13" x2="15" y2="13"/><line x1="9" y1="17" x2="15" y2="17"/></svg>`,
+  video: () => `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><polygon points="23 7 16 12 23 17 23 7"/><rect x="1" y="5" width="15" height="14" rx="2" ry="2"/></svg>`,
+  menu: () => `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="1"/><circle cx="12" cy="5" r="1"/><circle cx="12" cy="19" r="1"/></svg>`,
+  upload: () => `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/></svg>`,
+};
+
+Shell.render({
+  active: 'materials',
+  role: 'TEACHER',
+  content: '<div class="loading">Loading materials…</div>',
+});
+
+(async function boot() {
+  try {
+    const [matRes, clsRes] = await Promise.all([
+      fetch(API_BASE + '/api/teacher/materials', { headers: { 'Authorization': 'Bearer ' + TOKEN } }),
+      fetch(API_BASE + '/api/teacher/classes',   { headers: { 'Authorization': 'Bearer ' + TOKEN } }),
+    ]);
+
+    if (matRes.status === 401 || matRes.status === 403) {
+      localStorage.removeItem('apex_token');
+      localStorage.removeItem('apex_user');
+      location.href = '../login.html';
+      return;
+    }
+
+    DATA = await matRes.json();
+    const classData = await clsRes.json();
+    CLASSES = classData.classes || [];
+
+    rerender();
+  } catch (err) {
+    document.getElementById('app-main').innerHTML = `
+      <div class="error-box">
+        <h2>Could not load materials</h2>
+        <p style="color:var(--text-dim); margin:8px 0 16px;">${Utils.esc(err.message)}</p>
+        <button class="btn btn-primary" onclick="location.reload()">Try again</button>
+      </div>`;
+  }
+})();
+
+/* ============================================================
+   HELPERS
+   ============================================================ */
+function classList() {
+  return [...new Set(DATA.materials.map(m => m.className))].sort();
+}
+
+function filtered() {
+  return DATA.materials.filter(m => {
+    if (activeClass !== 'all' && m.className !== activeClass) return false;
+    if (query && !m.name.toLowerCase().includes(query.toLowerCase())) return false;
+    return true;
+  });
+}
+
+/* ============================================================
+   RENDER
+   ============================================================ */
+function rerender() {
+  document.getElementById('app-main').innerHTML = renderPage();
+  wireAll();
+}
+
+function renderPage() {
+  const s = DATA.stats;
+  return `
+    <header class="page-header">
+      <div>
+        <div class="page-eyebrow">Teaching</div>
+        <h1 class="page-title">Learning Materials</h1>
+        <p class="page-subtitle">
+          ${s.totalFiles} file${s.totalFiles !== 1 ? 's' : ''} ·
+          ${s.notes} note${s.notes !== 1 ? 's' : ''} ·
+          ${s.videos} video${s.videos !== 1 ? 's' : ''}
+        </p>
+      </div>
+      <div class="page-actions">
+        <button class="btn btn-primary" id="upload-btn">
+          ${FileIcon.upload()} Upload Material
+        </button>
+      </div>
+    </header>
+
+    <div id="toolbar-host">${renderToolbar()}</div>
+    <div class="mat-grid" id="grid-host">${renderGrid()}</div>
+  `;
+}
+
+function renderToolbar() {
+  const classes = classList();
+  const counts = { all: DATA.materials.length };
+  classes.forEach(c => counts[c] = DATA.materials.filter(m => m.className === c).length);
+
+  const pill = (key, label, count) => `
+    <button class="filter-pill ${activeClass === key ? 'active' : ''}" data-class="${Utils.esc(key)}">
+      ${Utils.esc(label)}<span class="count">${count}</span>
+    </button>`;
+
+  return `
+    <div class="mat-toolbar">
+      <div class="filter-pills">
+        ${pill('all', 'All', counts.all)}
+        ${classes.map(c => pill(c, c, counts[c])).join('')}
+      </div>
+      <div class="mat-search">
+        ${Icon.search()}
+        <input type="text" id="search-input" placeholder="Search by file name…" value="${Utils.esc(query)}">
+      </div>
+    </div>`;
+}
+
+function renderGrid() {
+  const rows = filtered();
+  if (rows.length === 0) {
+    return `
+      <div class="mat-empty">
+        <div class="mat-empty-icon">${Icon.file()}</div>
+        <h3>No materials found</h3>
+        <p>Try a different filter or upload a new file.</p>
+      </div>`;
+  }
+  return rows.map(renderCard).join('');
+}
+
+function renderCard(m) {
+  return `
+    <div class="mat-card" data-id="${m.id}">
+      <div class="mat-top">
+        <div class="mat-type ${m.type === 'note' ? 'pdf' : 'video'}">
+          ${FileIcon[m.type]()}
+        </div>
+        <button class="mat-menu" data-menu="${m.id}">${FileIcon.menu()}</button>
+      </div>
+      <div>
+        <div class="mat-name">${Utils.esc(m.name)}</div>
+        <div class="mat-class">${Utils.esc(m.className)}</div>
+      </div>
+      <div class="mat-foot">
+        <span>${Utils.esc(m.type === 'note' ? 'PDF' : 'Video')}</span>
+        <span class="mat-date">${Utils.esc(m.uploaded)}</span>
+      </div>
+    </div>`;
+}
+
+/* ============================================================
+   UPLOAD MODAL
+   ============================================================ */
+function openUploadModal() {
+  if (CLASSES.length === 0) {
+    showToast('You have no classes to upload to');
+    return;
+  }
+
+  const classOpts = CLASSES.map(c => `
+    <option value="${c.id}">${Utils.esc(c.name)}</option>`).join('');
+
+  const body = `
+    <div class="form-field">
+      <label>Class</label>
+      <select id="up-class">${classOpts}</select>
+    </div>
+
+    <div class="form-field">
+      <label>File Type</label>
+      <select id="up-type">
+        <option value="note">Note (PDF)</option>
+        <option value="video">Video (MP4 / MOV)</option>
+      </select>
+    </div>
+
+    <div class="form-field">
+      <label>File</label>
+      <div class="upload-drop" id="up-drop">
+        <div class="upload-drop-icon">${FileIcon.upload()}</div>
+        <h4 id="up-drop-title">Choose a file</h4>
+        <p id="up-drop-sub">PDF — click to browse</p>
+        <div id="up-file-slot"></div>
+      </div>
+      <input type="file" id="up-file" style="display:none;" accept=".pdf">
+    </div>
+
+    <div class="form-actions" style="margin-top: var(--sp-5);">
+      <button class="btn btn-ghost" data-cancel>Cancel</button>
+      <button class="btn btn-primary" id="up-submit" disabled style="opacity:.5;">
+        Upload
+      </button>
+    </div>
+  `;
+
+  const m = Modal.open({ title: 'Upload Material', body, size: 'sm' });
+
+  const drop = m.el.querySelector('#up-drop');
+  const file = m.el.querySelector('#up-file');
+  const slot = m.el.querySelector('#up-file-slot');
+  const sub  = m.el.querySelector('#up-submit');
+  const title = m.el.querySelector('#up-drop-title');
+  const subt  = m.el.querySelector('#up-drop-sub');
+  const typeSel = m.el.querySelector('#up-type');
+
+  let selectedFile = null;
+  let fileType = 'note';
+
+  drop.onclick = () => file.click();
+
+  typeSel.onchange = () => {
+    fileType = typeSel.value;
+    if (fileType === 'video') {
+      file.accept = '.mp4,.mov';
+      subt.textContent = 'MP4 or MOV — click to browse';
+    } else {
+      file.accept = '.pdf';
+      subt.textContent = 'PDF — click to browse';
+    }
+    // Reset selection
+    selectedFile = null;
+    slot.innerHTML = '';
+    title.textContent = 'Choose a file';
+    sub.disabled = true;
+    sub.style.opacity = '0.5';
+  };
+
+  file.onchange = () => {
+    if (!file.files[0]) return;
+    selectedFile = file.files[0];
+    drop.classList.add('has-file');
+    title.textContent = 'File selected';
+    subt.textContent = 'Click to change';
+    slot.innerHTML = `<div class="file-chip">${FileIcon.note()} ${Utils.esc(selectedFile.name)}</div>`;
+    sub.disabled = false;
+    sub.style.opacity = '1';
+  };
+
+  m.el.querySelector('[data-cancel]').onclick = () => m.close();
+
+  sub.onclick = async () => {
+    if (!selectedFile) return;
+
+    sub.disabled = true;
+    sub.textContent = 'Uploading…';
+
+    const fd = new FormData();
+    fd.append('classId', m.el.querySelector('#up-class').value);
+    fd.append('fileType', fileType);
+    fd.append('file', selectedFile);
+
+    try {
+      const res = await fetch(API_BASE + '/api/teacher/materials', {
+        method: 'POST',
+        headers: { 'Authorization': 'Bearer ' + TOKEN },   // NO Content-Type — browser sets boundary
+        body: fd,
+      });
+      const data = await res.json().catch(() => ({}));
+
+      if (!res.ok) {
+        showToast(data.message || 'Upload failed');
+        sub.disabled = false;
+        sub.textContent = 'Upload';
+        return;
+      }
+
+      m.close();
+      // Reload the whole page data
+      const matRes = await fetch(API_BASE + '/api/teacher/materials', {
+        headers: { 'Authorization': 'Bearer ' + TOKEN },
+      });
+      DATA = await matRes.json();
+      rerender();
+      showToast('Material uploaded');
+    } catch (err) {
+      showToast('Network error: ' + err.message);
+      sub.disabled = false;
+      sub.textContent = 'Upload';
+    }
+  };
+}
+
+/* ============================================================
+   DELETE MENU
+   ============================================================ */
+function openMaterialMenu(id) {
+  const mat = DATA.materials.find(x => x.id === id);
+  if (!mat) return;
+
+  const body = `
+    <p style="font-size:13.5px; color:var(--text-dim); line-height:1.55; margin-bottom:var(--sp-4);">
+      <strong style="color:var(--navy);">${Utils.esc(mat.name)}</strong><br>
+      ${Utils.esc(mat.className)} · Uploaded ${Utils.esc(mat.uploaded)}
+    </p>
+    <div class="form-actions" style="margin-top:0;">
+      <button class="btn btn-ghost" data-cancel>Cancel</button>
+      <button class="btn" data-delete style="background:var(--danger); border-color:var(--danger); color:#fff;">
+        Delete
+      </button>
+    </div>
+  `;
+
+  const m = Modal.open({ title: 'Material Options', body, size: 'sm' });
+
+  m.el.querySelector('[data-cancel]').onclick = () => m.close();
+
+  m.el.querySelector('[data-delete]').onclick = async () => {
+    try {
+      const res = await fetch(`${API_BASE}/api/teacher/materials/${id}`, {
+        method: 'DELETE',
+        headers: { 'Authorization': 'Bearer ' + TOKEN },
+      });
+      const data = await res.json().catch(() => ({}));
+
+      if (!res.ok) {
+        showToast(data.message || 'Delete failed');
+        return;
+      }
+
+      m.close();
+      const matRes = await fetch(API_BASE + '/api/teacher/materials', {
+        headers: { 'Authorization': 'Bearer ' + TOKEN },
+      });
+      DATA = await matRes.json();
+      rerender();
+      showToast('Material deleted');
+    } catch (err) {
+      showToast('Network error: ' + err.message);
+    }
+  };
+}
+
+/* ============================================================
+   WIRING
+   ============================================================ */
+function wireAll() {
+  const btn = document.getElementById('upload-btn');
+  if (btn) btn.onclick = openUploadModal;
+
+  document.querySelectorAll('.filter-pill').forEach(b => {
+    b.onclick = () => { activeClass = b.dataset.class; rerender(); };
+  });
+
+  const search = document.getElementById('search-input');
+  if (search) {
+    search.oninput = (e) => {
+      query = e.target.value;
+      document.getElementById('grid-host').innerHTML = renderGrid();
+      wireMenus();
+    };
+  }
+
+  wireMenus();
+}
+
+function wireMenus() {
+  document.querySelectorAll('[data-menu]').forEach(btn => {
+    btn.onclick = (e) => {
+      e.stopPropagation();
+      openMaterialMenu(parseInt(btn.dataset.menu, 10));
+    };
+  });
+}
+
+function showToast(message) {
+  let host = document.querySelector('.toast-host');
+  if (!host) {
+    host = document.createElement('div');
+    host.className = 'toast-host';
+    document.body.appendChild(host);
+  }
+  const el = document.createElement('div');
+  el.className = 'toast toast-success';
+  el.textContent = message;
+  host.appendChild(el);
+  void el.offsetWidth;
+  el.classList.add('toast-in');
+  setTimeout(() => {
+    el.classList.remove('toast-in');
+    setTimeout(() => el.remove(), 200);
+  }, 3000);
+}
+</script>
+</body>
+</html>

@@ -1,0 +1,621 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Child Detail — Apex Institute</title>
+
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Plus+Jakarta+Sans:wght@500;600;700;800&display=swap" rel="stylesheet">
+
+  <link rel="stylesheet" href="../shared/css/tokens.css">
+  <link rel="stylesheet" href="../shared/css/base.css">
+  <link rel="stylesheet" href="../shared/css/layout.css">
+  <link rel="stylesheet" href="../shared/css/components.css">
+
+  <style>
+    /* ---------- Child header ---------- */
+    .child-hero {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: var(--r-lg);
+      padding: var(--sp-5);
+      box-shadow: var(--shadow-xs);
+      display: flex;
+      align-items: center;
+      gap: var(--sp-5);
+      margin-bottom: var(--sp-5);
+    }
+    .child-hero .ch-avatar {
+      width: 72px; height: 72px;
+      border-radius: 50%;
+      background: var(--navy);
+      color: #fff;
+      display: grid; place-items: center;
+      font-family: 'Plus Jakarta Sans', sans-serif;
+      font-weight: 800; font-size: 24px;
+      letter-spacing: -0.02em;
+      flex-shrink: 0;
+    }
+    .ch-body { flex: 1; min-width: 0; }
+    .ch-name {
+      font-family: 'Plus Jakarta Sans', sans-serif;
+      font-size: 22px; font-weight: 800;
+      color: var(--navy);
+      letter-spacing: -0.02em;
+      margin-bottom: 5px;
+    }
+    .ch-meta {
+      font-size: 13px; color: var(--text-dim);
+      display: flex; align-items: center; gap: 12px; flex-wrap: wrap;
+    }
+    .ch-meta span {
+      display: inline-flex; align-items: center; gap: 5px;
+    }
+    .ch-meta svg { width: 13px; height: 13px; color: var(--text-faint); }
+    .ch-chip {
+      display: inline-flex; padding: 3px 10px;
+      border-radius: 100px;
+      background: var(--gold-soft);
+      color: #8F6B0F;
+      font-size: 11.5px; font-weight: 700;
+      letter-spacing: 0.02em;
+    }
+
+    .ch-back {
+      margin-left: auto;
+      display: inline-flex; align-items: center; gap: 6px;
+      font-size: 13px; font-weight: 600;
+      color: var(--text-dim);
+      transition: color 160ms;
+    }
+    .ch-back:hover { color: var(--navy); }
+    .ch-back svg { width: 14px; height: 14px; }
+
+    /* ---------- Tabs ---------- */
+    .tabs {
+      display: flex; gap: 4px;
+      border-bottom: 1px solid var(--border);
+      margin-bottom: var(--sp-5);
+    }
+    .tab {
+      padding: 12px 18px;
+      font-family: 'Plus Jakarta Sans', sans-serif;
+      font-size: 13px; font-weight: 700;
+      color: var(--text-dim);
+      border: none;
+      background: transparent;
+      border-bottom: 2px solid transparent;
+      margin-bottom: -1px;
+      cursor: pointer;
+      transition: all var(--dur-fast) var(--ease);
+      display: inline-flex; align-items: center; gap: 7px;
+    }
+    .tab svg { width: 15px; height: 15px; }
+    .tab:hover { color: var(--navy); }
+    .tab.active {
+      color: var(--navy);
+      border-bottom-color: var(--gold);
+    }
+
+    /* ---------- Timetable grid (compact) ---------- */
+    .tt-scroll { overflow-x: auto; padding-bottom: var(--sp-2); }
+    .tt-wrap {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: var(--r-lg);
+      box-shadow: var(--shadow-xs);
+      overflow: hidden;
+      min-width: 720px;
+    }
+    .tt-head {
+      display: grid;
+      grid-template-columns: 80px repeat(6, 1fr);
+      background: var(--surface-alt);
+      border-bottom: 1px solid var(--border);
+    }
+    .tt-head > div {
+      padding: 11px 6px;
+      text-align: center;
+      border-left: 1px solid var(--border);
+      font-family: 'Plus Jakarta Sans', sans-serif;
+      font-size: 12px; font-weight: 700;
+      color: var(--navy);
+    }
+    .tt-head > div:first-child { border-left: none; }
+    .tt-row {
+      display: grid;
+      grid-template-columns: 80px repeat(6, 1fr);
+      border-bottom: 1px solid var(--border);
+    }
+    .tt-row:last-child { border-bottom: none; }
+    .tt-time {
+      padding: 12px;
+      background: var(--surface-alt);
+      border-right: 1px solid var(--border);
+      font-family: 'Plus Jakarta Sans', sans-serif;
+      font-size: 12px; font-weight: 700; color: var(--navy);
+      display: flex; flex-direction: column; justify-content: center;
+    }
+    .tt-time small { font-size: 10px; color: var(--text-dim); font-weight: 500; margin-top: 2px; }
+    .tt-cell {
+      padding: 6px;
+      border-left: 1px solid var(--border);
+      min-height: 74px;
+    }
+    .tt-slot {
+      height: 100%;
+      padding: 8px 10px;
+      border-radius: var(--r-sm);
+      border-left: 3px solid var(--accent, var(--navy));
+      background: var(--accent-bg, rgba(20,33,61,.06));
+      display: flex; flex-direction: column; gap: 3px;
+    }
+    .tt-slot .s-subj {
+      font-family: 'Plus Jakarta Sans', sans-serif;
+      font-size: 12px; font-weight: 700; color: var(--navy);
+      line-height: 1.2;
+    }
+    .tt-slot .s-meta {
+      font-size: 10.5px; color: var(--text-dim);
+    }
+
+    /* ---------- Attendance (compact) ---------- */
+    .att-block {
+      display: grid;
+      grid-template-columns: 260px 1fr;
+      gap: var(--sp-5);
+    }
+    @media (max-width: 800px) { .att-block { grid-template-columns: 1fr; } }
+
+    .att-ring-card {
+      background: var(--navy);
+      border-radius: var(--r-lg);
+      padding: var(--sp-5);
+      color: #fff;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      box-shadow: var(--shadow-md);
+    }
+    .ring-wrap {
+      position: relative;
+      width: 160px; height: 160px;
+      margin: var(--sp-3) 0;
+    }
+    .ring-svg { transform: rotate(-90deg); }
+    .ring-track { fill: none; stroke: rgba(255,255,255,.08); stroke-width: 12; }
+    .ring-fill {
+      fill: none; stroke: var(--gold); stroke-width: 12;
+      stroke-linecap: round;
+      transition: stroke-dashoffset 900ms cubic-bezier(.4,0,.2,1);
+    }
+    .ring-content {
+      position: absolute; inset: 0;
+      display: flex; flex-direction: column;
+      align-items: center; justify-content: center;
+    }
+    .ring-value {
+      font-family: 'Plus Jakarta Sans', sans-serif;
+      font-size: 40px; font-weight: 800;
+      letter-spacing: -0.03em; line-height: 1;
+    }
+    .ring-value small { font-size: 18px; color: rgba(255,255,255,.6); margin-left: 1px; }
+    .ring-caption {
+      font-size: 11px; font-weight: 600;
+      color: var(--gold);
+      letter-spacing: 0.1em; text-transform: uppercase;
+      margin-top: 5px;
+    }
+    .att-ring-foot {
+      display: flex; gap: var(--sp-4);
+      padding-top: var(--sp-4);
+      border-top: 1px solid rgba(255,255,255,.1);
+      width: 100%; justify-content: center;
+      margin-top: auto;
+    }
+    .att-ring-foot .afs { text-align: center; }
+    .att-ring-foot .afs-v {
+      font-family: 'Plus Jakarta Sans', sans-serif;
+      font-size: 18px; font-weight: 800;
+    }
+    .att-ring-foot .afs-l {
+      font-size: 10px; color: rgba(255,255,255,.55);
+      letter-spacing: 0.08em; text-transform: uppercase;
+      margin-top: 4px;
+    }
+
+    /* Per-subject breakdown */
+    .subj-row {
+      padding: var(--sp-4) var(--sp-5);
+      border-bottom: 1px solid var(--border);
+    }
+    .subj-row:last-child { border-bottom: none; }
+    .subj-top {
+      display: flex; align-items: center; justify-content: space-between;
+      margin-bottom: 8px;
+    }
+    .subj-name {
+      font-family: 'Plus Jakarta Sans', sans-serif;
+      font-size: 13.5px; font-weight: 700;
+      color: var(--navy);
+    }
+    .subj-pct {
+      font-family: 'Plus Jakarta Sans', sans-serif;
+      font-size: 15px; font-weight: 800;
+      font-variant-numeric: tabular-nums;
+    }
+    .subj-pct.good { color: var(--success); }
+    .subj-pct.warn { color: var(--warning); }
+    .subj-pct.bad { color: var(--danger); }
+    .subj-bar {
+      height: 6px; background: var(--bg);
+      border-radius: 100px; overflow: hidden;
+    }
+    .subj-bar-fill {
+      height: 100%; border-radius: 100px;
+      transition: width 800ms var(--ease);
+    }
+    .subj-bar-fill.good { background: var(--success); }
+    .subj-bar-fill.warn { background: var(--warning); }
+    .subj-bar-fill.bad  { background: var(--danger); }
+
+    /* ---------- Results table ---------- */
+    .results-table {
+      width: 100%; border-collapse: collapse;
+      background: var(--surface);
+      font-size: 13.5px;
+    }
+    .results-table th {
+      text-align: left;
+      padding: 13px var(--sp-5);
+      background: var(--surface-alt);
+      color: var(--text-dim);
+      font-family: 'Plus Jakarta Sans', sans-serif;
+      font-size: 11px; font-weight: 700;
+      letter-spacing: 0.06em; text-transform: uppercase;
+      border-bottom: 1px solid var(--border);
+    }
+    .results-table th.num { text-align: right; }
+    .results-table th.center { text-align: center; }
+    .results-table td {
+      padding: 15px var(--sp-5);
+      border-bottom: 1px solid var(--border);
+    }
+    .results-table tr:last-child td { border-bottom: none; }
+    .results-table tbody tr:hover td { background: var(--surface-alt); }
+
+    .result-subject {
+      font-family: 'Plus Jakarta Sans', sans-serif;
+      font-size: 13.5px; font-weight: 700;
+      color: var(--navy); margin-bottom: 3px;
+    }
+    .result-meta { font-size: 12px; color: var(--text-dim); }
+
+    .result-marks {
+      text-align: right;
+      font-family: 'Plus Jakarta Sans', sans-serif;
+      font-variant-numeric: tabular-nums;
+    }
+    .result-marks-main {
+      font-size: 15px; font-weight: 800;
+      color: var(--navy); letter-spacing: -0.01em;
+    }
+    .result-marks-total {
+      font-size: 12.5px; color: var(--text-dim);
+      font-weight: 500; margin-left: 2px;
+    }
+
+    .result-grade {
+      text-align: center;
+    }
+    .grade-circle {
+      display: inline-grid; place-items: center;
+      width: 34px; height: 34px; border-radius: 50%;
+      font-family: 'Plus Jakarta Sans', sans-serif;
+      font-size: 13px; font-weight: 800;
+      border: 2px solid transparent;
+    }
+    .grade-circle.grade-A { background: #E7F4EE; color: #198754; border-color: #A6E0C2; }
+    .grade-circle.grade-B { background: #EAF1FE; color: #175CD3; border-color: #B6CEFB; }
+    .grade-circle.grade-C { background: #FEF3E7; color: #B54708; border-color: #F5D2AD; }
+    .grade-circle.grade-S { background: #FBF3DC; color: #8F6B0F; border-color: #EEDDA9; }
+    .grade-circle.grade-F { background: #FEECEC; color: #B42318; border-color: #F3B7B7; }
+  </style>
+</head>
+<body>
+
+<script src="../shared/js/utils.js"></script>
+<script src="../shared/js/icons.js"></script>
+<script src="../shared/js/shell.js"></script>
+
+<script>
+const TOKEN = localStorage.getItem('apex_token');
+if (!TOKEN) location.href = '../login.html';
+const API_BASE = 'http://localhost:8080';
+
+const params = new URLSearchParams(location.search);
+const childId = parseInt(params.get('id') || '1', 10);
+let activeTab = params.get('tab') || 'timetable';
+
+let DATA = null;
+
+Shell.render({
+  active: 'children',
+  role: 'PARENT',
+  content: '<div class="loading">Loading child details…</div>',
+});
+
+(async function boot() {
+  try {
+    const res = await fetch(API_BASE + '/api/parent/child/' + childId, {
+      headers: { 'Authorization': 'Bearer ' + TOKEN },
+    });
+    if (res.status === 401 || res.status === 403) {
+      localStorage.removeItem('apex_token');
+      localStorage.removeItem('apex_user');
+      location.href = '../login.html';
+      return;
+    }
+    if (!res.ok) throw new Error('Server returned ' + res.status);
+    DATA = await res.json();
+    rerender();
+  } catch (err) {
+    document.getElementById('app-main').innerHTML = `
+      <div class="error-box">
+        <h2>Could not load child details</h2>
+        <p style="color:var(--text-dim); margin:8px 0 16px;">${Utils.esc(err.message)}</p>
+        <button class="btn btn-primary" onclick="location.reload()">Try again</button>
+      </div>`;
+  }
+})();
+
+function initials(name) {
+  return name.split(' ').filter(Boolean).slice(0, 2).map(w => w[0].toUpperCase()).join('');
+}
+
+function isToday(day) {
+  const idx = new Date().getDay();
+  return ['Sunday','Monday','Tuesday','Wednesday','Thursday','Friday','Saturday'][idx] === day;
+}
+
+function slotAt(day, start) {
+  return DATA.timetable.find(e => e.day === day && e.start === start);
+}
+
+const SUBJECT_STYLE = {
+  Mathematics: { accent: '#14213D', bg: 'rgba(20,33,61,.07)' },
+  Science:     { accent: '#198754', bg: 'rgba(25,135,84,.09)' },
+  Physics:     { accent: '#E9B949', bg: 'rgba(233,185,73,.16)' },
+  English:     { accent: '#175CD3', bg: 'rgba(23,92,211,.08)' },
+  ICT:         { accent: '#6941C6', bg: 'rgba(105,65,198,.08)' },
+  Biology:     { accent: '#0E9384', bg: 'rgba(14,147,132,.09)' },
+  Chemistry:   { accent: '#C11574', bg: 'rgba(193,21,116,.08)' },
+};
+function styleFor(s) {
+  return SUBJECT_STYLE[s] || { accent: '#14213D', bg: 'rgba(20,33,61,.07)' };
+}
+
+function rerender() {
+  document.getElementById('app-main').innerHTML = renderPage();
+  wireTabs();
+  animateRing();
+}
+
+function renderPage() {
+  const c = DATA.child;
+  return `
+    <header class="page-header">
+      <div>
+        <div class="page-eyebrow">Child Details</div>
+        <h1 class="page-title">${Utils.esc(c.fullName)}</h1>
+        <p class="page-subtitle">Viewing as parent · updates in real time</p>
+      </div>
+    </header>
+
+    <div class="child-hero">
+      <div class="ch-avatar">${initials(c.fullName)}</div>
+      <div class="ch-body">
+        <div class="ch-name">${Utils.esc(c.fullName)}</div>
+        <div class="ch-meta">
+          <span>${Icon.user()} ${Utils.esc(c.studentCode)}</span>
+          <span class="ch-chip">Grade ${Utils.esc(c.grade)}</span>
+          <span>${Icon.book()} ${DATA.timetable.length} sessions</span>
+          <span>${Icon.trend()} ${DATA.attendance.pct}% attendance</span>
+        </div>
+      </div>
+      <a href="children.html" class="ch-back">${Icon.arrowR()} All children</a>
+    </div>
+
+    <div id="tabs-host">${renderTabs()}</div>
+    <div id="tab-content">${renderTab()}</div>
+  `;
+}
+
+function renderTabs() {
+  const tabs = [
+    { key: 'timetable',  label: 'Timetable',  icon: Icon.calendar() },
+    { key: 'attendance', label: 'Attendance', icon: Icon.clipboard() },
+    { key: 'results',    label: 'Results',    icon: Icon.award() },
+  ];
+  return `
+    <div class="tabs">
+      ${tabs.map(t => `
+        <button class="tab${t.key === activeTab ? ' active' : ''}" data-tab="${t.key}">
+          ${t.icon} ${t.label}
+        </button>`).join('')}
+    </div>`;
+}
+
+function renderTab() {
+  if (activeTab === 'attendance') return renderAttendance();
+  if (activeTab === 'results')    return renderResults();
+  return renderTimetable();
+}
+
+function renderTimetable() {
+  const days = DATA.days;
+  const slots = DATA.slots;
+
+  const head = `<div class="tt-head"><div>Time</div>${days.map(d => `<div>${d.slice(0,3)}</div>`).join('')}</div>`;
+
+  const body = slots.map(slot => {
+    const cells = days.map(day => {
+      const e = slotAt(day, slot.start);
+      if (!e) return `<div class="tt-cell"></div>`;
+      const st = styleFor(e.subject);
+      return `
+        <div class="tt-cell">
+          <div class="tt-slot" style="--accent:${st.accent}; --accent-bg:${st.bg};">
+            <div class="s-subj">${Utils.esc(e.subject)}</div>
+            <div class="s-meta">${Utils.esc(e.teacher)}</div>
+            <div class="s-meta">${Utils.esc(e.room)}</div>
+          </div>
+        </div>`;
+    }).join('');
+    return `
+      <div class="tt-row">
+        <div class="tt-time">${slot.start}<small>${slot.end}</small></div>
+        ${cells}
+      </div>`;
+  }).join('');
+
+  return `
+    <div class="tt-scroll">
+      <div class="tt-wrap">
+        ${head}
+        ${body}
+      </div>
+    </div>`;
+}
+
+function renderAttendance() {
+  const a = DATA.attendance;
+  const r = 66;
+  const circ = 2 * Math.PI * r;
+  const offset = circ * (1 - a.pct / 100);
+
+  return `
+    <div class="att-block">
+      <div class="att-ring-card">
+        <div style="font-size:11px; font-weight:700; letter-spacing:.14em; text-transform:uppercase; color:rgba(255,255,255,.55);">
+          Overall
+        </div>
+        <div class="ring-wrap">
+          <svg class="ring-svg" viewBox="0 0 160 160" width="160" height="160">
+            <circle class="ring-track" cx="80" cy="80" r="${r}"/>
+            <circle class="ring-fill" cx="80" cy="80" r="${r}"
+                    stroke-dasharray="${circ}"
+                    stroke-dashoffset="${circ}"
+                    data-target="${offset}"/>
+          </svg>
+          <div class="ring-content">
+            <div class="ring-value">${Math.round(a.pct)}<small>%</small></div>
+            <div class="ring-caption">${a.pct >= 90 ? 'Excellent' : a.pct >= 75 ? 'Good' : 'Needs work'}</div>
+          </div>
+        </div>
+        <div class="att-ring-foot">
+          <div class="afs"><div class="afs-v">${a.present}</div><div class="afs-l">Present</div></div>
+          <div class="afs"><div class="afs-v">${a.absent}</div><div class="afs-l">Absent</div></div>
+          <div class="afs"><div class="afs-v">${a.total}</div><div class="afs-l">Total</div></div>
+        </div>
+      </div>
+
+      <div class="card">
+        <div class="card-header">
+          <div><h2>By Subject</h2><div class="card-sub">${a.bySubject.length} subject${a.bySubject.length !== 1 ? 's' : ''}</div></div>
+        </div>
+        <div>
+          ${a.bySubject.length === 0
+            ? `<div style="padding:var(--sp-6); text-align:center; color:var(--text-dim); font-size:13px;">No attendance yet.</div>`
+            : a.bySubject.map(s => {
+                const tone = s.pct >= 85 ? 'good' : s.pct >= 65 ? 'warn' : 'bad';
+                return `
+                  <div class="subj-row">
+                    <div class="subj-top">
+                      <div class="subj-name">${Utils.esc(s.subject)}</div>
+                      <div class="subj-pct ${tone}">${s.pct}%</div>
+                    </div>
+                    <div class="subj-bar">
+                      <div class="subj-bar-fill ${tone}" style="width:${s.pct}%"></div>
+                    </div>
+                  </div>`;
+              }).join('')}
+        </div>
+      </div>
+    </div>`;
+}
+
+function renderResults() {
+  const list = DATA.exams;
+  if (list.length === 0) {
+    return `
+      <div class="card" style="padding:var(--sp-8); text-align:center;">
+        <div style="font-family:'Plus Jakarta Sans',sans-serif; font-size:16px; font-weight:700; color:var(--navy); margin-bottom:6px;">
+          No results yet
+        </div>
+        <p style="font-size:13px; color:var(--text-dim);">
+          Results will appear here as soon as teachers publish them.
+        </p>
+      </div>`;
+  }
+
+  return `
+    <div class="card">
+      <div class="card-header">
+        <div><h2>Exam Results</h2><div class="card-sub">${list.length} published exam${list.length !== 1 ? 's' : ''}</div></div>
+      </div>
+      <table class="results-table">
+        <thead>
+          <tr>
+            <th>Exam</th>
+            <th class="num">Marks</th>
+            <th class="num">Score</th>
+            <th class="center">Grade</th>
+          </tr>
+        </thead>
+        <tbody>
+          ${list.map(e => `
+            <tr>
+              <td>
+                <div class="result-subject">${Utils.esc(e.subject)}</div>
+                <div class="result-meta">${Utils.esc(e.title)} · ${Utils.esc(e.date)}</div>
+              </td>
+              <td class="result-marks">
+                <span class="result-marks-main">${Number.isInteger(e.marks) ? e.marks : e.marks.toFixed(1)}</span>
+                <span class="result-marks-total">/ ${e.totalMarks}</span>
+              </td>
+              <td class="result-marks">
+                <span class="result-marks-main">${e.percentage}%</span>
+              </td>
+              <td class="result-grade">
+                <span class="grade-circle grade-${e.grade}">${e.grade}</span>
+              </td>
+            </tr>`).join('')}
+        </tbody>
+      </table>
+    </div>`;
+}
+
+function wireTabs() {
+  document.querySelectorAll('.tab').forEach(t => {
+    t.onclick = () => {
+      activeTab = t.dataset.tab;
+      const url = new URL(location.href);
+      url.searchParams.set('id', childId);
+      url.searchParams.set('tab', activeTab);
+      history.replaceState({}, '', url);
+      rerender();
+    };
+  });
+}
+
+function animateRing() {
+  const ring = document.querySelector('.ring-fill');
+  if (!ring) return;
+  setTimeout(() => { ring.style.strokeDashoffset = ring.dataset.target; }, 60);
+}
+</script>
+</body>
+</html>

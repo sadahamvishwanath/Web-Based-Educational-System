@@ -1,0 +1,285 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Rooms — Apex Institute</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Plus+Jakarta+Sans:wght@500;600;700;800&display=swap" rel="stylesheet">
+
+  <link rel="stylesheet" href="../shared/css/tokens.css">
+  <link rel="stylesheet" href="../shared/css/base.css">
+  <link rel="stylesheet" href="../shared/css/layout.css">
+  <link rel="stylesheet" href="../shared/css/components.css">
+
+  <style>
+    .room-grid {
+      display: grid; grid-template-columns: repeat(4, 1fr); gap: var(--sp-4);
+    }
+    @media (max-width: 1100px) { .room-grid { grid-template-columns: repeat(3, 1fr); } }
+    @media (max-width: 800px) { .room-grid { grid-template-columns: repeat(2, 1fr); } }
+
+    .room-card {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: var(--r-lg);
+      padding: var(--sp-5);
+      box-shadow: var(--shadow-xs);
+      position: relative;
+      transition: all var(--dur) var(--ease);
+      text-align: center;
+    }
+    .room-card:hover { box-shadow: var(--shadow-md); border-color: var(--border-strong); }
+    .room-icon {
+      width: 56px; height: 56px; border-radius: var(--r-md);
+      margin: 0 auto var(--sp-3);
+      display: grid; place-items: center;
+      color: #fff;
+      font-family: 'Plus Jakarta Sans', sans-serif;
+      font-weight: 800; font-size: 18px;
+      letter-spacing: -0.02em;
+    }
+    .room-name {
+      font-family: 'Plus Jakarta Sans', sans-serif;
+      font-size: 17px; font-weight: 800;
+      color: var(--navy); letter-spacing: -0.02em;
+      margin-bottom: 4px;
+    }
+    .room-meta { font-size: 12px; color: var(--text-dim); }
+
+    .room-delete {
+      position: absolute; top: 8px; right: 8px;
+      width: 26px; height: 26px; border-radius: var(--r-sm);
+      color: var(--text-faint);
+      display: grid; place-items: center;
+      cursor: pointer; background: transparent; border: none;
+      transition: all var(--dur-fast) var(--ease);
+    }
+    .room-delete:hover { background: var(--danger-bg); color: var(--danger); }
+    .room-delete svg { width: 13px; height: 13px; }
+
+    .room-add-card {
+      background: var(--surface);
+      border: 2px dashed var(--border-strong);
+      border-radius: var(--r-lg);
+      padding: var(--sp-5);
+      display: flex; flex-direction: column;
+      align-items: center; justify-content: center;
+      gap: var(--sp-3);
+      min-height: 172px;
+      cursor: pointer;
+      transition: all var(--dur) var(--ease);
+      color: var(--text-dim);
+    }
+    .room-add-card:hover {
+      border-color: var(--navy); color: var(--navy); background: var(--surface-alt);
+    }
+    .room-add-card svg { width: 32px; height: 32px; }
+    .room-add-card span {
+      font-family: 'Plus Jakarta Sans', sans-serif;
+      font-size: 13px; font-weight: 700;
+    }
+  </style>
+</head>
+<body>
+
+<script src="../shared/js/utils.js"></script>
+<script src="../shared/js/icons.js"></script>
+<script src="../shared/js/shell.js"></script>
+<script src="../shared/js/modal.js"></script>
+
+<script>
+const TOKEN = localStorage.getItem('apex_token');
+if (!TOKEN) location.href = '../login.html';
+const API_BASE = 'http://localhost:8080';
+
+let DATA = null;
+
+Shell.render({
+  active: 'rooms',
+  role: 'ADMIN',
+  content: '<div class="loading">Loading rooms…</div>',
+});
+
+(async function boot() {
+  try {
+    const res = await fetch(API_BASE + '/api/admin/rooms', {
+      headers: { 'Authorization': 'Bearer ' + TOKEN },
+    });
+    if (res.status === 401 || res.status === 403) {
+      localStorage.removeItem('apex_token');
+      localStorage.removeItem('apex_user');
+      location.href = '../login.html';
+      return;
+    }
+    if (!res.ok) throw new Error('Server returned ' + res.status);
+    DATA = await res.json();
+    rerender();
+  } catch (err) {
+    document.getElementById('app-main').innerHTML = `
+      <div class="error-box">
+        <h2>Could not load rooms</h2>
+        <p style="color:var(--text-dim); margin:8px 0 16px;">${Utils.esc(err.message)}</p>
+        <button class="btn btn-primary" onclick="location.reload()">Try again</button>
+      </div>`;
+  }
+})();
+
+function colorFor(name) {
+  if (name.startsWith('A')) return '#14213D';
+  if (name.startsWith('B')) return '#175CD3';
+  if (name.startsWith('C')) return '#6941C6';
+  return '#0E9384';
+}
+
+function rerender() {
+  document.getElementById('app-main').innerHTML = renderPage();
+  wireAll();
+}
+
+function renderPage() {
+  return `
+    <header class="page-header">
+      <div>
+        <div class="page-eyebrow">Academics</div>
+        <h1 class="page-title">Rooms</h1>
+        <p class="page-subtitle">
+          ${DATA.total} room${DATA.total !== 1 ? 's' : ''} · ${DATA.inUse} in use
+        </p>
+      </div>
+      <div class="page-actions">
+        <button class="btn btn-primary" id="header-add">${Icon.pin()} New Room</button>
+      </div>
+    </header>
+
+    <div class="room-grid" id="grid-host">${renderGrid()}</div>
+  `;
+}
+
+function renderGrid() {
+  return DATA.rooms.map(renderCard).join('') + renderAddCard();
+}
+
+function renderCard(r) {
+  return `
+    <div class="room-card" data-rid="${r.id}">
+      <button class="room-delete" data-delete="${r.id}" title="Delete">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+          <line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/>
+        </svg>
+      </button>
+      <div class="room-icon" style="background:${colorFor(r.name)};">${Utils.esc(r.name)}</div>
+      <div class="room-name">Room ${Utils.esc(r.name)}</div>
+      <div class="room-meta">${r.usageCount} weekly slot${r.usageCount !== 1 ? 's' : ''}</div>
+    </div>`;
+}
+
+function renderAddCard() {
+  return `
+    <div class="room-add-card" id="add-card">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+        <line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/>
+      </svg>
+      <span>Add Room</span>
+    </div>`;
+}
+
+function openAddModal() {
+  const body = `
+    <div class="form-field">
+      <label>Room Name</label>
+      <input type="text" id="ar-name" placeholder="e.g. C1" required>
+      <div class="form-help">Short name (1–10 characters). Shown on timetables.</div>
+    </div>
+    <div class="form-actions" style="margin-top: var(--sp-5);">
+      <button class="btn btn-ghost" data-cancel>Cancel</button>
+      <button class="btn btn-primary" id="ar-submit">Add Room</button>
+    </div>
+  `;
+  const m = Modal.open({ title: 'New Room', body, size: 'sm' });
+
+  m.el.querySelector('[data-cancel]').onclick = () => m.close();
+  m.el.querySelector('#ar-submit').onclick = async () => {
+    const name = m.el.querySelector('#ar-name').value.trim();
+    if (!name) return showToast('Please enter a room name');
+    if (name.length > 10) return showToast('Room name must be 10 characters or less');
+
+    try {
+      const res = await fetch(API_BASE + '/api/admin/rooms', {
+        method: 'POST',
+        headers: { 'Authorization': 'Bearer ' + TOKEN, 'Content-Type': 'application/json' },
+        body: JSON.stringify({ name }),
+      });
+      const data = await res.json().catch(() => ({}));
+      if (!res.ok) { showToast(data.message || 'Create failed'); return; }
+      m.close();
+      await reload();
+      showToast(`Room ${name} added`);
+    } catch (err) { showToast('Network error: ' + err.message); }
+  };
+}
+
+function openDeleteModal(id) {
+  const r = DATA.rooms.find(x => x.id === id);
+  if (!r) return;
+  const body = `
+    <p style="font-size:13.5px; color:var(--text-dim); line-height:1.55; margin-bottom:var(--sp-4);">
+      Delete <strong style="color:var(--navy);">Room ${Utils.esc(r.name)}</strong>?
+      ${r.usageCount > 0
+        ? `<br><span style="color:var(--warning);">Warning: used in ${r.usageCount} timetable slot${r.usageCount > 1 ? 's' : ''}.</span>`
+        : ''}
+    </p>
+    <div class="form-actions" style="margin-top:0;">
+      <button class="btn btn-ghost" data-cancel>Cancel</button>
+      <button class="btn" data-confirm style="background:var(--danger); border-color:var(--danger); color:#fff;">Delete</button>
+    </div>`;
+  const m = Modal.open({ title: 'Delete Room', body, size: 'sm' });
+
+  m.el.querySelector('[data-cancel]').onclick = () => m.close();
+  m.el.querySelector('[data-confirm]').onclick = async () => {
+    try {
+      const res = await fetch(`${API_BASE}/api/admin/rooms/${id}`, {
+        method: 'DELETE',
+        headers: { 'Authorization': 'Bearer ' + TOKEN },
+      });
+      const data = await res.json().catch(() => ({}));
+      if (!res.ok) { showToast(data.message || 'Delete failed'); return; }
+      m.close();
+      await reload();
+      showToast(`Room ${r.name} deleted`);
+    } catch (err) { showToast('Network error: ' + err.message); }
+  };
+}
+
+async function reload() {
+  const res = await fetch(API_BASE + '/api/admin/rooms', {
+    headers: { 'Authorization': 'Bearer ' + TOKEN },
+  });
+  if (res.ok) {
+    DATA = await res.json();
+    rerender();
+  }
+}
+
+function wireAll() {
+  document.getElementById('header-add').onclick = openAddModal;
+  document.getElementById('add-card')?.addEventListener('click', openAddModal);
+  document.querySelectorAll('[data-delete]').forEach(b => {
+    b.onclick = (e) => { e.stopPropagation(); openDeleteModal(parseInt(b.dataset.delete, 10)); };
+  });
+}
+
+function showToast(message) {
+  let host = document.querySelector('.toast-host');
+  if (!host) { host = document.createElement('div'); host.className = 'toast-host'; document.body.appendChild(host); }
+  const el = document.createElement('div');
+  el.className = 'toast toast-success';
+  el.textContent = message;
+  host.appendChild(el);
+  void el.offsetWidth; el.classList.add('toast-in');
+  setTimeout(() => { el.classList.remove('toast-in'); setTimeout(() => el.remove(), 200); }, 3000);
+}
+</script>
+</body>
+</html>

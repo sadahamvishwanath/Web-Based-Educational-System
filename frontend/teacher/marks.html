@@ -1,0 +1,636 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Marks Entry — Apex Institute</title>
+
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Plus+Jakarta+Sans:wght@500;600;700;800&display=swap" rel="stylesheet">
+
+  <link rel="stylesheet" href="../shared/css/tokens.css">
+  <link rel="stylesheet" href="../shared/css/base.css">
+  <link rel="stylesheet" href="../shared/css/layout.css">
+  <link rel="stylesheet" href="../shared/css/components.css">
+
+  <style>
+    /* Info banner */
+    .marks-banner {
+      display: flex; align-items: center; gap: var(--sp-4);
+      padding: var(--sp-4) var(--sp-5);
+      background: var(--navy); color: #fff;
+      border-radius: var(--r-lg);
+      margin-bottom: var(--sp-5);
+      box-shadow: var(--shadow-md);
+    }
+    .marks-banner-icon {
+      width: 44px; height: 44px; border-radius: var(--r-md);
+      background: rgba(233,185,73,.16);
+      color: var(--gold);
+      display: grid; place-items: center;
+      flex-shrink: 0;
+    }
+    .marks-banner-icon svg { width: 20px; height: 20px; }
+    .marks-banner-body { flex: 1; min-width: 0; }
+    .marks-banner-title {
+      font-family: 'Plus Jakarta Sans', sans-serif;
+      font-size: 15px; font-weight: 800;
+      letter-spacing: -0.01em;
+      margin-bottom: 3px;
+    }
+    .marks-banner-meta {
+      font-size: 12.5px; color: rgba(255,255,255,.65);
+      display: flex; gap: var(--sp-4); flex-wrap: wrap;
+    }
+    .marks-banner-meta span { display: inline-flex; align-items: center; gap: 5px; }
+    .marks-banner-meta svg { width: 13px; height: 13px; }
+
+    /* Toolbar */
+    .marks-toolbar {
+      display: flex; align-items: center; gap: var(--sp-3);
+      padding: var(--sp-4);
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: var(--r-lg);
+      margin-bottom: var(--sp-5);
+      flex-wrap: wrap;
+    }
+    .marks-field { display: flex; flex-direction: column; gap: 6px; }
+    .marks-field label {
+      font-family: 'Plus Jakarta Sans', sans-serif;
+      font-size: 11px; font-weight: 700;
+      color: var(--navy);
+      text-transform: uppercase;
+      letter-spacing: 0.06em;
+    }
+    .marks-field select {
+      padding: 9px 12px;
+      border: 1px solid var(--border);
+      border-radius: var(--r-md);
+      background: var(--surface);
+      font-family: inherit; font-size: 13.5px;
+      outline: none;
+      min-width: 240px;
+    }
+    .marks-field select:focus {
+      border-color: var(--navy);
+      box-shadow: 0 0 0 3px rgba(20,33,61,.08);
+    }
+
+    /* Marks table */
+    .marks-table-wrap {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: var(--r-lg);
+      overflow: hidden;
+      box-shadow: var(--shadow-xs);
+    }
+    .marks-table {
+      width: 100%; border-collapse: collapse;
+      font-size: 13.5px;
+    }
+    .marks-table th {
+      text-align: left;
+      padding: 13px var(--sp-5);
+      background: var(--surface-alt);
+      color: var(--text-dim);
+      font-family: 'Plus Jakarta Sans', sans-serif;
+      font-size: 11px; font-weight: 700;
+      letter-spacing: 0.06em; text-transform: uppercase;
+      border-bottom: 1px solid var(--border);
+    }
+    .marks-table th.center { text-align: center; }
+    .marks-table td {
+      padding: 14px var(--sp-5);
+      border-bottom: 1px solid var(--border);
+      vertical-align: middle;
+    }
+    .marks-table tr:last-child td { border-bottom: none; }
+    .marks-table tbody tr:hover td { background: var(--surface-alt); }
+
+    .student-cell {
+      display: flex; align-items: center; gap: var(--sp-3);
+    }
+    .stu-avatar {
+      width: 38px; height: 38px;
+      border-radius: 50%;
+      background: var(--navy); color: #fff;
+      display: grid; place-items: center;
+      font-family: 'Plus Jakarta Sans', sans-serif;
+      font-weight: 800; font-size: 13px;
+      flex-shrink: 0;
+    }
+    .stu-body { min-width: 0; }
+    .stu-name {
+      font-family: 'Plus Jakarta Sans', sans-serif;
+      font-size: 13.5px; font-weight: 700;
+      color: var(--navy); margin-bottom: 2px;
+    }
+    .stu-id { font-size: 11.5px; color: var(--text-dim); }
+
+    .marks-input {
+      width: 90px;
+      padding: 8px 10px;
+      border: 1px solid var(--border);
+      border-radius: var(--r-md);
+      font-family: 'Plus Jakarta Sans', sans-serif;
+      font-size: 14px; font-weight: 700;
+      color: var(--navy);
+      text-align: center;
+      outline: none;
+      font-variant-numeric: tabular-nums;
+      transition: all var(--dur-fast) var(--ease);
+    }
+    .marks-input:focus {
+      border-color: var(--navy);
+      box-shadow: 0 0 0 3px rgba(20,33,61,.08);
+    }
+    .marks-input.invalid {
+      border-color: var(--danger);
+      box-shadow: 0 0 0 3px rgba(180,35,24,.08);
+    }
+    .marks-total { font-size: 13px; color: var(--text-dim); font-weight: 500; margin-left: 6px; }
+
+    .pct-cell, .grade-cell { text-align: center; }
+
+    .pct-value {
+      font-family: 'Plus Jakarta Sans', sans-serif;
+      font-size: 14px; font-weight: 700;
+      color: var(--navy);
+      font-variant-numeric: tabular-nums;
+    }
+
+    .grade-badge {
+      display: inline-grid; place-items: center;
+      width: 32px; height: 32px;
+      border-radius: 50%;
+      font-family: 'Plus Jakarta Sans', sans-serif;
+      font-size: 12.5px; font-weight: 800;
+      border: 2px solid transparent;
+    }
+    .grade-badge.grade-A { background: #E7F4EE; color: #198754; border-color: #A6E0C2; }
+    .grade-badge.grade-B { background: #EAF1FE; color: #175CD3; border-color: #B6CEFB; }
+    .grade-badge.grade-C { background: #FEF3E7; color: #B54708; border-color: #F5D2AD; }
+    .grade-badge.grade-S { background: #FBF3DC; color: #8F6B0F; border-color: #EEDDA9; }
+    .grade-badge.grade-F { background: #FEECEC; color: #B42318; border-color: #F3B7B7; }
+    .grade-badge.empty { background: var(--bg); color: var(--text-faint); border-color: var(--border); }
+
+    /* Footer */
+    .marks-footer {
+      display: flex; align-items: center; justify-content: space-between;
+      gap: var(--sp-3);
+      padding: var(--sp-4) var(--sp-5);
+      background: var(--surface-alt);
+      border-top: 1px solid var(--border);
+      flex-wrap: wrap;
+    }
+    .marks-stats {
+      display: flex; gap: var(--sp-5);
+      font-size: 13px; color: var(--text-dim);
+    }
+    .marks-stats strong { color: var(--navy); font-weight: 700; }
+
+    /* Empty */
+    .marks-empty {
+      padding: var(--sp-8) var(--sp-5);
+      text-align: center;
+    }
+    .marks-empty-icon {
+      width: 56px; height: 56px; margin: 0 auto var(--sp-4);
+      border-radius: 50%; background: var(--bg);
+      display: grid; place-items: center;
+      color: var(--text-faint);
+    }
+    .marks-empty-icon svg { width: 26px; height: 26px; }
+    .marks-empty h3 { font-size: 16px; color: var(--navy); margin-bottom: 6px; }
+    .marks-empty p { font-size: 13px; color: var(--text-dim); }
+  </style>
+</head>
+<body>
+
+<script src="../shared/js/utils.js"></script>
+<script src="../shared/js/icons.js"></script>
+<script src="../shared/js/shell.js"></script>
+<script src="../shared/js/modal.js"></script>
+
+<script>
+/* ============================================================
+   AUTH + BOOT
+   ============================================================ */
+const TOKEN = localStorage.getItem('apex_token');
+if (!TOKEN) location.href = '../login.html';
+const API_BASE = 'http://localhost:8080';
+
+let EXAMS = [];
+let rosterData = null;
+let marks = {};             // { studentId: number | null }
+let selectedExamId = null;
+
+Shell.render({
+  active: 'exams',
+  role: 'TEACHER',
+  content: '<div class="loading">Loading exams…</div>',
+});
+
+(async function boot() {
+  try {
+    const res = await fetch(API_BASE + '/api/teacher/exams', {
+      headers: { 'Authorization': 'Bearer ' + TOKEN },
+    });
+    if (res.status === 401 || res.status === 403) {
+      localStorage.removeItem('apex_token');
+      localStorage.removeItem('apex_user');
+      location.href = '../login.html';
+      return;
+    }
+    if (!res.ok) throw new Error('Server returned ' + res.status);
+
+    const data = await res.json();
+    EXAMS = data.exams || [];
+
+    if (EXAMS.length > 0) {
+      selectedExamId = EXAMS[0].id;
+      await loadRoster();
+    } else {
+      renderEmpty();
+    }
+  } catch (err) {
+    document.getElementById('app-main').innerHTML = `
+      <div class="error-box">
+        <h2>Could not load exams</h2>
+        <p style="color:var(--text-dim); margin:8px 0 16px;">${Utils.esc(err.message)}</p>
+        <button class="btn btn-primary" onclick="location.reload()">Try again</button>
+      </div>`;
+  }
+})();
+
+/* ============================================================
+   FETCH ROSTER
+   ============================================================ */
+async function loadRoster() {
+  const res = await fetch(`${API_BASE}/api/teacher/exams/${selectedExamId}/marks`, {
+    headers: { 'Authorization': 'Bearer ' + TOKEN },
+  });
+  const data = await res.json().catch(() => ({}));
+
+  if (!res.ok) {
+    showToast(data.message || 'Failed to load roster');
+    return;
+  }
+
+  rosterData = data;
+  marks = {};
+  data.roster.forEach(s => { marks[s.studentId] = s.marks; });
+
+  rerender();
+}
+
+/* ============================================================
+   RENDER
+   ============================================================ */
+function rerender() {
+  document.getElementById('app-main').innerHTML = renderPage();
+  wireAll();
+}
+
+function renderPage() {
+  return `
+    <header class="page-header">
+      <div>
+        <div class="page-eyebrow">Teaching</div>
+        <h1 class="page-title">Marks Entry</h1>
+        <p class="page-subtitle">Enter marks for each student — grades compute automatically.</p>
+      </div>
+    </header>
+
+    ${renderBanner()}
+    ${renderToolbar()}
+    ${renderTable()}
+  `;
+}
+
+function renderBanner() {
+  if (!rosterData) return '';
+  const e = rosterData;
+  const entered = Object.values(marks).filter(v => v != null).length;
+
+  return `
+    <div class="marks-banner">
+      <div class="marks-banner-icon">${Icon.award()}</div>
+      <div class="marks-banner-body">
+        <div class="marks-banner-title">${Utils.esc(e.title)}</div>
+        <div class="marks-banner-meta">
+          <span>${Icon.book()} ${Utils.esc(e.className)}</span>
+          <span>${Icon.award()} Total: ${e.totalMarks} marks</span>
+          <span>${Icon.user()} ${entered}/${e.roster.length} entered</span>
+        </div>
+      </div>
+    </div>`;
+}
+
+function renderToolbar() {
+  const opts = EXAMS.map(e => `
+    <option value="${e.id}" ${e.id === selectedExamId ? 'selected' : ''}>
+      ${Utils.esc(e.className)} — ${Utils.esc(e.title)}${e.published ? ' ✓' : ''}
+    </option>`).join('');
+
+  return `
+    <div class="marks-toolbar">
+      <div class="marks-field">
+        <label>Exam</label>
+        <select id="exam-select">${opts}</select>
+      </div>
+      <div style="margin-left:auto; display:flex; gap:6px;">
+        <button class="btn btn-ghost" id="clear-btn">Clear All</button>
+        <button class="btn btn-primary" id="save-btn">
+          ${Icon.check()} Save
+        </button>
+        ${rosterData && !rosterData.published
+          ? `<button class="btn btn-gold" id="publish-btn">${Icon.award()} Publish</button>`
+          : rosterData && rosterData.published
+            ? `<span class="badge badge-success" style="padding:8px 14px;">Published</span>`
+            : ''}
+      </div>
+    </div>`;
+}
+
+function renderTable() {
+  if (!rosterData) return '<div class="loading">Loading roster…</div>';
+  const { roster, totalMarks } = rosterData;
+
+  if (roster.length === 0) {
+    return `
+      <div class="marks-table-wrap">
+        <div class="marks-empty">
+          <div class="marks-empty-icon">${Icon.user()}</div>
+          <h3>No students enrolled</h3>
+          <p>This class has no students yet.</p>
+        </div>
+      </div>`;
+  }
+
+  return `
+    <div class="marks-table-wrap">
+      <table class="marks-table">
+        <thead>
+          <tr>
+            <th>Student</th>
+            <th>Marks</th>
+            <th class="center">Percentage</th>
+            <th class="center">Grade</th>
+          </tr>
+        </thead>
+        <tbody>
+          ${roster.map(s => renderRow(s, totalMarks)).join('')}
+        </tbody>
+      </table>
+      ${renderFooter(roster, totalMarks)}
+    </div>`;
+}
+
+function renderRow(s, total) {
+  const raw = marks[s.studentId];
+  const hasMark = raw != null;
+  const pct = hasMark && total > 0 ? (raw / total) * 100 : null;
+  const grade = gradeOf(pct);
+
+  const initials = s.fullName.split(' ')
+    .filter(Boolean).slice(0, 2).map(w => w[0].toUpperCase()).join('');
+
+  return `
+    <tr data-sid="${s.studentId}">
+      <td>
+        <div class="student-cell">
+          <div class="stu-avatar">${initials}</div>
+          <div class="stu-body">
+            <div class="stu-name">${Utils.esc(s.fullName)}</div>
+            <div class="stu-id">${Utils.esc(s.studentCode)}</div>
+          </div>
+        </div>
+      </td>
+      <td>
+        <input type="number" class="marks-input" data-sid="${s.studentId}"
+               value="${hasMark ? raw : ''}"
+               min="0" max="${total}" step="0.01" placeholder="—">
+        <span class="marks-total">/ ${total}</span>
+      </td>
+      <td class="pct-cell">
+        <span class="pct-value" data-pct="${s.studentId}">
+          ${pct != null ? Math.round(pct * 10) / 10 + '%' : '—'}
+        </span>
+      </td>
+      <td class="grade-cell">
+        <span class="grade-badge ${grade ? 'grade-' + grade : 'empty'}" data-grade="${s.studentId}">
+          ${grade || '—'}
+        </span>
+      </td>
+    </tr>`;
+}
+
+function renderFooter(roster, total) {
+  const values = Object.values(marks).filter(v => v != null);
+  const avg = values.length > 0
+    ? Math.round(values.reduce((a, b) => a + b, 0) / values.length * 10) / 10
+    : null;
+  const avgPct = avg != null && total > 0 ? Math.round(avg / total * 100 * 10) / 10 : null;
+
+  return `
+    <div class="marks-footer">
+      <div class="marks-stats">
+        <span><strong>${values.length}</strong> / ${roster.length} entered</span>
+        <span>Average: <strong>${avgPct != null ? avgPct + '%' : '—'}</strong></span>
+      </div>
+      <div style="font-size:12.5px; color:var(--text-dim);">
+        Grades auto-compute · A ≥ 75 · B ≥ 65 · C ≥ 55 · S ≥ 35
+      </div>
+    </div>`;
+}
+
+/* ============================================================
+   HELPERS
+   ============================================================ */
+function gradeOf(pct) {
+  if (pct == null) return null;
+  if (pct >= 75) return 'A';
+  if (pct >= 65) return 'B';
+  if (pct >= 55) return 'C';
+  if (pct >= 35) return 'S';
+  return 'F';
+}
+
+/* ============================================================
+   LIVE UPDATES (keeps focus while typing)
+   ============================================================ */
+function refreshLive() {
+  if (!rosterData) return;
+  const total = rosterData.totalMarks;
+
+  document.querySelectorAll('.marks-input').forEach(inp => {
+    const sid = parseInt(inp.dataset.sid, 10);
+    const raw = inp.value;
+    const hasMark = raw !== '' && raw != null;
+    const num = hasMark ? Number(raw) : null;
+    const pct = num != null && total > 0 ? (num / total) * 100 : null;
+    const grade = gradeOf(pct);
+
+    const pctEl = document.querySelector(`[data-pct="${sid}"]`);
+    const gradeEl = document.querySelector(`[data-grade="${sid}"]`);
+    if (pctEl) pctEl.textContent = pct != null ? Math.round(pct * 10) / 10 + '%' : '—';
+    if (gradeEl) {
+      gradeEl.textContent = grade || '—';
+      gradeEl.className = 'grade-badge ' + (grade ? 'grade-' + grade : 'empty');
+    }
+    inp.classList.toggle('invalid', hasMark && (num < 0 || num > total));
+  });
+
+  // Update the footer
+  const footer = document.querySelector('.marks-footer');
+  if (footer) footer.outerHTML = renderFooter(rosterData.roster, total);
+}
+
+/* ============================================================
+   WIRING
+   ============================================================ */
+function wireAll() {
+  const sel = document.getElementById('exam-select');
+  if (sel) {
+    sel.onchange = async () => {
+      selectedExamId = parseInt(sel.value, 10);
+      await loadRoster();
+    };
+  }
+
+  document.querySelectorAll('.marks-input').forEach(inp => {
+    inp.oninput = () => {
+      const sid = parseInt(inp.dataset.sid, 10);
+      const v = inp.value;
+      marks[sid] = v === '' ? null : Number(v);
+      refreshLive();
+    };
+  });
+
+  const clearBtn = document.getElementById('clear-btn');
+  if (clearBtn) {
+    clearBtn.onclick = () => {
+      Object.keys(marks).forEach(k => { marks[k] = null; });
+      rerender();
+      showToast('All marks cleared');
+    };
+  }
+
+  const saveBtn = document.getElementById('save-btn');
+  if (saveBtn) {
+    saveBtn.onclick = async () => {
+      // Validate ranges before sending
+      const total = rosterData.totalMarks;
+      const invalid = Object.entries(marks).find(([_, v]) => v != null && (v < 0 || v > total));
+      if (invalid) {
+        showToast(`Marks must be between 0 and ${total}`);
+        return;
+      }
+
+      saveBtn.disabled = true;
+      const original = saveBtn.innerHTML;
+      saveBtn.innerHTML = 'Saving…';
+
+      const entries = Object.entries(marks).map(([sid, v]) => ({
+        studentId: parseInt(sid, 10),
+        marks: v,
+      }));
+
+      try {
+        const res = await fetch(`${API_BASE}/api/teacher/exams/${selectedExamId}/marks`, {
+          method: 'POST',
+          headers: {
+            'Authorization': 'Bearer ' + TOKEN,
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify({ entries }),
+        });
+        const data = await res.json().catch(() => ({}));
+
+        if (!res.ok) {
+          showToast(data.message || 'Save failed');
+          saveBtn.disabled = false;
+          saveBtn.innerHTML = original;
+          return;
+        }
+        showToast(`Saved — ${data.changed} record${data.changed === 1 ? '' : 's'} changed`);
+        await loadRoster();
+
+      } catch (err) {
+        showToast('Network error: ' + err.message);
+        saveBtn.disabled = false;
+        saveBtn.innerHTML = original;
+      }
+    };
+  }
+
+  const publishBtn = document.getElementById('publish-btn');
+  if (publishBtn) {
+    publishBtn.onclick = async () => {
+      publishBtn.disabled = true;
+      publishBtn.innerHTML = 'Publishing…';
+      try {
+        const res = await fetch(`${API_BASE}/api/teacher/exams/${selectedExamId}/publish`, {
+          method: 'POST',
+          headers: { 'Authorization': 'Bearer ' + TOKEN },
+        });
+        const data = await res.json().catch(() => ({}));
+        if (!res.ok) {
+          showToast(data.message || 'Publish failed');
+          publishBtn.disabled = false;
+          publishBtn.innerHTML = 'Publish';
+          return;
+        }
+        showToast('Exam published — students can now see their marks');
+        await loadRoster();
+      } catch (err) {
+        showToast('Network error: ' + err.message);
+        publishBtn.disabled = false;
+      }
+    };
+  }
+}
+
+function renderEmpty() {
+  document.getElementById('app-main').innerHTML = `
+    <header class="page-header">
+      <div>
+        <div class="page-eyebrow">Teaching</div>
+        <h1 class="page-title">Marks Entry</h1>
+      </div>
+    </header>
+    <section class="card" style="padding:var(--sp-8); text-align:center;">
+      <div style="font-family:'Plus Jakarta Sans',sans-serif; font-size:16px; font-weight:700; color:var(--navy); margin-bottom:6px;">
+        No exams yet
+      </div>
+      <p style="font-size:13px; color:var(--text-dim); margin-bottom: 20px;">
+        Create an exam first, then come back to enter marks.
+      </p>
+      <a href="exams.html" class="btn btn-primary">Go to Exams</a>
+    </section>`;
+}
+
+function showToast(message) {
+  let host = document.querySelector('.toast-host');
+  if (!host) {
+    host = document.createElement('div');
+    host.className = 'toast-host';
+    document.body.appendChild(host);
+  }
+  const el = document.createElement('div');
+  el.className = 'toast toast-success';
+  el.textContent = message;
+  host.appendChild(el);
+  void el.offsetWidth;
+  el.classList.add('toast-in');
+  setTimeout(() => {
+    el.classList.remove('toast-in');
+    setTimeout(() => el.remove(), 200);
+  }, 3000);
+}
+</script>
+</body>
+</html>

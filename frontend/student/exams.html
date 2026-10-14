@@ -1,0 +1,914 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Exams & Results — Apex Institute</title>
+
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Plus+Jakarta+Sans:wght@500;600;700;800&display=swap" rel="stylesheet">
+
+  <link rel="stylesheet" href="../shared/css/tokens.css">
+  <link rel="stylesheet" href="../shared/css/base.css">
+  <link rel="stylesheet" href="../shared/css/layout.css">
+  <link rel="stylesheet" href="../shared/css/components.css">
+
+  <style>
+    .exam-summary {
+      display: grid;
+      grid-template-columns: repeat(4, 1fr);
+      gap: var(--sp-4);
+      margin-bottom: var(--sp-5);
+    }
+    @media (max-width: 900px) { .exam-summary { grid-template-columns: repeat(2, 1fr); } }
+
+    .summary-tile {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: var(--r-lg);
+      padding: var(--sp-4) var(--sp-5);
+      box-shadow: var(--shadow-xs);
+      position: relative;
+      overflow: hidden;
+    }
+    .summary-tile .bar-accent {
+      position: absolute;
+      top: 0; left: 0;
+      width: 4px;
+      height: 100%;
+    }
+    .summary-label {
+      font-size: 11px;
+      font-weight: 700;
+      color: var(--text-dim);
+      text-transform: uppercase;
+      letter-spacing: 0.08em;
+      margin-bottom: 6px;
+    }
+    .summary-value {
+      font-family: 'Plus Jakarta Sans', sans-serif;
+      font-size: 24px;
+      font-weight: 800;
+      color: var(--navy);
+      letter-spacing: -0.02em;
+      line-height: 1.1;
+    }
+    .summary-value small {
+      font-size: 13px;
+      font-weight: 600;
+      color: var(--text-dim);
+      margin-left: 3px;
+    }
+    .summary-meta {
+      font-size: 12px;
+      color: var(--text-dim);
+      margin-top: 4px;
+    }
+    .summary-meta.positive { color: var(--success); font-weight: 600; }
+
+    /* Available to Take section */
+    .avail-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+      gap: var(--sp-4);
+    }
+    .avail-card {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: var(--r-lg);
+      padding: var(--sp-5);
+      display: flex;
+      flex-direction: column;
+      gap: var(--sp-3);
+      box-shadow: var(--shadow-xs);
+      transition: box-shadow 200ms var(--ease), transform 200ms var(--ease);
+    }
+    .avail-card:hover {
+      box-shadow: var(--shadow-md);
+      transform: translateY(-2px);
+    }
+    .avail-head {
+      display: flex;
+      justify-content: space-between;
+      align-items: flex-start;
+      gap: 12px;
+    }
+    .avail-subject {
+      font-family: 'Plus Jakarta Sans', sans-serif;
+      font-size: 15px;
+      font-weight: 800;
+      color: var(--navy);
+    }
+    .avail-title {
+      font-size: 12.5px;
+      color: var(--text-dim);
+      margin-top: 2px;
+    }
+    .avail-badge {
+      font-size: 10px;
+      font-weight: 800;
+      letter-spacing: .08em;
+      text-transform: uppercase;
+      background: var(--gold-soft);
+      color: #7A5B10;
+      padding: 4px 8px;
+      border-radius: 100px;
+      white-space: nowrap;
+    }
+    .avail-info {
+      font-size: 12.5px;
+      color: var(--text-dim);
+      display: flex;
+      flex-direction: column;
+      gap: 3px;
+    }
+    .avail-cta {
+      margin-top: 6px;
+      padding: 10px;
+      background: var(--navy);
+      color: #fff;
+      font-family: 'Plus Jakarta Sans', sans-serif;
+      font-size: 13px;
+      font-weight: 700;
+      text-align: center;
+      border-radius: var(--r-md);
+      text-decoration: none;
+      transition: background 160ms var(--ease);
+    }
+    .avail-cta:hover { background: var(--navy-700); }
+
+    .exam-toolbar {
+      display: flex;
+      align-items: center;
+      gap: var(--sp-3);
+      margin-bottom: var(--sp-5);
+      flex-wrap: wrap;
+    }
+    .filter-pills { display: flex; gap: 6px; flex-wrap: wrap; }
+    .filter-pill {
+      padding: 7px 14px;
+      border-radius: 100px;
+      border: 1px solid var(--border);
+      background: var(--surface);
+      font-family: 'Plus Jakarta Sans', sans-serif;
+      font-size: 12.5px;
+      font-weight: 600;
+      color: var(--text-dim);
+      cursor: pointer;
+      transition: all var(--dur-fast) var(--ease);
+    }
+    .filter-pill:hover { border-color: var(--border-strong); color: var(--navy); }
+    .filter-pill.active {
+      background: var(--navy);
+      border-color: var(--navy);
+      color: #fff;
+    }
+    .filter-pill .count {
+      opacity: .55;
+      margin-left: 5px;
+      font-weight: 500;
+    }
+    .filter-pill.active .count { opacity: .75; }
+
+    .results-table-wrap {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: var(--r-lg);
+      overflow: hidden;
+      box-shadow: var(--shadow-xs);
+    }
+
+    .results-table {
+      width: 100%;
+      border-collapse: collapse;
+      font-size: 13.5px;
+    }
+    .results-table th {
+      text-align: left;
+      padding: 14px var(--sp-5);
+      background: var(--surface-alt);
+      color: var(--text-dim);
+      font-family: 'Plus Jakarta Sans', sans-serif;
+      font-size: 11px;
+      font-weight: 700;
+      letter-spacing: 0.06em;
+      text-transform: uppercase;
+      border-bottom: 1px solid var(--border);
+      white-space: nowrap;
+    }
+    .results-table th.num { text-align: right; }
+    .results-table th.center { text-align: center; }
+
+    .results-table td {
+      padding: 16px var(--sp-5);
+      border-bottom: 1px solid var(--border);
+      vertical-align: middle;
+    }
+    .results-table tr:last-child td { border-bottom: none; }
+    .results-table tbody tr {
+      cursor: pointer;
+      transition: background var(--dur-fast) var(--ease);
+    }
+    .results-table tbody tr:hover { background: var(--surface-alt); }
+
+    .sub-cell {
+      display: flex;
+      align-items: center;
+      gap: var(--sp-3);
+    }
+    .sub-icon {
+      width: 38px;
+      height: 38px;
+      border-radius: var(--r-md);
+      display: grid;
+      place-items: center;
+      flex-shrink: 0;
+      background: var(--accent-bg, rgba(20,33,61,.07));
+      color: var(--accent, var(--navy));
+    }
+    .sub-icon svg { width: 18px; height: 18px; }
+    .sub-body { min-width: 0; }
+    .sub-title {
+      font-family: 'Plus Jakarta Sans', sans-serif;
+      font-size: 14px;
+      font-weight: 700;
+      color: var(--navy);
+      letter-spacing: -0.005em;
+      margin-bottom: 2px;
+    }
+    .sub-meta {
+      font-size: 12px;
+      color: var(--text-dim);
+    }
+
+    .marks-cell {
+      text-align: right;
+      font-family: 'Plus Jakarta Sans', sans-serif;
+      font-variant-numeric: tabular-nums;
+      white-space: nowrap;
+    }
+    .marks-main {
+      font-size: 15px;
+      font-weight: 800;
+      color: var(--navy);
+      letter-spacing: -0.01em;
+    }
+    .marks-total {
+      font-size: 13px;
+      font-weight: 500;
+      color: var(--text-dim);
+      margin-left: 2px;
+    }
+
+    .pct-cell {
+      text-align: right;
+      font-family: 'Plus Jakarta Sans', sans-serif;
+      font-size: 14px;
+      font-weight: 700;
+      font-variant-numeric: tabular-nums;
+      color: var(--navy);
+    }
+
+    .bar-cell { width: 160px; }
+    .bar-track {
+      height: 6px;
+      background: var(--bg);
+      border-radius: 100px;
+      overflow: hidden;
+    }
+    .bar-fill {
+      height: 100%;
+      border-radius: 100px;
+      transition: width 600ms var(--ease);
+      background: var(--accent, var(--navy));
+    }
+
+    .grade-cell { text-align: center; }
+    .grade-badge {
+      display: inline-grid;
+      place-items: center;
+      width: 36px;
+      height: 36px;
+      border-radius: 50%;
+      font-family: 'Plus Jakarta Sans', sans-serif;
+      font-size: 14px;
+      font-weight: 800;
+      letter-spacing: -0.01em;
+      border: 2px solid transparent;
+    }
+    .grade-A { background: #E7F4EE; color: #198754; border-color: #A6E0C2; }
+    .grade-B { background: #EAF1FE; color: #175CD3; border-color: #B6CEFB; }
+    .grade-C { background: #FEF3E7; color: #B54708; border-color: #F5D2AD; }
+    .grade-S { background: #FBF3DC; color: #8F6B0F; border-color: #EEDDA9; }
+    .grade-F { background: #FEECEC; color: #B42318; border-color: #F3B7B7; }
+
+    .results-empty {
+      padding: var(--sp-8) var(--sp-5);
+      text-align: center;
+    }
+    .results-empty .empty-icon {
+      width: 56px;
+      height: 56px;
+      margin: 0 auto var(--sp-4);
+      border-radius: 50%;
+      background: var(--bg);
+      display: grid;
+      place-items: center;
+      color: var(--text-faint);
+    }
+    .results-empty .empty-icon svg { width: 26px; height: 26px; }
+    .results-empty h3 { font-size: 16px; color: var(--navy); margin-bottom: 6px; }
+    .results-empty p { font-size: 13px; color: var(--text-dim); }
+
+    /* Exam detail modal */
+    .exam-detail-hero {
+      display: flex;
+      align-items: center;
+      gap: var(--sp-5);
+      padding: var(--sp-5);
+      background: var(--surface-alt);
+      border-radius: var(--r-lg);
+      border: 1px solid var(--border);
+      margin-bottom: var(--sp-5);
+    }
+    .hero-grade {
+      width: 88px;
+      height: 88px;
+      border-radius: 50%;
+      display: grid;
+      place-items: center;
+      font-family: 'Plus Jakarta Sans', sans-serif;
+      font-size: 36px;
+      font-weight: 800;
+      letter-spacing: -0.03em;
+      flex-shrink: 0;
+    }
+    .hero-body { flex: 1; min-width: 0; }
+    .hero-subject {
+      font-family: 'Plus Jakarta Sans', sans-serif;
+      font-size: 20px;
+      font-weight: 800;
+      color: var(--navy);
+      letter-spacing: -0.02em;
+      margin-bottom: 4px;
+    }
+    .hero-meta {
+      font-size: 13px;
+      color: var(--text-dim);
+      display: flex;
+      gap: var(--sp-4);
+      flex-wrap: wrap;
+      margin-top: 6px;
+    }
+    .hero-meta span { display: inline-flex; align-items: center; gap: 5px; }
+    .hero-meta svg { width: 13px; height: 13px; color: var(--text-faint); }
+
+    .detail-stats {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: var(--sp-3);
+      margin-bottom: var(--sp-5);
+    }
+    .detail-stat {
+      padding: var(--sp-4);
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: var(--r-md);
+      text-align: center;
+    }
+    .detail-stat .ds-label {
+      font-size: 11px;
+      font-weight: 700;
+      color: var(--text-dim);
+      text-transform: uppercase;
+      letter-spacing: 0.06em;
+      margin-bottom: 6px;
+    }
+    .detail-stat .ds-value {
+      font-family: 'Plus Jakarta Sans', sans-serif;
+      font-size: 20px;
+      font-weight: 800;
+      color: var(--navy);
+      letter-spacing: -0.02em;
+    }
+
+    .grade-scale {
+      display: grid;
+      grid-template-columns: repeat(5, 1fr);
+      gap: 6px;
+      margin-top: var(--sp-3);
+    }
+    .scale-item {
+      padding: 10px 6px;
+      border-radius: var(--r-md);
+      text-align: center;
+      border: 1px solid var(--border);
+      background: var(--surface);
+    }
+    .scale-item.current {
+      border-color: var(--navy);
+      background: var(--navy);
+      color: #fff;
+    }
+    .scale-item .sc-letter {
+      font-family: 'Plus Jakarta Sans', sans-serif;
+      font-size: 15px;
+      font-weight: 800;
+      margin-bottom: 2px;
+    }
+    .scale-item .sc-range {
+      font-size: 10px;
+      color: var(--text-dim);
+      font-weight: 500;
+    }
+    .scale-item.current .sc-range { color: rgba(255,255,255,.7); }
+
+    /* Question list inside the modal */
+    .q-list {
+      display: flex;
+      flex-direction: column;
+      gap: var(--sp-3);
+    }
+    .q-item {
+      padding: var(--sp-4);
+      background: var(--surface-alt);
+      border: 1px solid var(--border);
+      border-radius: var(--r-md);
+    }
+    .q-item-head {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      margin-bottom: var(--sp-3);
+    }
+    .q-item-num {
+      width: 26px; height: 26px; border-radius: 50%;
+      background: var(--navy); color: #fff;
+      display: grid; place-items: center;
+      font-family: 'Plus Jakarta Sans', sans-serif;
+      font-weight: 800; font-size: 12px;
+      flex-shrink: 0;
+    }
+    .q-item-text {
+      font-size: 13.5px;
+      color: var(--navy);
+      font-weight: 600;
+      line-height: 1.5;
+    }
+    .q-item-opts {
+      display: grid; grid-template-columns: 1fr 1fr; gap: 6px;
+      margin-top: var(--sp-3);
+      font-size: 12.5px;
+    }
+    .q-item-opt {
+      padding: 7px 10px;
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: var(--r-sm);
+      color: var(--text);
+    }
+    .q-item-opt.correct {
+      background: var(--success-bg);
+      border-color: var(--success);
+      color: var(--success);
+      font-weight: 700;
+    }
+    .q-item-opt.correct::after {
+      content: ' ✓';
+      font-weight: 800;
+    }
+  </style>
+</head>
+<body>
+
+<script src="../shared/js/utils.js"></script>
+<script src="../shared/js/icons.js"></script>
+<script src="../shared/js/shell.js"></script>
+<script src="../shared/js/modal.js"></script>
+
+<script>
+const TOKEN = localStorage.getItem('apex_token');
+if (!TOKEN) location.href = '../login.html';
+const API_BASE = 'http://localhost:8080';
+
+Shell.render({
+  active: 'exams',
+  role: 'STUDENT',
+  content: '<div class="loading">Loading exam results…</div>',
+});
+
+let DATA = null;
+let AVAILABLE = [];
+let activeSubject = 'all';
+
+(async function loadExams() {
+  try {
+    const [resultsRes, availableRes] = await Promise.all([
+      fetch(API_BASE + '/api/student/exams', { headers: { 'Authorization': 'Bearer ' + TOKEN } }),
+      fetch(API_BASE + '/api/student/exams/available', { headers: { 'Authorization': 'Bearer ' + TOKEN } }),
+    ]);
+
+    if (resultsRes.status === 401 || resultsRes.status === 403) {
+      localStorage.removeItem('apex_token');
+      localStorage.removeItem('apex_user');
+      location.href = '../login.html';
+      return;
+    }
+    if (!resultsRes.ok) throw new Error('Server returned ' + resultsRes.status);
+
+    DATA = await resultsRes.json();
+
+    if (availableRes.ok) {
+      const avail = await availableRes.json();
+      AVAILABLE = avail.exams || [];
+    } else {
+      AVAILABLE = [];
+    }
+
+    rerender();
+
+  } catch (err) {
+    document.getElementById('app-main').innerHTML = `
+      <div class="error-box">
+        <h2>Could not load exam results</h2>
+        <p style="color:var(--text-dim); margin:8px 0 16px;">${Utils.esc(err.message)}</p>
+        <button class="btn btn-primary" onclick="location.reload()">Try again</button>
+      </div>`;
+  }
+})();
+
+/* ============================================================
+   HELPERS
+   ============================================================ */
+const SUBJECT_STYLE = {
+  Mathematics: { accent: '#14213D', bg: 'rgba(20,33,61,.07)' },
+  Science:     { accent: '#198754', bg: 'rgba(25,135,84,.09)' },
+  Physics:     { accent: '#E9B949', bg: 'rgba(233,185,73,.16)' },
+  English:     { accent: '#175CD3', bg: 'rgba(23,92,211,.08)' },
+  ICT:         { accent: '#6941C6', bg: 'rgba(105,65,198,.08)' },
+  Biology:     { accent: '#0E9384', bg: 'rgba(14,147,132,.09)' },
+  Chemistry:   { accent: '#C11574', bg: 'rgba(193,21,116,.08)' },
+};
+function styleFor(s) {
+  return SUBJECT_STYLE[s] || { accent: '#14213D', bg: 'rgba(20,33,61,.07)' };
+}
+
+function gradeColor(g) {
+  return {
+    A: { bg: '#E7F4EE', fg: '#198754' },
+    B: { bg: '#EAF1FE', fg: '#175CD3' },
+    C: { bg: '#FEF3E7', fg: '#B54708' },
+    S: { bg: '#FBF3DC', fg: '#8F6B0F' },
+    F: { bg: '#FEECEC', fg: '#B42318' },
+  }[g] || { bg: '#E4E7EC', fg: '#667085' };
+}
+
+function filteredExams() {
+  if (activeSubject === 'all') return DATA.exams;
+  return DATA.exams.filter(e => e.subject === activeSubject);
+}
+
+function formatMarks(n) {
+  return Number.isInteger(n) ? String(n) : n.toFixed(1);
+}
+
+/* ============================================================
+   RENDER
+   ============================================================ */
+function rerender() {
+  document.getElementById('app-main').innerHTML = renderPage();
+  wireToolbar();
+  wireTable();
+}
+
+function renderPage() {
+  return `
+    <header class="page-header">
+      <div>
+        <div class="page-eyebrow">Academic Performance</div>
+        <h1 class="page-title">Exams &amp; Results</h1>
+        <p class="page-subtitle">
+          Your marks across ${DATA.subjects.length} subject${DATA.subjects.length !== 1 ? 's' : ''}.
+          Click any row to see the exam paper and grading scale.
+        </p>
+      </div>
+    </header>
+
+    ${renderAvailable()}
+    ${renderSummary()}
+    ${renderToolbar()}
+    ${renderTable()}
+  `;
+}
+
+function renderAvailable() {
+  if (!AVAILABLE || AVAILABLE.length === 0) return '';
+
+  return `
+    <section style="margin-bottom: var(--sp-5);">
+      <div class="summary-label" style="margin-bottom: 10px; font-size: 11px;">
+        Available to Take · ${AVAILABLE.length}
+      </div>
+      <div class="avail-grid">
+        ${AVAILABLE.map(ex => {
+          const s = styleFor(ex.subject);
+          return `
+            <div class="avail-card" style="border-left: 4px solid ${s.accent};">
+              <div class="avail-head">
+                <div>
+                  <div class="avail-subject">${Utils.esc(ex.subject)}</div>
+                  <div class="avail-title">${Utils.esc(ex.title)}</div>
+                </div>
+                <span class="avail-badge">New</span>
+              </div>
+
+              <div class="avail-info">
+                <div>${Utils.esc(ex.className)}</div>
+                <div>${ex.questionCount} question${ex.questionCount !== 1 ? 's' : ''} · ${ex.totalMarks} marks</div>
+                <div>${Utils.esc(ex.teacher)}</div>
+              </div>
+
+              <a class="avail-cta" href="take-exam.html?examId=${ex.id}">Take Exam</a>
+            </div>`;
+        }).join('')}
+      </div>
+    </section>`;
+}
+
+function renderSummary() {
+  const s = DATA.stats;
+  if (s.totalExams === 0) {
+    return `
+      <section class="stat-grid" style="grid-template-columns:repeat(3,1fr);">
+        ${summaryTile({ accent: 'var(--navy)', label: 'Exams Taken', value: '0', meta: 'No published exams yet' })}
+        ${summaryTile({ accent: 'var(--success)', label: 'Average Score', value: '—', meta: 'Awaiting data' })}
+        ${summaryTile({ accent: 'var(--gold)', label: 'Overall Standing', value: '—', meta: 'Awaiting data' })}
+      </section>`;
+  }
+
+  return `
+    <section class="stat-grid">
+      ${summaryTile({
+        accent: 'var(--navy)',
+        label: 'Exams Taken',
+        value: s.totalExams,
+        meta: `Across ${DATA.subjects.length} subject${DATA.subjects.length !== 1 ? 's' : ''}`,
+      })}
+      ${summaryTile({
+        accent: 'var(--success)',
+        label: 'Average Score',
+        value: s.averagePct, suffix: '%',
+        meta: `Grade ${s.averageGrade}`,
+        metaClass: 'positive',
+      })}
+      ${summaryTile({
+        accent: 'var(--gold)',
+        label: 'Best Subject',
+        value: s.bestSubject || '—',
+        small: true,
+        meta: s.bestSubjectPct + '% average',
+        metaClass: 'positive',
+      })}
+      ${summaryTile({
+        accent: 'var(--info)',
+        label: 'Overall Standing',
+        value: s.averageGrade,
+        meta: s.overallStanding,
+      })}
+    </section>`;
+}
+
+function summaryTile({ accent, label, value, suffix = '', meta, metaClass = '', small = false }) {
+  return `
+    <div class="stat-card" style="border-left: 3px solid ${accent}">
+      <div class="stat-body" style="padding-left: 4px">
+        <div class="stat-label">${Utils.esc(label)}</div>
+        <div class="stat-value" style="${small ? 'font-size:17px; margin-top:3px;' : ''}">
+          ${Utils.esc(String(value))}${suffix ? `<small>${suffix}</small>` : ''}
+        </div>
+        <div class="stat-meta ${metaClass === 'positive' ? 'stat-meta-positive' : ''}">${Utils.esc(meta)}</div>
+      </div>
+    </div>`;
+}
+
+function renderToolbar() {
+  const pills = `
+    <button class="filter-pill ${activeSubject === 'all' ? 'active' : ''}" data-subject="all">
+      All Subjects<span class="count">${DATA.exams.length}</span>
+    </button>` +
+    DATA.subjects.map(s => `
+      <button class="filter-pill ${activeSubject === s.subject ? 'active' : ''}" data-subject="${Utils.esc(s.subject)}">
+        ${Utils.esc(s.subject)}<span class="count">${s.count}</span>
+      </button>`).join('');
+
+  return `
+    <div class="exam-toolbar">
+      <div class="filter-pills">${pills}</div>
+    </div>`;
+}
+
+function renderTable() {
+  const rows = filteredExams();
+  if (rows.length === 0) {
+    return `
+      <div class="results-table-wrap">
+        <div class="results-empty">
+          <div class="empty-icon">${Icon.award()}</div>
+          <h3>No results yet</h3>
+          <p>Once your teachers publish marks, they'll appear here.</p>
+        </div>
+      </div>`;
+  }
+
+  return `
+    <div class="results-table-wrap">
+      <table class="results-table">
+        <thead>
+          <tr>
+            <th>Exam</th>
+            <th class="num">Marks</th>
+            <th class="num">Score</th>
+            <th></th>
+            <th class="center">Grade</th>
+          </tr>
+        </thead>
+        <tbody>
+          ${rows.map(renderRow).join('')}
+        </tbody>
+      </table>
+    </div>`;
+}
+
+function renderRow(e) {
+  const s = styleFor(e.subject);
+  return `
+    <tr data-exam-id="${e.id}" data-subject="${Utils.esc(e.subject)}">
+      <td>
+        <div class="sub-cell">
+          <div class="sub-icon" style="background:${s.bg}; color:${s.accent};">
+            ${Icon.book()}
+          </div>
+          <div class="sub-body">
+            <div class="sub-title">${Utils.esc(e.subject)}</div>
+            <div class="sub-meta">${Utils.esc(e.title)} · ${Utils.esc(e.date)}</div>
+          </div>
+        </div>
+      </td>
+      <td class="marks-cell">
+        <span class="marks-main">${formatMarks(e.marks)}</span>
+        <span class="marks-total">/ ${e.totalMarks}</span>
+      </td>
+      <td class="pct-cell">${e.percentage}%</td>
+      <td class="bar-cell">
+        <div class="bar-track">
+          <div class="bar-fill" style="--accent:${s.accent}; width:${e.percentage}%"></div>
+        </div>
+      </td>
+      <td class="grade-cell">
+        <span class="grade-badge grade-${e.grade}">${e.grade}</span>
+      </td>
+    </tr>`;
+}
+
+/* ============================================================
+   DETAIL MODAL — includes the exam paper
+   ============================================================ */
+function openExamDetail(examId, subject) {
+  const e = DATA.exams.find(x => x.id === examId && x.subject === subject);
+  if (!e) return;
+
+  const color = gradeColor(e.grade);
+  const scale = [
+    { l: 'A', r: '75+' },
+    { l: 'B', r: '65–74' },
+    { l: 'C', r: '55–64' },
+    { l: 'S', r: '35–54' },
+    { l: 'F', r: '< 35' },
+  ];
+
+  const body = `
+    <div class="exam-detail-hero">
+      <div class="hero-grade" style="background:${color.bg}; color:${color.fg}; border:3px solid ${color.fg}20;">
+        ${e.grade}
+      </div>
+      <div class="hero-body">
+        <div class="hero-subject">${Utils.esc(e.subject)}</div>
+        <div style="font-size:13.5px; color:var(--text-dim);">${Utils.esc(e.title)}</div>
+        <div class="hero-meta">
+          <span>${Icon.calendar()} ${Utils.esc(e.date)}</span>
+          <span>${Icon.user()} ${Utils.esc(e.teacher)}</span>
+        </div>
+      </div>
+    </div>
+
+    <div class="detail-stats">
+      <div class="detail-stat">
+        <div class="ds-label">Marks</div>
+        <div class="ds-value">${formatMarks(e.marks)} <span style="font-size:13px; color:var(--text-dim); font-weight:600;">/ ${e.totalMarks}</span></div>
+      </div>
+      <div class="detail-stat">
+        <div class="ds-label">Percentage</div>
+        <div class="ds-value">${e.percentage}%</div>
+      </div>
+      <div class="detail-stat">
+        <div class="ds-label">Grade</div>
+        <div class="ds-value" style="color:${color.fg}">${e.grade}</div>
+      </div>
+    </div>
+
+    <div style="margin-top:var(--sp-5);">
+      <div class="summary-label" style="margin-bottom:8px;">Grading Scale</div>
+      <div class="grade-scale">
+        ${scale.map(item => `
+          <div class="scale-item ${item.l === e.grade ? 'current' : ''}">
+            <div class="sc-letter">${item.l}</div>
+            <div class="sc-range">${item.r}</div>
+          </div>`).join('')}
+      </div>
+    </div>
+
+    <div style="margin-top:var(--sp-6);">
+      <div class="summary-label" style="margin-bottom:10px;">Exam Paper</div>
+      <div id="eq-host">
+        <p style="font-size:13px; color:var(--text-dim); text-align:center; padding:var(--sp-4) 0;">
+          Loading questions…
+        </p>
+      </div>
+    </div>
+  `;
+
+  const m = Modal.open({ title: 'Exam Result', body, size: 'md' });
+  loadQuestions(m.el.querySelector('#eq-host'), examId);
+}
+
+async function loadQuestions(host, examId) {
+  try {
+    const res = await fetch(`${API_BASE}/api/student/exams/${examId}/questions`, {
+      headers: { 'Authorization': 'Bearer ' + TOKEN },
+    });
+
+    if (!res.ok) {
+      host.innerHTML = `<p style="font-size:13px; color:var(--text-dim); text-align:center; padding:var(--sp-4) 0;">
+        Could not load exam questions.
+      </p>`;
+      return;
+    }
+
+    const questions = await res.json();
+
+    if (!questions || questions.length === 0) {
+      host.innerHTML = `<p style="font-size:13px; color:var(--text-dim); text-align:center; padding:var(--sp-4) 0;">
+        This exam has no questions.
+      </p>`;
+      return;
+    }
+
+    host.innerHTML = `
+      <div class="q-list">
+        ${questions.map((q, i) => `
+          <div class="q-item">
+            <div class="q-item-head">
+              <div class="q-item-num">${i + 1}</div>
+              <div class="q-item-text">${Utils.esc(q.text)}</div>
+            </div>
+            <div class="q-item-opts">
+              ${['A','B','C','D'].map(L => {
+                const opt = q['option' + L];
+                const isCorrect = L === q.correct;
+                return `<div class="q-item-opt ${isCorrect ? 'correct' : ''}">
+                  <strong>${L}.</strong> ${Utils.esc(opt)}
+                </div>`;
+              }).join('')}
+            </div>
+          </div>`).join('')}
+      </div>`;
+  } catch (err) {
+    host.innerHTML = `<p style="font-size:13px; color:var(--danger); text-align:center; padding:var(--sp-4) 0;">
+      Network error: ${Utils.esc(err.message)}
+    </p>`;
+  }
+}
+
+/* ============================================================
+   WIRING
+   ============================================================ */
+function wireToolbar() {
+  document.querySelectorAll('.filter-pill').forEach(btn => {
+    btn.onclick = () => {
+      activeSubject = btn.dataset.subject;
+      rerender();
+    };
+  });
+}
+
+function wireTable() {
+  document.querySelectorAll('.results-table tbody tr').forEach(tr => {
+    tr.onclick = () => {
+      openExamDetail(parseInt(tr.dataset.examId, 10), tr.dataset.subject);
+    };
+  });
+}
+</script>
+</body>
+</html>

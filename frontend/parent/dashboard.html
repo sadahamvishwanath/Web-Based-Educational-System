@@ -1,0 +1,453 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Dashboard — Apex Institute</title>
+
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Plus+Jakarta+Sans:wght@500;600;700;800&display=swap" rel="stylesheet">
+
+  <link rel="stylesheet" href="../shared/css/tokens.css">
+  <link rel="stylesheet" href="../shared/css/base.css">
+  <link rel="stylesheet" href="../shared/css/layout.css">
+  <link rel="stylesheet" href="../shared/css/components.css">
+
+  <style>
+    /* ---------- Child cards ---------- */
+    .children-row {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: var(--sp-4);
+    }
+    @media (max-width: 900px) { .children-row { grid-template-columns: 1fr; } }
+
+    .child-card {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: var(--r-lg);
+      padding: var(--sp-5);
+      box-shadow: var(--shadow-xs);
+      cursor: pointer;
+      transition: all var(--dur) var(--ease);
+      display: flex;
+      flex-direction: column;
+      gap: var(--sp-4);
+      position: relative;
+    }
+    .child-card:hover {
+      transform: translateY(-2px);
+      box-shadow: var(--shadow-md);
+      border-color: var(--border-strong);
+    }
+
+    .cc-top {
+      display: flex;
+      align-items: center;
+      gap: var(--sp-3);
+    }
+    .cc-avatar {
+      width: 48px; height: 48px;
+      border-radius: 50%;
+      background: var(--navy);
+      color: #fff;
+      display: grid; place-items: center;
+      font-family: 'Plus Jakarta Sans', sans-serif;
+      font-weight: 800; font-size: 15px;
+      letter-spacing: -0.01em;
+      flex-shrink: 0;
+    }
+    .cc-avatar.secondary { background: var(--gold); color: var(--navy); }
+    .cc-name {
+      font-family: 'Plus Jakarta Sans', sans-serif;
+      font-size: 15px; font-weight: 800;
+      color: var(--navy);
+      letter-spacing: -0.015em;
+      margin-bottom: 3px;
+    }
+    .cc-sub {
+      font-size: 12.5px; color: var(--text-dim);
+      display: flex; align-items: center; gap: 8px;
+    }
+    .cc-sub .grade-chip {
+      display: inline-flex; padding: 2px 8px;
+      border-radius: 100px;
+      background: var(--bg);
+      color: var(--navy);
+      font-size: 11px; font-weight: 700;
+      letter-spacing: 0.02em;
+    }
+    .cc-arrow {
+      margin-left: auto;
+      color: var(--text-faint);
+      transition: transform var(--dur-fast) var(--ease), color var(--dur-fast) var(--ease);
+    }
+    .child-card:hover .cc-arrow { color: var(--navy); transform: translateX(3px); }
+
+    /* ---------- Stats row ---------- */
+    .cc-stats {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: var(--sp-3);
+      padding: var(--sp-4) 0;
+      border-top: 1px solid var(--border);
+      border-bottom: 1px solid var(--border);
+    }
+    .cc-stat { text-align: center; }
+    .cc-stat-label {
+      font-size: 10.5px; font-weight: 700;
+      color: var(--text-dim);
+      text-transform: uppercase; letter-spacing: 0.08em;
+      margin-bottom: 4px;
+    }
+    .cc-stat-value {
+      font-family: 'Plus Jakarta Sans', sans-serif;
+      font-size: 20px; font-weight: 800;
+      color: var(--navy);
+      letter-spacing: -0.02em;
+      line-height: 1;
+    }
+    .cc-stat-value small {
+      font-size: 12px; color: var(--text-dim); font-weight: 600;
+      margin-left: 1px;
+    }
+    .cc-stat-value.grade-A { color: var(--success); }
+    .cc-stat-value.grade-B { color: var(--info); }
+    .cc-stat-value.grade-C { color: var(--warning); }
+
+    /* ---------- Actions ---------- */
+    .cc-actions {
+      display: flex; gap: 6px;
+    }
+    .cc-action {
+      flex: 1;
+      padding: 8px 6px;
+      border-radius: var(--r-md);
+      border: 1px solid var(--border);
+      background: var(--surface);
+      color: var(--navy);
+      font-family: 'Plus Jakarta Sans', sans-serif;
+      font-size: 11.5px; font-weight: 700;
+      text-align: center;
+      text-decoration: none;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      gap: 5px;
+      transition: all var(--dur-fast) var(--ease);
+    }
+    .cc-action:hover {
+      border-color: var(--navy);
+      background: var(--surface-alt);
+      color: var(--navy);
+    }
+    .cc-action svg { width: 13px; height: 13px; }
+
+    /* ---------- Outstanding fees ---------- */
+    .fee-row {
+      display: flex; align-items: center; gap: var(--sp-3);
+      padding: var(--sp-4) var(--sp-5);
+      border-bottom: 1px solid var(--border);
+    }
+    .fee-row:last-child { border-bottom: none; }
+    .fee-icon {
+      width: 36px; height: 36px;
+      border-radius: var(--r-md);
+      background: var(--warning-bg);
+      color: var(--warning);
+      display: grid; place-items: center;
+      flex-shrink: 0;
+    }
+    .fee-icon svg { width: 16px; height: 16px; }
+    .fee-body { flex: 1; min-width: 0; }
+    .fee-title {
+      font-family: 'Plus Jakarta Sans', sans-serif;
+      font-size: 13px; font-weight: 700;
+      color: var(--navy); margin-bottom: 2px;
+    }
+    .fee-meta { font-size: 11.5px; color: var(--text-dim); }
+    .fee-amount {
+      font-family: 'Plus Jakarta Sans', sans-serif;
+      font-size: 14px; font-weight: 800;
+      color: var(--navy);
+      font-variant-numeric: tabular-nums;
+    }
+
+    /* ---------- Alerts ---------- */
+    .alert-row {
+      display: flex; gap: var(--sp-3);
+      padding: var(--sp-4) var(--sp-5);
+      border-bottom: 1px solid var(--border);
+    }
+    .alert-row:last-child { border-bottom: none; }
+    .alert-icon {
+      width: 32px; height: 32px;
+      border-radius: var(--r-md);
+      background: var(--gold-soft);
+      color: #8F6B0F;
+      display: grid; place-items: center;
+      flex-shrink: 0;
+    }
+    .alert-icon svg { width: 15px; height: 15px; }
+    .alert-icon.info { background: var(--info-bg); color: var(--info); }
+    .alert-icon.success { background: var(--success-bg); color: var(--success); }
+    .alert-body { flex: 1; min-width: 0; }
+    .alert-title {
+      font-family: 'Plus Jakarta Sans', sans-serif;
+      font-size: 13px; font-weight: 700;
+      color: var(--navy); margin-bottom: 3px;
+    }
+    .alert-text {
+      font-size: 12.5px; color: var(--text-dim);
+      line-height: 1.5;
+      display: -webkit-box;
+      line-clamp: 2;
+      -webkit-line-clamp: 2;
+      -webkit-box-orient: vertical;
+      overflow: hidden;
+    }
+    .alert-time {
+      font-size: 11px; color: var(--text-faint);
+      margin-top: 5px;
+    }
+  </style>
+</head>
+<body>
+
+<script src="../shared/js/utils.js"></script>
+<script src="../shared/js/icons.js"></script>
+<script src="../shared/js/shell.js"></script>
+
+<script>
+const TOKEN = localStorage.getItem('apex_token');
+if (!TOKEN) location.href = '../login.html';
+const API_BASE = 'http://localhost:8080';
+
+Shell.render({
+  active: 'dashboard',
+  role: 'PARENT',
+  content: '<div class="loading">Loading dashboard…</div>',
+});
+
+(async function boot() {
+  try {
+    const res = await fetch(API_BASE + '/api/parent/dashboard', {
+      headers: { 'Authorization': 'Bearer ' + TOKEN },
+    });
+    if (res.status === 401 || res.status === 403) {
+      localStorage.removeItem('apex_token');
+      localStorage.removeItem('apex_user');
+      location.href = '../login.html';
+      return;
+    }
+    if (!res.ok) throw new Error('Server returned ' + res.status);
+    const data = await res.json();
+    document.getElementById('app-main').innerHTML = render(data);
+  } catch (err) {
+    document.getElementById('app-main').innerHTML = `
+      <div class="error-box">
+        <h2>Could not load dashboard</h2>
+        <p style="color:var(--text-dim); margin:8px 0 16px;">${Utils.esc(err.message)}</p>
+        <button class="btn btn-primary" onclick="location.reload()">Try again</button>
+      </div>`;
+  }
+})();
+
+function initials(name) {
+  return name.split(' ').filter(Boolean).slice(0, 2).map(w => w[0].toUpperCase()).join('');
+}
+
+function render(data) {
+  const { parent, stats, children, unpaidInvoices, alerts } = data;
+
+  const now = new Date();
+  const dayName = now.toLocaleDateString('en-GB', { weekday: 'long' });
+  const dateStr = now.toLocaleDateString('en-GB', { day: 'numeric', month: 'long', year: 'numeric' });
+  const hour = now.getHours();
+  const greeting = hour < 12 ? 'Good morning' : hour < 17 ? 'Good afternoon' : 'Good evening';
+  const firstName = parent.fullName.split(' ')[0];
+
+  return `
+    <header class="page-header">
+      <div>
+        <div class="page-eyebrow">${dayName}, ${dateStr}</div>
+        <h1 class="page-title">${greeting}, ${Utils.esc(firstName)}.</h1>
+        <p class="page-subtitle">
+          ${stats.children} children · ${stats.unpaidCount} outstanding invoice${stats.unpaidCount !== 1 ? 's' : ''}
+        </p>
+      </div>
+      <div class="page-actions">
+        <a href="children.html" class="btn btn-ghost">${Icon.user()} My Children</a>
+        <a href="invoices.html" class="btn btn-primary">${Icon.money()} Pay Fees</a>
+      </div>
+    </header>
+
+    <section class="stat-grid">
+      ${statTile('var(--navy)',    'Children',        stats.children, '', 'Linked to your account', '')}
+      ${statTile('var(--success)', 'Avg Attendance',  stats.avgAttendance, '%', 'Across all children', 'stat-meta-positive')}
+      ${statTile('var(--warning)', 'Outstanding',     'Rs. ' + stats.unpaidTotal.toFixed(0), '',
+          stats.unpaidCount + ' invoice' + (stats.unpaidCount !== 1 ? 's' : '') + ' unpaid', '')}
+      ${statTile('var(--gold)',    'New Alerts',      stats.totalAlerts, '', 'Since your last visit', '')}
+    </section>
+
+    <div class="content-grid">
+      <div class="content-col">
+        ${renderChildren(children)}
+      </div>
+      <div class="content-col">
+        ${renderOutstanding(unpaidInvoices)}
+        ${renderAlerts(alerts)}
+      </div>
+    </div>
+  `;
+}
+
+function statTile(accent, label, value, suffix, meta, metaClass) {
+  return `
+    <div class="stat-card" style="border-left: 3px solid ${accent}">
+      <div class="stat-body" style="padding-left: 4px">
+        <div class="stat-label">${Utils.esc(label)}</div>
+        <div class="stat-value">${Utils.esc(String(value))}${suffix ? `<small>${suffix}</small>` : ''}</div>
+        <div class="stat-meta ${metaClass}">${Utils.esc(meta)}</div>
+      </div>
+    </div>`;
+}
+
+function renderChildren(children) {
+  if (children.length === 0) {
+    return `
+      <section class="card">
+        <div class="card-header">
+          <div><h2>Your Children</h2><div class="card-sub">No children linked yet</div></div>
+        </div>
+        <div style="padding:var(--sp-8); text-align:center; color:var(--text-dim); font-size:13px;">
+          Ask an admin to link your account to your child's student ID.
+        </div>
+      </section>`;
+  }
+
+  return `
+    <section class="card">
+      <div class="card-header">
+        <div>
+          <h2>Your Children</h2>
+          <div class="card-sub">Click any card to see full details</div>
+        </div>
+        <a href="children.html" class="card-link">View all ${Icon.arrowR()}</a>
+      </div>
+      <div style="padding: 0 var(--sp-5) var(--sp-5);">
+        <div class="children-row">
+          ${children.map((c, i) => renderChildCard(c, i)).join('')}
+        </div>
+      </div>
+    </section>`;
+}
+
+function renderChildCard(c, index) {
+  return `
+    <div class="child-card" onclick="location.href='child.html?id=${c.id}'">
+      <div class="cc-top">
+        <div class="cc-avatar ${index === 1 ? 'secondary' : ''}">${initials(c.fullName)}</div>
+        <div style="flex:1; min-width:0;">
+          <div class="cc-name">${Utils.esc(c.fullName)}</div>
+          <div class="cc-sub">
+            ${Utils.esc(c.studentCode)}
+            <span class="grade-chip">Grade ${Utils.esc(c.grade)}</span>
+          </div>
+        </div>
+        <div class="cc-arrow">${Icon.arrowR()}</div>
+      </div>
+
+      <div class="cc-stats">
+        <div class="cc-stat">
+          <div class="cc-stat-label">Attendance</div>
+          <div class="cc-stat-value">${c.attendance}<small>%</small></div>
+        </div>
+        <div class="cc-stat">
+          <div class="cc-stat-label">Classes</div>
+          <div class="cc-stat-value">${c.classes}</div>
+        </div>
+        <div class="cc-stat">
+          <div class="cc-stat-label">Latest</div>
+          <div class="cc-stat-value grade-${c.latestGrade}">${c.latestGrade}</div>
+        </div>
+      </div>
+    </div>`;
+}
+
+function renderOutstanding(list) {
+  if (list.length === 0) {
+    return `
+      <section class="card">
+        <div class="card-header"><h2>Outstanding Fees</h2></div>
+        <div style="padding: var(--sp-6) var(--sp-5); text-align:center; color:var(--success); font-size:13px; font-weight:600;">
+          All fees settled. 🎉
+        </div>
+      </section>`;
+  }
+  const total = list.reduce((s, x) => s + x.amount, 0);
+  return `
+    <section class="card">
+      <div class="card-header">
+        <div>
+          <h2>Outstanding Fees</h2>
+          <div class="card-sub">${list.length} invoice${list.length !== 1 ? 's' : ''} pending</div>
+        </div>
+        <a href="invoices.html" class="card-link">All invoices ${Icon.arrowR()}</a>
+      </div>
+      <div>
+        ${list.map(o => `
+          <div style="display:flex; align-items:center; gap:var(--sp-3); padding:var(--sp-4) var(--sp-5); border-bottom:1px solid var(--border);">
+            <div style="width:36px; height:36px; border-radius:var(--r-md); background:var(--warning-bg); color:var(--warning); display:grid; place-items:center; flex-shrink:0;">
+              ${Icon.clock()}
+            </div>
+            <div style="flex:1; min-width:0;">
+              <div style="font-family:'Plus Jakarta Sans',sans-serif; font-size:13px; font-weight:700; color:var(--navy); margin-bottom:2px;">
+                ${Utils.esc(o.invoiceNo)}
+              </div>
+              <div style="font-size:11.5px; color:var(--text-dim);">
+                ${Utils.esc(o.childName)} · Due ${Utils.esc(o.due)}
+              </div>
+            </div>
+            <div style="font-family:'Plus Jakarta Sans',sans-serif; font-size:14px; font-weight:800; color:var(--navy); font-variant-numeric:tabular-nums;">
+              Rs. ${o.amount.toFixed(2)}
+            </div>
+          </div>
+        `).join('')}
+      </div>
+      <div style="padding: 0 var(--sp-5) var(--sp-5);">
+        <a href="invoices.html" class="btn btn-primary" style="width:100%;">
+          ${Icon.money()} Pay Rs. ${total.toFixed(2)}
+        </a>
+      </div>
+    </section>`;
+}
+
+function renderAlerts(list) {
+  return `
+    <section class="card">
+      <div class="card-header">
+        <div>
+          <h2>Recent Alerts</h2>
+          <div class="card-sub">${list.length} update${list.length !== 1 ? 's' : ''}</div>
+        </div>
+      </div>
+      <div>
+        ${list.length === 0
+          ? `<div style="padding:var(--sp-6); text-align:center; color:var(--text-dim); font-size:13px;">No alerts yet.</div>`
+          : list.map(a => `
+              <div class="notif-item">
+                <div class="notif-icon">${Icon.bell()}</div>
+                <div class="notif-body">
+                  <div class="notif-title">${Utils.esc(a.title)}</div>
+                  <div class="notif-text">${Utils.esc(a.text)}</div>
+                  <div class="notif-time">${Utils.esc(a.time)}</div>
+                </div>
+              </div>`).join('')}
+      </div>
+    </section>`;
+}
+</script>
+</body>
+</html>

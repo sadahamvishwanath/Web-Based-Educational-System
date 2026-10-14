@@ -1,0 +1,589 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>My Profile — Apex Institute</title>
+
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Plus+Jakarta+Sans:wght@500;600;700;800&display=swap" rel="stylesheet">
+
+  <link rel="stylesheet" href="../shared/css/tokens.css">
+  <link rel="stylesheet" href="../shared/css/base.css">
+  <link rel="stylesheet" href="../shared/css/layout.css">
+  <link rel="stylesheet" href="../shared/css/components.css">
+
+  <style>
+    .profile-grid {
+      display: grid;
+      grid-template-columns: 320px 1fr;
+      gap: var(--sp-5);
+      align-items: start;
+    }
+    @media (max-width: 900px) { .profile-grid { grid-template-columns: 1fr; } }
+
+    /* Avatar card */
+    .avatar-card {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: var(--r-lg);
+      padding: var(--sp-6);
+      text-align: center;
+      box-shadow: var(--shadow-xs);
+    }
+    .avatar-wrap {
+      position: relative;
+      width: 140px; height: 140px;
+      margin: 0 auto var(--sp-4);
+    }
+    .avatar-img {
+      width: 140px; height: 140px;
+      border-radius: 50%;
+      object-fit: cover;
+      background: var(--bg);
+      border: 3px solid var(--surface);
+      box-shadow: 0 0 0 1px var(--border), 0 4px 12px rgba(16,24,40,.08);
+      display: block;
+    }
+    .avatar-fallback {
+      width: 140px; height: 140px;
+      border-radius: 50%;
+      background: var(--navy);
+      color: #fff;
+      display: grid; place-items: center;
+      font-family: 'Plus Jakarta Sans', sans-serif;
+      font-weight: 800; font-size: 44px;
+      letter-spacing: -0.02em;
+      box-shadow: 0 0 0 1px var(--border), 0 4px 12px rgba(16,24,40,.08);
+      user-select: none;
+    }
+    .avatar-overlay {
+      position: absolute; inset: 0;
+      border-radius: 50%;
+      background: rgba(20,33,61,.55);
+      color: #fff;
+      display: grid; place-items: center;
+      opacity: 0;
+      cursor: pointer;
+      transition: opacity 160ms var(--ease);
+    }
+    .avatar-wrap:hover .avatar-overlay { opacity: 1; }
+    .avatar-overlay svg { width: 28px; height: 28px; }
+
+    .avatar-name {
+      font-family: 'Plus Jakarta Sans', sans-serif;
+      font-size: 17px; font-weight: 800;
+      color: var(--navy);
+      letter-spacing: -0.01em;
+      margin-bottom: 4px;
+    }
+    .avatar-email {
+      font-size: 12.5px; color: var(--text-dim);
+      margin-bottom: 10px;
+      word-break: break-all;
+    }
+    .avatar-role {
+      display: inline-flex; padding: 3px 10px;
+      border-radius: 100px;
+      background: var(--gold-soft); color: #8F6B0F;
+      font-family: 'Plus Jakarta Sans', sans-serif;
+      font-size: 10.5px; font-weight: 700;
+      letter-spacing: 0.08em; text-transform: uppercase;
+    }
+    .avatar-actions {
+      margin-top: var(--sp-5);
+      display: flex; flex-direction: column; gap: 8px;
+    }
+
+    /* Cards */
+    .profile-card {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: var(--r-lg);
+      box-shadow: var(--shadow-xs);
+      overflow: hidden;
+      margin-bottom: var(--sp-5);
+    }
+    .profile-card-head {
+      padding: var(--sp-5) var(--sp-6);
+      border-bottom: 1px solid var(--border);
+      background: var(--surface-alt);
+    }
+    .profile-card-head h2 {
+      font-family: 'Plus Jakarta Sans', sans-serif;
+      font-size: 15px; font-weight: 700;
+      color: var(--navy);
+      letter-spacing: -0.01em;
+      margin: 0 0 4px;
+    }
+    .profile-card-head p {
+      font-size: 12.5px; color: var(--text-dim);
+      margin: 0; line-height: 1.55;
+    }
+    .profile-card-body { padding: var(--sp-6); }
+
+    /* Fields */
+    .form-field { margin-bottom: var(--sp-4); }
+    .form-field:last-child { margin-bottom: 0; }
+    .form-field label {
+      display: block;
+      font-family: 'Plus Jakarta Sans', sans-serif;
+      font-size: 12.5px; font-weight: 600;
+      color: var(--navy);
+      margin-bottom: 7px;
+      letter-spacing: -0.005em;
+    }
+    .form-field input {
+      width: 100%;
+      padding: 11px 14px;
+      border: 1px solid var(--border);
+      border-radius: 10px;
+      font-family: inherit; font-size: 14px;
+      color: var(--text); background: var(--surface);
+      outline: none;
+      transition: all 160ms var(--ease);
+    }
+    .form-field input::placeholder { color: var(--text-faint); }
+    .form-field input:focus {
+      border-color: var(--navy);
+      box-shadow: 0 0 0 3px rgba(20,33,61,.08);
+    }
+    .form-field input:disabled {
+      background: var(--bg);
+      color: var(--text-dim);
+      cursor: not-allowed;
+    }
+    .form-help {
+      font-size: 11.5px; color: var(--text-dim);
+      margin-top: 5px; line-height: 1.5;
+    }
+    .form-row {
+      display: grid; grid-template-columns: 1fr 1fr; gap: 12px;
+    }
+    @media (max-width: 600px) { .form-row { grid-template-columns: 1fr; } }
+
+    .form-actions {
+      display: flex; justify-content: flex-end; gap: 8px;
+      margin-top: var(--sp-5);
+      padding-top: var(--sp-5);
+      border-top: 1px solid var(--border);
+    }
+
+    .btn {
+      padding: 10px 18px;
+      border-radius: 10px;
+      font-family: 'Plus Jakarta Sans', sans-serif;
+      font-size: 13px; font-weight: 700;
+      letter-spacing: -0.005em;
+      cursor: pointer; border: none;
+      transition: all 160ms var(--ease);
+      display: inline-flex; align-items: center; gap: 6px;
+    }
+    .btn-primary { background: var(--navy); color: #fff; }
+    .btn-primary:hover { background: var(--navy-700); box-shadow: 0 6px 16px rgba(20,33,61,.18); }
+    .btn-ghost { background: transparent; color: var(--text-dim); border: 1px solid var(--border); }
+    .btn-ghost:hover { color: var(--navy); border-color: var(--border-strong); background: var(--bg); }
+    .btn-danger { background: transparent; color: var(--danger); border: 1px solid rgba(180,35,24,.3); }
+    .btn-danger:hover { background: var(--danger-bg); border-color: var(--danger); }
+    .btn:disabled { opacity: .6; cursor: not-allowed; }
+    .btn svg { width: 15px; height: 15px; }
+
+    /* Password toggle */
+    .pw-wrap { position: relative; }
+    .pw-wrap input { padding-right: 44px; }
+    .pw-toggle {
+      position: absolute; top: 50%; right: 10px;
+      transform: translateY(-50%);
+      width: 26px; height: 26px;
+      border: none; background: transparent;
+      color: var(--text-faint);
+      cursor: pointer; border-radius: 6px;
+      display: grid; place-items: center;
+    }
+    .pw-toggle:hover { color: var(--navy); background: var(--bg); }
+    .pw-toggle svg { width: 15px; height: 15px; }
+
+    /* Toast */
+    .toast-host {
+      position: fixed; bottom: 24px; right: 24px; z-index: 9999;
+      display: flex; flex-direction: column; gap: 8px;
+    }
+    .toast {
+      padding: 12px 18px;
+      background: var(--navy); color: #fff;
+      border-radius: 10px;
+      font-size: 13px; font-weight: 500;
+      box-shadow: 0 8px 24px rgba(16,24,40,.2);
+      transform: translateY(12px); opacity: 0;
+      transition: all 220ms var(--ease);
+      max-width: 360px;
+    }
+    .toast-in { transform: translateY(0); opacity: 1; }
+    .toast-error { background: var(--danger); }
+  </style>
+</head>
+<body>
+
+<script src="../shared/js/utils.js"></script>
+<script src="../shared/js/icons.js"></script>
+<script src="../shared/js/shell.js"></script>
+
+<script>
+const TOKEN = localStorage.getItem('apex_token');
+if (!TOKEN) location.href = '../login.html';
+const API_BASE = 'http://localhost:8080';
+
+function loadUser() {
+  try { return JSON.parse(localStorage.getItem('apex_user') || '{}'); }
+  catch { return {}; }
+}
+let USER = loadUser();
+
+Shell.render({
+  active: 'profile',
+  content: '<div class="loading">Loading profile…</div>',
+});
+
+/* ============================================================
+   RENDER
+   ============================================================ */
+function renderPage() {
+  const initials = (USER.fullName || '?')
+    .split(' ').filter(Boolean).slice(0, 2)
+    .map(w => w[0].toUpperCase()).join('');
+
+  const avatarHtml = USER.profilePicture
+    ? `<img class="avatar-img" src="${Utils.esc(API_BASE + USER.profilePicture)}" alt="">`
+    : `<div class="avatar-fallback">${initials}</div>`;
+
+  return `
+    <header class="page-header">
+      <div>
+        <div class="page-eyebrow">Account</div>
+        <h1 class="page-title">My Profile</h1>
+        <p class="page-subtitle">Manage your personal information, password, and profile picture.</p>
+      </div>
+    </header>
+
+    <div class="profile-grid">
+
+      <div class="avatar-card">
+        <div class="avatar-wrap" id="avatar-wrap">
+          ${avatarHtml}
+          <div class="avatar-overlay" id="avatar-trigger">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M23 19a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h4l2-3h6l2 3h4a2 2 0 0 1 2 2z"/><circle cx="12" cy="13" r="4"/></svg>
+          </div>
+        </div>
+
+        <div class="avatar-name">${Utils.esc(USER.fullName || '—')}</div>
+        <div class="avatar-email">${Utils.esc(USER.email || '')}</div>
+        <div class="avatar-role">${Utils.esc(USER.role || 'TEACHER')}</div>
+
+        <div class="avatar-actions">
+          <button class="btn btn-primary" id="upload-btn">Upload new picture</button>
+          <button class="btn btn-danger" id="remove-btn" ${USER.profilePicture ? '' : 'disabled'}>Remove picture</button>
+        </div>
+
+        <input type="file" id="avatar-input" accept="image/png,image/jpeg,image/webp" style="display:none;">
+        <div class="form-help" style="margin-top:12px; text-align:center;">
+          JPG, PNG or WebP · max 2 MB
+        </div>
+      </div>
+
+      <div>
+
+        <!-- Personal information -->
+        <div class="profile-card">
+          <div class="profile-card-head">
+            <h2>Personal information</h2>
+            <p>This is how your name appears on classes, exams, and notices.</p>
+          </div>
+          <div class="profile-card-body">
+            <div class="form-row">
+              <div class="form-field">
+                <label for="pf-name">Full name</label>
+                <input type="text" id="pf-name" value="${Utils.esc(USER.fullName || '')}" autocomplete="name">
+              </div>
+              <div class="form-field">
+                <label for="pf-phone">Phone</label>
+                <input type="tel" id="pf-phone" value="${Utils.esc(USER.phone || '')}" autocomplete="tel">
+              </div>
+            </div>
+
+            <div class="form-field">
+              <label for="pf-email">Email</label>
+              <input type="email" id="pf-email" value="${Utils.esc(USER.email || '')}" autocomplete="email">
+              <div class="form-help">This is also your login identifier. Changing it changes how you sign in.</div>
+            </div>
+
+            <div class="form-actions">
+              <button class="btn btn-ghost" id="pf-reset">Reset</button>
+              <button class="btn btn-primary" id="pf-save">Save changes</button>
+            </div>
+          </div>
+        </div>
+
+        <!-- Password -->
+        <div class="profile-card">
+          <div class="profile-card-head">
+            <h2>Change password</h2>
+            <p>Use a strong password — at least 6 characters. You'll stay signed in on this device.</p>
+          </div>
+          <div class="profile-card-body">
+            <div class="form-field">
+              <label for="pw-current">Current password</label>
+              <div class="pw-wrap">
+                <input type="password" id="pw-current" autocomplete="current-password">
+                <button type="button" class="pw-toggle" data-toggle="pw-current">
+                  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg>
+                </button>
+              </div>
+            </div>
+
+            <div class="form-row">
+              <div class="form-field">
+                <label for="pw-new">New password</label>
+                <div class="pw-wrap">
+                  <input type="password" id="pw-new" autocomplete="new-password" minlength="6">
+                  <button type="button" class="pw-toggle" data-toggle="pw-new">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg>
+                  </button>
+                </div>
+              </div>
+              <div class="form-field">
+                <label for="pw-confirm">Confirm new password</label>
+                <div class="pw-wrap">
+                  <input type="password" id="pw-confirm" autocomplete="new-password" minlength="6">
+                  <button type="button" class="pw-toggle" data-toggle="pw-confirm">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg>
+                  </button>
+                </div>
+              </div>
+            </div>
+
+            <div class="form-actions">
+              <button class="btn btn-primary" id="pw-save">Update password</button>
+            </div>
+          </div>
+        </div>
+
+      </div>
+    </div>
+  `;
+}
+
+/* ============================================================
+   BOOT
+   ============================================================ */
+(async function boot() {
+  document.getElementById('app-main').innerHTML = renderPage();
+  wireAll();
+
+  try {
+    const res = await fetch(API_BASE + '/api/me', {
+      headers: { 'Authorization': 'Bearer ' + TOKEN },
+    });
+    if (res.status === 401 || res.status === 403) {
+      localStorage.removeItem('apex_token');
+      localStorage.removeItem('apex_user');
+      location.href = '../login.html';
+      return;
+    }
+    if (res.ok) {
+      const fresh = await res.json();
+      USER = { ...USER, ...fresh };
+      localStorage.setItem('apex_user', JSON.stringify(USER));
+      document.getElementById('app-main').innerHTML = renderPage();
+      wireAll();
+    }
+  } catch { /* offline — keep cached */ }
+})();
+
+/* ============================================================
+   WIRING
+   ============================================================ */
+function wireAll() {
+  /* Password toggles */
+  document.querySelectorAll('.pw-toggle').forEach(btn => {
+    btn.onclick = () => {
+      const inp = document.getElementById(btn.dataset.toggle);
+      if (!inp) return;
+      inp.type = inp.type === 'password' ? 'text' : 'password';
+    };
+  });
+
+  /* Avatar upload */
+  const fileInput = document.getElementById('avatar-input');
+  document.getElementById('upload-btn').onclick    = () => fileInput.click();
+  document.getElementById('avatar-trigger').onclick = () => fileInput.click();
+
+  fileInput.onchange = async () => {
+    const file = fileInput.files[0];
+    if (!file) return;
+
+    if (!/^image\/(png|jpeg|webp)$/.test(file.type))
+      return toast('Only PNG, JPG, or WebP images are allowed', true);
+    if (file.size > 2 * 1024 * 1024)
+      return toast('Image is too large (max 2 MB)', true);
+
+    const fd = new FormData();
+    fd.append('file', file);
+
+    try {
+      const res = await fetch(API_BASE + '/api/me/picture', {
+        method: 'POST',
+        headers: { 'Authorization': 'Bearer ' + TOKEN },
+        body: fd,
+      });
+      const data = await res.json().catch(() => ({}));
+      if (!res.ok) return toast(data.message || 'Upload failed', true);
+
+      USER.profilePicture = data.profilePicture || data.pictureUrl || data.url;
+      localStorage.setItem('apex_user', JSON.stringify(USER));
+      document.getElementById('app-main').innerHTML = renderPage();
+      wireAll();
+      toast('Profile picture updated');
+    } catch (err) {
+      toast('Network error: ' + err.message, true);
+    } finally {
+      fileInput.value = '';
+    }
+  };
+
+  /* Remove picture */
+  document.getElementById('remove-btn').onclick = async () => {
+    if (!confirm('Remove your profile picture?')) return;
+    try {
+      const res = await fetch(API_BASE + '/api/me/picture', {
+        method: 'DELETE',
+        headers: { 'Authorization': 'Bearer ' + TOKEN },
+      });
+      if (!res.ok) {
+        const d = await res.json().catch(() => ({}));
+        return toast(d.message || 'Remove failed', true);
+      }
+      USER.profilePicture = null;
+      localStorage.setItem('apex_user', JSON.stringify(USER));
+      document.getElementById('app-main').innerHTML = renderPage();
+      wireAll();
+      toast('Profile picture removed');
+    } catch (err) {
+      toast('Network error: ' + err.message, true);
+    }
+  };
+
+  /* Save profile — PUT /api/me */
+  document.getElementById('pf-save').onclick = async () => {
+    const fullName = document.getElementById('pf-name').value.trim();
+    const email    = document.getElementById('pf-email').value.trim();
+    const phone    = document.getElementById('pf-phone').value.trim();
+
+    if (!fullName) return toast('Please enter your name', true);
+    if (!email || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email))
+      return toast('Please enter a valid email', true);
+
+    const btn = document.getElementById('pf-save');
+    btn.disabled = true;
+    const orig = btn.textContent;
+    btn.textContent = 'Saving…';
+
+    try {
+      const res = await fetch(API_BASE + '/api/me', {
+        method: 'PUT',
+        headers: {
+          'Authorization': 'Bearer ' + TOKEN,
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ fullName, email, phone }),
+      });
+      const data = await res.json().catch(() => ({}));
+      if (!res.ok) {
+        toast(data.message || 'Save failed', true);
+        btn.disabled = false; btn.textContent = orig;
+        return;
+      }
+      // Server returns UserDto — merge it
+      USER = { ...USER, ...(data || {}) };
+      localStorage.setItem('apex_user', JSON.stringify(USER));
+      document.getElementById('app-main').innerHTML = renderPage();
+      wireAll();
+      toast('Profile updated');
+    } catch (err) {
+      toast('Network error: ' + err.message, true);
+      btn.disabled = false; btn.textContent = orig;
+    }
+  };
+
+  document.getElementById('pf-reset').onclick = () => {
+    document.getElementById('pf-name').value  = USER.fullName || '';
+    document.getElementById('pf-email').value = USER.email || '';
+    document.getElementById('pf-phone').value = USER.phone || '';
+  };
+
+  /* Change password — PUT /api/me/password */
+  document.getElementById('pw-save').onclick = async () => {
+    const current = document.getElementById('pw-current').value;
+    const next    = document.getElementById('pw-new').value;
+    const confirm = document.getElementById('pw-confirm').value;
+
+    if (!current)                 return toast('Please enter your current password', true);
+    if (!next || next.length < 6) return toast('New password must be at least 6 characters', true);
+    if (next !== confirm)         return toast('New passwords do not match', true);
+
+    const btn = document.getElementById('pw-save');
+    btn.disabled = true;
+    const orig = btn.textContent;
+    btn.textContent = 'Updating…';
+
+    try {
+      const res = await fetch(API_BASE + '/api/me/password', {
+        method: 'PUT',
+        headers: {
+          'Authorization': 'Bearer ' + TOKEN,
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ currentPassword: current, newPassword: next }),
+      });
+      if (!res.ok) {
+        const data = await res.json().catch(() => ({}));
+        toast(data.message || 'Password change failed', true);
+        btn.disabled = false; btn.textContent = orig;
+        return;
+      }
+      document.getElementById('pw-current').value = '';
+      document.getElementById('pw-new').value     = '';
+      document.getElementById('pw-confirm').value = '';
+      toast('Password updated');
+      btn.disabled = false; btn.textContent = orig;
+    } catch (err) {
+      toast('Network error: ' + err.message, true);
+      btn.disabled = false; btn.textContent = orig;
+    }
+  };
+}
+
+/* ============================================================
+   TOAST
+   ============================================================ */
+function toast(msg, isError = false) {
+  let host = document.querySelector('.toast-host');
+  if (!host) {
+    host = document.createElement('div');
+    host.className = 'toast-host';
+    document.body.appendChild(host);
+  }
+  const el = document.createElement('div');
+  el.className = 'toast' + (isError ? ' toast-error' : '');
+  el.textContent = msg;
+  host.appendChild(el);
+  void el.offsetWidth;
+  el.classList.add('toast-in');
+  setTimeout(() => {
+    el.classList.remove('toast-in');
+    setTimeout(() => el.remove(), 220);
+  }, 3200);
+}
+</script>
+</body>
+</html>

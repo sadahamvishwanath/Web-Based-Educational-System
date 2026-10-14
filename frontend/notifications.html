@@ -1,0 +1,484 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Notifications — Apex Institute</title>
+
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Plus+Jakarta+Sans:wght@500;600;700;800&display=swap" rel="stylesheet">
+
+  <link rel="stylesheet" href="shared/css/tokens.css">
+  <link rel="stylesheet" href="shared/css/base.css">
+  <link rel="stylesheet" href="shared/css/layout.css">
+  <link rel="stylesheet" href="shared/css/components.css">
+
+  <style>
+    /* Standalone header — this page has no sidebar because it's shared across roles */
+    .notif-shell {
+      min-height: 100vh;
+      background: var(--bg);
+    }
+    .notif-top {
+      height: 68px;
+      background: var(--navy);
+      color: #fff;
+      display: flex;
+      align-items: center;
+      padding: 0 var(--sp-6);
+      gap: var(--sp-4);
+    }
+    .notif-top .brand {
+      display: flex; align-items: center; gap: var(--sp-3);
+      font-family: 'Plus Jakarta Sans', sans-serif;
+      font-weight: 700; font-size: 15px;
+    }
+    .notif-top .brand-mark {
+      width: 34px; height: 34px; border-radius: 8px;
+      background: var(--gold); color: var(--navy);
+      display: grid; place-items: center;
+      font-family: 'Plus Jakarta Sans', sans-serif;
+      font-weight: 800; font-size: 16px;
+    }
+    .notif-top .spacer { flex: 1; }
+    .notif-top .back {
+      display: inline-flex; align-items: center; gap: 6px;
+      color: rgba(255,255,255,.75);
+      font-size: 13px; font-weight: 600;
+      transition: color var(--dur-fast) var(--ease);
+    }
+    .notif-top .back:hover { color: #fff; }
+    .notif-top .back svg { width: 16px; height: 16px; }
+    .notif-top .user {
+      display: flex; align-items: center; gap: 10px;
+      padding: 5px 12px 5px 5px;
+      border-radius: 100px;
+      background: rgba(255,255,255,.08);
+    }
+    .notif-top .user-avatar {
+      width: 32px; height: 32px; border-radius: 50%;
+      background: var(--gold); color: var(--navy);
+      display: grid; place-items: center;
+      font-family: 'Plus Jakarta Sans', sans-serif;
+      font-weight: 800; font-size: 12px;
+    }
+    .notif-top .user-name {
+      font-family: 'Plus Jakarta Sans', sans-serif;
+      font-weight: 700; font-size: 13px;
+    }
+    .notif-top .user-role {
+      font-size: 10px; opacity: .65;
+      text-transform: uppercase; letter-spacing: .08em;
+      font-weight: 600;
+    }
+
+    .notif-body {
+      max-width: 880px;
+      margin: 0 auto;
+      padding: var(--sp-7) var(--sp-5);
+    }
+
+    .notif-toolbar {
+      display: flex; align-items: center; gap: var(--sp-3);
+      margin-bottom: var(--sp-5); flex-wrap: wrap;
+    }
+    .filter-pills { display: flex; gap: 6px; }
+    .filter-pill {
+      padding: 7px 14px; border-radius: 100px;
+      border: 1px solid var(--border);
+      background: var(--surface);
+      font-family: 'Plus Jakarta Sans', sans-serif;
+      font-size: 12.5px; font-weight: 600;
+      color: var(--text-dim); cursor: pointer;
+      transition: all var(--dur-fast) var(--ease);
+    }
+    .filter-pill:hover { border-color: var(--border-strong); color: var(--navy); }
+    .filter-pill.active { background: var(--navy); border-color: var(--navy); color: #fff; }
+    .filter-pill .count { opacity: .55; margin-left: 5px; font-weight: 500; }
+    .filter-pill.active .count { opacity: .8; }
+
+    .mark-all-btn {
+      margin-left: auto;
+      padding: 8px 14px; border-radius: var(--r-md);
+      border: 1px solid var(--border);
+      background: var(--surface); color: var(--navy);
+      font-family: 'Plus Jakarta Sans', sans-serif;
+      font-size: 12.5px; font-weight: 700;
+      cursor: pointer;
+      transition: all var(--dur-fast) var(--ease);
+    }
+    .mark-all-btn:hover { border-color: var(--navy); background: var(--surface-alt); }
+    .mark-all-btn:disabled { opacity: .4; cursor: not-allowed; }
+
+    .notif-card {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: var(--r-lg);
+      box-shadow: var(--shadow-xs);
+      overflow: hidden;
+    }
+    .n-row {
+      display: flex; gap: var(--sp-4);
+      padding: var(--sp-5);
+      border-bottom: 1px solid var(--border);
+      transition: background var(--dur-fast) var(--ease);
+      cursor: pointer;
+      position: relative;
+    }
+    .n-row:last-child { border-bottom: none; }
+    .n-row:hover { background: var(--surface-alt); }
+    .n-row.unread { background: rgba(233,185,73,.04); }
+    .n-row.unread::before {
+      content: '';
+      position: absolute; left: 0; top: 16px; bottom: 16px;
+      width: 3px; background: var(--gold);
+      border-radius: 0 3px 3px 0;
+    }
+
+    .n-icon {
+      width: 40px; height: 40px; border-radius: var(--r-md);
+      display: grid; place-items: center; flex-shrink: 0;
+      background: var(--gold-soft); color: #8F6B0F;
+    }
+    .n-icon svg { width: 18px; height: 18px; }
+    .n-icon.general  { background: var(--info-bg); color: var(--info); }
+    .n-icon.students { background: var(--success-bg); color: var(--success); }
+    .n-icon.parents  { background: var(--gold-soft); color: #8F6B0F; }
+    .n-icon.teachers { background: #F4EBFF; color: #6941C6; }
+    .n-icon.class    { background: var(--navy); color: #fff; }
+
+    .n-body { flex: 1; min-width: 0; }
+    .n-head {
+      display: flex; align-items: center; gap: 10px;
+      margin-bottom: 6px; flex-wrap: wrap;
+    }
+    .n-title {
+      font-family: 'Plus Jakarta Sans', sans-serif;
+      font-size: 14.5px; font-weight: 800;
+      color: var(--navy); letter-spacing: -.01em;
+    }
+    .n-tag {
+      display: inline-flex; padding: 2px 8px;
+      border-radius: 100px;
+      background: var(--bg);
+      font-size: 10.5px; font-weight: 700;
+      color: var(--text-dim);
+      text-transform: uppercase; letter-spacing: .06em;
+    }
+    .n-msg {
+      font-size: 13.5px; color: var(--text);
+      line-height: 1.55;
+    }
+    .n-foot {
+      display: flex; gap: var(--sp-4);
+      margin-top: 10px;
+      font-size: 11.5px; color: var(--text-dim);
+      flex-wrap: wrap;
+    }
+    .n-foot span { display: inline-flex; align-items: center; gap: 4px; }
+    .n-foot svg { width: 12px; height: 12px; color: var(--text-faint); }
+
+    .n-dot {
+      width: 8px; height: 8px; border-radius: 50%;
+      background: var(--gold); flex-shrink: 0;
+      align-self: flex-start; margin-top: 6px;
+    }
+    .n-dot.read { background: transparent; }
+
+    .notif-empty {
+      padding: var(--sp-8) var(--sp-5);
+      text-align: center;
+      background: var(--surface);
+      border: 1px dashed var(--border-strong);
+      border-radius: var(--r-lg);
+    }
+    .notif-empty-icon {
+      width: 56px; height: 56px; margin: 0 auto var(--sp-4);
+      border-radius: 50%; background: var(--bg);
+      display: grid; place-items: center; color: var(--text-faint);
+    }
+    .notif-empty-icon svg { width: 26px; height: 26px; }
+    .notif-empty h3 { font-size: 16px; color: var(--navy); margin-bottom: 6px; }
+    .notif-empty p { font-size: 13px; color: var(--text-dim); }
+  </style>
+</head>
+<body>
+
+<script src="shared/js/utils.js"></script>
+<script src="shared/js/icons.js"></script>
+
+<script>
+/* ============================================================
+   AUTH GUARD + USER INFO
+   ============================================================ */
+const TOKEN = localStorage.getItem('apex_token');
+if (!TOKEN) location.href = 'login.html';
+
+const API_BASE = 'http://localhost:8080';
+
+const USER = (() => {
+  try { return JSON.parse(localStorage.getItem('apex_user') || '{}'); }
+  catch { return {}; }
+})();
+
+const ROLE_LABEL = {
+  STUDENT: 'Student', PARENT: 'Parent', TEACHER: 'Teacher',
+  ADMIN: 'Admin', MANAGEMENT: 'Management',
+}[USER.role] || USER.role || 'User';
+
+const BACK_LINK = {
+  STUDENT:    'student/dashboard.html',
+  PARENT:     'parent/dashboard.html',
+  TEACHER:    'teacher/dashboard.html',
+  ADMIN:      'admin/dashboard.html',
+  MANAGEMENT: 'management/dashboard.html',
+}[USER.role] || 'login.html';
+
+let DATA = null;
+let activeFilter = 'all';
+
+/* ============================================================
+   RENDER — header is written once, body rerenders
+   ============================================================ */
+document.body.innerHTML = `
+  <div class="notif-shell">
+    <header class="notif-top">
+      <div class="brand">
+        <div class="brand-mark">A</div>
+        <span>Apex Institute</span>
+      </div>
+      <div class="spacer"></div>
+      <a href="${BACK_LINK}" class="back">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+          <line x1="19" y1="12" x2="5" y2="12"/><polyline points="12 19 5 12 12 5"/>
+        </svg>
+        Back to dashboard
+      </a>
+      <div class="user">
+        <div class="user-avatar">${initials(USER.fullName || '?')}</div>
+        <div>
+          <div class="user-name">${escapeHtml(USER.fullName || 'User')}</div>
+          <div class="user-role">${escapeHtml(ROLE_LABEL)}</div>
+        </div>
+      </div>
+    </header>
+    <div class="notif-body" id="notif-body">
+      <div class="loading">Loading notifications…</div>
+    </div>
+  </div>
+`;
+
+(async function load() {
+  try {
+    const res = await fetch(API_BASE + '/api/notifications', {
+      headers: { 'Authorization': 'Bearer ' + TOKEN },
+    });
+
+    if (res.status === 401 || res.status === 403) {
+      localStorage.removeItem('apex_token');
+      localStorage.removeItem('apex_user');
+      location.href = 'login.html';
+      return;
+    }
+    if (!res.ok) throw new Error('Server returned ' + res.status);
+
+    DATA = await res.json();
+    rerender();
+
+  } catch (err) {
+    document.getElementById('notif-body').innerHTML = `
+      <div class="error-box">
+        <h2>Could not load notifications</h2>
+        <p style="color:var(--text-dim); margin:8px 0 16px;">${escapeHtml(err.message)}</p>
+        <button class="btn btn-primary" onclick="location.reload()">Try again</button>
+      </div>`;
+  }
+})();
+
+/* ============================================================
+   HELPERS
+   ============================================================ */
+function initials(name) {
+  return name.split(' ').filter(Boolean).slice(0, 2).map(w => w[0].toUpperCase()).join('') || '?';
+}
+function escapeHtml(s) {
+  return String(s == null ? '' : s).replace(/[&<>"']/g, c => ({
+    '&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'
+  }[c]));
+}
+function audienceLabel(aud) {
+  return ({ general: 'Notice', students: 'For Students', parents: 'For Parents',
+            teachers: 'For Teachers', class: 'Class Notice' })[aud] || aud;
+}
+function iconFor(aud) {
+  if (aud === 'general')  return Icon.bell();
+  if (aud === 'students') return Icon.award();
+  if (aud === 'parents')  return Icon.user();
+  if (aud === 'teachers') return Icon.book();
+  if (aud === 'class')    return Icon.calendar();
+  return Icon.bell();
+}
+
+/* ============================================================
+   RENDER
+   ============================================================ */
+function rerender() {
+  document.getElementById('notif-body').innerHTML = renderPage();
+  wireAll();
+}
+
+function renderPage() {
+  return `
+    <div style="margin-bottom: var(--sp-6);">
+      <h1 style="font-family:'Plus Jakarta Sans',sans-serif; font-size:28px; font-weight:800; color:var(--navy); letter-spacing:-.02em; margin:0 0 6px;">
+        Notifications
+      </h1>
+      <p style="font-size:14px; color:var(--text-dim);">
+        ${DATA.total} notice${DATA.total !== 1 ? 's' : ''} · ${DATA.unread} unread
+      </p>
+    </div>
+
+    ${renderToolbar()}
+    ${renderList()}
+  `;
+}
+
+function renderToolbar() {
+  const unreadCount = DATA.notifications.filter(n => !n.read).length;
+  const pill = (k, l, count) => `
+    <button class="filter-pill ${activeFilter === k ? 'active' : ''}" data-filter="${k}">
+      ${l}<span class="count">${count}</span>
+    </button>`;
+
+  return `
+    <div class="notif-toolbar">
+      <div class="filter-pills">
+        ${pill('all', 'All', DATA.total)}
+        ${pill('unread', 'Unread', unreadCount)}
+      </div>
+      <button class="mark-all-btn" id="mark-all-btn" ${unreadCount === 0 ? 'disabled' : ''}>
+        Mark all as read
+      </button>
+    </div>`;
+}
+
+function renderList() {
+  const list = activeFilter === 'unread'
+    ? DATA.notifications.filter(n => !n.read)
+    : DATA.notifications;
+
+  if (list.length === 0) {
+    return `
+      <div class="notif-empty">
+        <div class="notif-empty-icon">${Icon.bell()}</div>
+        <h3>${activeFilter === 'unread' ? 'Nothing unread' : 'No notifications yet'}</h3>
+        <p>${activeFilter === 'unread'
+          ? 'You\'re all caught up.'
+          : 'When the institute posts a notice, it will appear here.'}</p>
+      </div>`;
+  }
+
+  return `
+    <div class="notif-card">
+      ${list.map(renderRow).join('')}
+    </div>`;
+}
+
+function renderRow(n) {
+  return `
+    <div class="n-row ${n.read ? '' : 'unread'}" data-id="${n.id}">
+      <div class="n-icon ${escapeHtml(n.audience)}">${iconFor(n.audience)}</div>
+      <div class="n-body">
+        <div class="n-head">
+          <div class="n-title">${escapeHtml(n.title)}</div>
+          <span class="n-tag">${escapeHtml(audienceLabel(n.audience))}</span>
+        </div>
+        <div class="n-msg">${escapeHtml(n.message)}</div>
+        <div class="n-foot">
+          <span>${Icon.user()} ${escapeHtml(n.author)}</span>
+          <span>${Icon.calendar()} ${escapeHtml(n.date)}</span>
+          <span style="color:var(--text-faint);">${escapeHtml(n.when)}</span>
+        </div>
+      </div>
+      <div class="n-dot ${n.read ? 'read' : ''}"></div>
+    </div>`;
+}
+
+/* ============================================================
+   WIRING
+   ============================================================ */
+function wireAll() {
+  document.querySelectorAll('.filter-pill').forEach(b => {
+    b.onclick = () => { activeFilter = b.dataset.filter; rerender(); };
+  });
+
+  const markAll = document.getElementById('mark-all-btn');
+  if (markAll) {
+    markAll.onclick = async () => {
+      markAll.disabled = true;
+      markAll.textContent = 'Marking…';
+      try {
+        const res = await fetch(API_BASE + '/api/notifications/read-all', {
+          method: 'PUT',
+          headers: { 'Authorization': 'Bearer ' + TOKEN },
+        });
+        if (!res.ok) throw new Error('Failed');
+        await refresh();
+      } catch (err) {
+        showToast('Could not mark all as read');
+        markAll.disabled = false;
+        markAll.textContent = 'Mark all as read';
+      }
+    };
+  }
+
+  // Click a row → mark that one read
+  document.querySelectorAll('.n-row').forEach(row => {
+    row.onclick = async () => {
+      const id = parseInt(row.dataset.id, 10);
+      const n = DATA.notifications.find(x => x.id === id);
+      if (!n || n.read) return;
+      try {
+        const res = await fetch(`${API_BASE}/api/notifications/${id}/read`, {
+          method: 'PUT',
+          headers: { 'Authorization': 'Bearer ' + TOKEN },
+        });
+        if (res.ok) {
+          n.read = true;
+          // Update just the two count chips + this row's dot
+          DATA.unread = DATA.notifications.filter(x => !x.read).length;
+          rerender();
+        }
+      } catch (err) { /* silent */ }
+    };
+  });
+}
+
+async function refresh() {
+  const res = await fetch(API_BASE + '/api/notifications', {
+    headers: { 'Authorization': 'Bearer ' + TOKEN },
+  });
+  if (res.ok) {
+    DATA = await res.json();
+    rerender();
+  }
+}
+
+function showToast(message) {
+  let host = document.querySelector('.toast-host');
+  if (!host) {
+    host = document.createElement('div');
+    host.className = 'toast-host';
+    document.body.appendChild(host);
+  }
+  const el = document.createElement('div');
+  el.className = 'toast toast-error';
+  el.textContent = message;
+  host.appendChild(el);
+  void el.offsetWidth; el.classList.add('toast-in');
+  setTimeout(() => { el.classList.remove('toast-in'); setTimeout(() => el.remove(), 200); }, 3000);
+}
+</script>
+</body>
+</html>

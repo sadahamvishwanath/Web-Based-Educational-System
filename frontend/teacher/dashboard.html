@@ -1,0 +1,420 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Dashboard — Apex Institute</title>
+
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Plus+Jakarta+Sans:wght@500;600;700;800&display=swap" rel="stylesheet">
+
+  <link rel="stylesheet" href="../shared/css/tokens.css">
+  <link rel="stylesheet" href="../shared/css/base.css">
+  <link rel="stylesheet" href="../shared/css/layout.css">
+  <link rel="stylesheet" href="../shared/css/components.css">
+
+  <style>
+    /* Session row (today's schedule) */
+    .session-row {
+      display: flex; align-items: center; gap: var(--sp-4);
+      padding: var(--sp-4) var(--sp-5);
+      border-bottom: 1px solid var(--border);
+      position: relative;
+      transition: background var(--dur-fast) var(--ease);
+    }
+    .session-row:last-child { border-bottom: none; }
+    .session-row:hover { background: var(--surface-alt); }
+    .session-row.is-next { background: linear-gradient(90deg, rgba(233,185,73,.07), transparent); }
+    .session-row.is-next::before {
+      content: ''; position: absolute; left: 0; top: 12px; bottom: 12px;
+      width: 3px; background: var(--gold); border-radius: 0 3px 3px 0;
+    }
+    .session-time {
+      display: flex; flex-direction: column;
+      min-width: 74px; padding-right: var(--sp-4);
+      border-right: 1px solid var(--border);
+    }
+    .session-time .t-start {
+      font-family: 'Plus Jakarta Sans', sans-serif;
+      font-size: 15px; font-weight: 700; color: var(--navy);
+    }
+    .session-time .t-end { font-size: 11.5px; color: var(--text-dim); margin-top: 1px; }
+    .session-body { flex: 1; min-width: 0; }
+    .session-body h3 {
+      font-size: 14.5px; font-weight: 700;
+      color: var(--navy); margin-bottom: 3px;
+    }
+    .session-body p {
+      font-size: 12.5px; color: var(--text-dim);
+      display: flex; gap: var(--sp-3); flex-wrap: wrap;
+    }
+    .session-body p span { display: inline-flex; align-items: center; gap: 5px; }
+    .session-body p svg { width: 13px; height: 13px; color: var(--text-faint); }
+
+    /* Quick-action grid */
+    .quick-grid {
+      display: grid; grid-template-columns: 1fr 1fr; gap: var(--sp-3);
+      padding: 0 var(--sp-5) var(--sp-5);
+    }
+    .quick-action {
+      display: flex; flex-direction: column; gap: var(--sp-3);
+      padding: var(--sp-4);
+      border: 1px solid var(--border); border-radius: var(--r-md);
+      transition: all var(--dur) var(--ease);
+      color: var(--navy);
+    }
+    .quick-action:hover {
+      border-color: var(--navy); background: var(--surface-alt);
+      color: var(--navy); transform: translateY(-1px);
+    }
+    .quick-action-icon {
+      width: 32px; height: 32px; border-radius: var(--r-sm);
+      background: var(--bg); display: grid; place-items: center;
+      color: var(--navy);
+    }
+    .quick-action-icon svg { width: 16px; height: 16px; }
+    .quick-action span {
+      font-family: 'Plus Jakarta Sans', sans-serif;
+      font-size: 12.5px; font-weight: 700;
+    }
+
+    /* Task list */
+    .task-row {
+      display: flex; gap: var(--sp-3);
+      padding: var(--sp-4) var(--sp-5);
+      border-bottom: 1px solid var(--border);
+      align-items: center;
+    }
+    .task-row:last-child { border-bottom: none; }
+    .task-check {
+      width: 18px; height: 18px; border-radius: 5px;
+      border: 2px solid var(--border-strong);
+      display: grid; place-items: center;
+      flex-shrink: 0; cursor: pointer;
+      transition: all var(--dur-fast) var(--ease);
+    }
+    .task-check.done { background: var(--success); border-color: var(--success); color: #fff; }
+    .task-check svg { width: 11px; height: 11px; opacity: 0; }
+    .task-check.done svg { opacity: 1; }
+    .task-body { flex: 1; min-width: 0; }
+    .task-title {
+      font-family: 'Plus Jakarta Sans', sans-serif;
+      font-size: 13px; font-weight: 700;
+      color: var(--navy); margin-bottom: 2px;
+    }
+    .task-title.done { color: var(--text-dim); text-decoration: line-through; }
+    .task-meta { font-size: 11.5px; color: var(--text-dim); }
+  </style>
+</head>
+<body>
+
+<script src="../shared/js/utils.js"></script>
+<script src="../shared/js/icons.js"></script>
+<script src="../shared/js/shell.js"></script>
+
+<script>
+/* ============================================================
+   AUTH + BOOT
+   ============================================================ */
+const TOKEN = localStorage.getItem('apex_token');
+if (!TOKEN) location.href = '../login.html';
+const API_BASE = 'http://localhost:8080';
+
+Shell.render({
+  active: 'dashboard',
+  role: 'TEACHER',
+  content: '<div class="loading">Loading dashboard…</div>',
+});
+
+(async function loadDashboard() {
+  try {
+    const res = await fetch(API_BASE + '/api/teacher/dashboard', {
+      headers: { 'Authorization': 'Bearer ' + TOKEN },
+    });
+
+    if (res.status === 401 || res.status === 403) {
+      localStorage.removeItem('apex_token');
+      localStorage.removeItem('apex_user');
+      location.href = '../login.html';
+      return;
+    }
+    if (!res.ok) throw new Error('Server returned ' + res.status);
+
+    const data = await res.json();
+    document.getElementById('app-main').innerHTML = renderDashboard(data);
+    wireTasks();
+
+  } catch (err) {
+    document.getElementById('app-main').innerHTML = `
+      <div class="error-box">
+        <h2>Could not load dashboard</h2>
+        <p style="color:var(--text-dim); margin:8px 0 16px;">${Utils.esc(err.message)}</p>
+        <button class="btn btn-primary" onclick="location.reload()">Try again</button>
+      </div>`;
+  }
+})();
+
+/* ============================================================
+   RENDER
+   ============================================================ */
+function renderDashboard(data) {
+  const { teacher, stats, todaySchedule, tasks, notifications, salary } = data;
+
+  const today = new Date();
+  const dayName = today.toLocaleDateString('en-GB', { weekday: 'long' });
+  const dateStr = today.toLocaleDateString('en-GB', { day: 'numeric', month: 'long', year: 'numeric' });
+  const hour = today.getHours();
+  const greeting = hour < 12 ? 'Good morning' : hour < 17 ? 'Good afternoon' : 'Good evening';
+  const firstName = (teacher.fullName || '').split(' ').slice(-1)[0] || 'Teacher';
+
+  return `
+    <header class="page-header">
+      <div>
+        <div class="page-eyebrow">${dayName}, ${dateStr}</div>
+        <h1 class="page-title">${greeting}, ${Utils.esc(firstName)}.</h1>
+        <p class="page-subtitle">
+          ${stats.classesCount} classes · ${stats.studentsCount} students ·
+          ${stats.todaySessions} session${stats.todaySessions !== 1 ? 's' : ''} today
+        </p>
+      </div>
+      <div class="page-actions">
+        <a href="attendance.html" class="btn btn-ghost">${Icon.clipboard()} Mark Attendance</a>
+        <a href="exams.html" class="btn btn-primary">${Icon.exam()} Create Exam</a>
+      </div>
+    </header>
+
+    ${renderSummary(stats, salary)}
+
+    <div class="content-grid">
+      <div class="content-col">
+        ${renderToday(todaySchedule)}
+        ${renderTasks(tasks)}
+      </div>
+      <div class="content-col">
+        ${renderQuickActions()}
+        ${renderAlerts(notifications)}
+      </div>
+    </div>
+  `;
+}
+
+/* ============================================================
+   SUMMARY TILES
+   ============================================================ */
+function renderSummary(stats, salary) {
+  const tile = ({ accent, label, value, suffix = '', meta, metaClass = '' }) => `
+    <div class="stat-card" style="border-left: 3px solid ${accent}">
+      <div class="stat-body" style="padding-left: 4px">
+        <div class="stat-label">${Utils.esc(label)}</div>
+        <div class="stat-value">${Utils.esc(String(value))}${suffix ? `<small>${suffix}</small>` : ''}</div>
+        <div class="stat-meta ${metaClass}">${meta}</div>
+      </div>
+    </div>`;
+
+  const salaryValue = stats.monthSalary > 0 ? 'Rs. ' + stats.monthSalary.toFixed(0) : '—';
+  const salaryMeta = salary
+    ? `${salary.month} ${salary.year} · ${salary.status === 'paid' ? 'Credited' : 'Pending'}`
+    : 'No records yet';
+
+  return `
+    <section class="stat-grid">
+      ${tile({
+        accent: 'var(--navy)',
+        label: 'Classes Taught',
+        value: stats.classesCount,
+        meta: 'This term',
+      })}
+      ${tile({
+        accent: 'var(--info)',
+        label: 'Total Students',
+        value: stats.studentsCount,
+        meta: 'Across all classes',
+      })}
+      ${tile({
+        accent: 'var(--gold)',
+        label: "Today's Sessions",
+        value: stats.todaySessions,
+        meta: stats.todaySessions === 0 ? 'No classes today' : 'Check schedule below',
+      })}
+      ${tile({
+        accent: stats.salaryStatus === 'paid' ? 'var(--success)' : 'var(--warning)',
+        label: 'Latest Salary',
+        value: salaryValue,
+        meta: salaryMeta,
+        metaClass: stats.salaryStatus === 'paid' ? 'stat-meta-positive' : '',
+      })}
+    </section>`;
+}
+
+/* ============================================================
+   TODAY'S SESSIONS
+   ============================================================ */
+function renderToday(list) {
+  if (list.length === 0) {
+    return `
+      <section class="card">
+        <div class="card-header">
+          <div>
+            <h2>Today's Sessions</h2>
+            <div class="card-sub">No classes scheduled</div>
+          </div>
+          <a href="classes.html" class="card-link">All classes ${Icon.arrowR()}</a>
+        </div>
+        <div style="padding: var(--sp-8) var(--sp-5); text-align:center; color:var(--text-dim); font-size:13px;">
+          Enjoy your day off.
+        </div>
+      </section>`;
+  }
+
+  return `
+    <section class="card">
+      <div class="card-header">
+        <div>
+          <h2>Today's Sessions</h2>
+          <div class="card-sub">${list.length} class${list.length !== 1 ? 'es' : ''} on schedule</div>
+        </div>
+        <a href="classes.html" class="card-link">All classes ${Icon.arrowR()}</a>
+      </div>
+      <div>${list.map(renderSession).join('')}</div>
+    </section>`;
+}
+
+function renderSession(s) {
+  const isNext = s.status === 'next';
+  const isDone = s.status === 'done';
+  const isLive = s.status === 'live';
+
+  // Which action button?
+  const markedFull = s.markedCount >= s.students && s.students > 0;
+  let actionHtml;
+  if (isDone || markedFull) {
+    actionHtml = `<a href="attendance.html" class="btn btn-ghost btn-sm">${Icon.clipboard()} View</a>`;
+  } else if (isLive || isNext) {
+    actionHtml = `<a href="attendance.html" class="btn btn-primary btn-sm">${Icon.clipboard()} Mark attendance</a>`;
+  } else {
+    actionHtml = `<a href="attendance.html" class="btn btn-ghost btn-sm">${Icon.clipboard()} Open</a>`;
+  }
+
+  return `
+    <div class="session-row ${isNext ? 'is-next' : ''}">
+      <div class="session-time">
+        <span class="t-start">${Utils.esc(s.start)}</span>
+        <span class="t-end">${Utils.esc(s.end)}</span>
+      </div>
+      <div class="session-body">
+        <h3>Grade ${Utils.esc(s.grade)} ${Utils.esc(s.subject)}</h3>
+        <p>
+          <span>${Icon.pin()} Room ${Utils.esc(s.room)}</span>
+          <span>${Icon.user()} ${s.students} students</span>
+        </p>
+      </div>
+      ${actionHtml}
+    </div>`;
+}
+
+/* ============================================================
+   TASKS
+   ============================================================ */
+function renderTasks(tasks) {
+  const pending = tasks.filter(t => !t.done).length;
+
+  return `
+    <section class="card">
+      <div class="card-header">
+        <div>
+          <h2>Tasks</h2>
+          <div class="card-sub">${pending} pending</div>
+        </div>
+      </div>
+      <div>
+        ${tasks.length === 0
+          ? `<div style="padding: var(--sp-6) var(--sp-5); text-align:center; color:var(--text-dim); font-size:13px;">
+               All caught up. Nothing pending.
+             </div>`
+          : tasks.map(renderTask).join('')}
+      </div>
+    </section>`;
+}
+
+function renderTask(t) {
+  const link = t.type === 'exam' ? 'exams.html'
+             : t.type === 'attendance' ? 'attendance.html'
+             : '#';
+  return `
+    <div class="task-row">
+      <div class="task-check ${t.done ? 'done' : ''}">${Icon.check()}</div>
+      <div class="task-body">
+        <div class="task-title ${t.done ? 'done' : ''}">
+          <a href="${link}" style="color:inherit;">${Utils.esc(t.title)}</a>
+        </div>
+        <div class="task-meta">${Utils.esc(t.meta)}</div>
+      </div>
+    </div>`;
+}
+
+/* ============================================================
+   QUICK ACTIONS
+   ============================================================ */
+function renderQuickActions() {
+  return `
+    <section class="card">
+      <div class="card-header"><h2>Quick Actions</h2></div>
+      <div class="quick-grid">
+        <a class="quick-action" href="attendance.html">
+          <div class="quick-action-icon">${Icon.clipboard()}</div>
+          <span>Mark Attendance</span>
+        </a>
+        <a class="quick-action" href="materials.html">
+          <div class="quick-action-icon">${Icon.file()}</div>
+          <span>Upload Material</span>
+        </a>
+        <a class="quick-action" href="exams.html">
+          <div class="quick-action-icon">${Icon.exam()}</div>
+          <span>New Exam</span>
+        </a>
+        <a class="quick-action" href="salary.html">
+          <div class="quick-action-icon">${Icon.money()}</div>
+          <span>My Salary</span>
+        </a>
+      </div>
+    </section>`;
+}
+
+/* ============================================================
+   ALERTS
+   ============================================================ */
+function renderAlerts(list) {
+  return `
+    <section class="card">
+      <div class="card-header">
+        <div>
+          <h2>Recent Alerts</h2>
+          <div class="card-sub">${list.length} update${list.length !== 1 ? 's' : ''}</div>
+        </div>
+      </div>
+      <div>
+        ${list.length === 0
+          ? `<div style="padding: var(--sp-6) var(--sp-5); text-align:center; color:var(--text-dim); font-size:13px;">
+               No notifications yet.
+             </div>`
+          : list.slice(0, 5).map(a => `
+              <div class="notif-item">
+                <div class="notif-icon">${Icon.bell()}</div>
+                <div class="notif-body">
+                  <div class="notif-title">${Utils.esc(a.title)}</div>
+                  <div class="notif-text">${Utils.esc(a.text)}</div>
+                  <div class="notif-time">${Utils.esc(a.time)}</div>
+                </div>
+              </div>`).join('')}
+      </div>
+    </section>`;
+}
+
+/* ============================================================
+   WIRING — no direct wiring needed for now
+   ============================================================ */
+function wireTasks() { /* placeholder for future interactivity */ }
+</script>
+</body>
+</html>

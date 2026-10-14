@@ -1,0 +1,337 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>My Children — Apex Institute</title>
+
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Plus+Jakarta+Sans:wght@500;600;700;800&display=swap" rel="stylesheet">
+
+  <link rel="stylesheet" href="../shared/css/tokens.css">
+  <link rel="stylesheet" href="../shared/css/base.css">
+  <link rel="stylesheet" href="../shared/css/layout.css">
+  <link rel="stylesheet" href="../shared/css/components.css">
+
+  <style>
+    .children-grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: var(--sp-5);
+    }
+    @media (max-width: 1000px) { .children-grid { grid-template-columns: 1fr; } }
+
+    /* Full child card */
+    .child-full {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: var(--r-lg);
+      box-shadow: var(--shadow-xs);
+      overflow: hidden;
+      transition: all var(--dur) var(--ease);
+      position: relative;
+      display: flex;
+      flex-direction: column;
+    }
+    .child-full:hover {
+      box-shadow: var(--shadow-md);
+      border-color: var(--border-strong);
+    }
+
+    /* Color accent strip at top */
+    .child-full::before {
+      content: '';
+      position: absolute;
+      top: 0; left: 0; right: 0; height: 4px;
+      background: var(--accent, var(--navy));
+    }
+
+    .cf-body {
+      padding: var(--sp-5);
+      display: flex;
+      flex-direction: column;
+      gap: var(--sp-4);
+      flex: 1;
+    }
+
+    .cf-head {
+      display: flex; align-items: center; gap: var(--sp-4);
+    }
+    .cf-avatar {
+      width: 60px; height: 60px;
+      border-radius: 50%;
+      background: var(--accent, var(--navy));
+      color: #fff;
+      display: grid; place-items: center;
+      font-family: 'Plus Jakarta Sans', sans-serif;
+      font-weight: 800; font-size: 20px;
+      letter-spacing: -0.02em;
+      flex-shrink: 0;
+    }
+    .cf-head-body { min-width: 0; flex: 1; }
+    .cf-name {
+      font-family: 'Plus Jakarta Sans', sans-serif;
+      font-size: 19px; font-weight: 800;
+      color: var(--navy);
+      letter-spacing: -0.02em;
+      margin-bottom: 4px;
+    }
+    .cf-meta {
+      font-size: 12.5px; color: var(--text-dim);
+      display: flex; align-items: center; gap: 8px; flex-wrap: wrap;
+    }
+    .cf-chip {
+      display: inline-flex; padding: 2px 8px;
+      border-radius: 100px;
+      background: var(--bg);
+      color: var(--navy);
+      font-size: 11px; font-weight: 700;
+      letter-spacing: 0.02em;
+    }
+
+    /* Info list */
+    .cf-info {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: var(--sp-3);
+      padding: var(--sp-4);
+      background: var(--surface-alt);
+      border-radius: var(--r-md);
+      border: 1px solid var(--border);
+    }
+    .cf-info-item {
+      display: flex; align-items: center; gap: 8px;
+      font-size: 12.5px; color: var(--text);
+      min-width: 0;
+    }
+    .cf-info-item svg {
+      width: 14px; height: 14px;
+      color: var(--text-faint); flex-shrink: 0;
+    }
+    .cf-info-item span {
+      overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
+    }
+
+    /* Stats */
+    .cf-stats {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: var(--sp-3);
+    }
+    .cf-stat {
+      padding: var(--sp-4);
+      background: var(--bg);
+      border-radius: var(--r-md);
+      text-align: center;
+    }
+    .cf-stat-label {
+      font-size: 10.5px; font-weight: 700;
+      color: var(--text-dim);
+      text-transform: uppercase; letter-spacing: 0.08em;
+      margin-bottom: 6px;
+    }
+    .cf-stat-value {
+      font-family: 'Plus Jakarta Sans', sans-serif;
+      font-size: 22px; font-weight: 800;
+      color: var(--navy);
+      letter-spacing: -0.02em;
+      line-height: 1;
+    }
+    .cf-stat-value small {
+      font-size: 12px; color: var(--text-dim);
+      font-weight: 600; margin-left: 2px;
+    }
+    .cf-stat-value.grade-A { color: var(--success); }
+    .cf-stat-value.grade-B { color: var(--info); }
+    .cf-stat-value.grade-C { color: var(--warning); }
+
+    /* Enrolled subjects */
+    .cf-subjects { display: flex; flex-wrap: wrap; gap: 6px; }
+    .subject-chip {
+      display: inline-flex; align-items: center; gap: 5px;
+      padding: 5px 10px;
+      border-radius: 100px;
+      background: var(--surface-alt);
+      border: 1px solid var(--border);
+      font-size: 11.5px; font-weight: 600;
+      color: var(--navy);
+    }
+    .subject-chip::before {
+      content: '';
+      width: 6px; height: 6px;
+      border-radius: 50%;
+      background: var(--dot, var(--navy));
+    }
+
+    /* Footer actions */
+    .cf-foot {
+      display: grid;
+      grid-template-columns: 1fr 1fr 1fr;
+      gap: 6px;
+      padding: var(--sp-4) var(--sp-5);
+      border-top: 1px solid var(--border);
+      background: var(--surface);
+    }
+    .cf-btn {
+      padding: 9px 8px;
+      border-radius: var(--r-md);
+      border: 1px solid var(--border);
+      background: var(--surface);
+      color: var(--navy);
+      font-family: 'Plus Jakarta Sans', sans-serif;
+      font-size: 12px; font-weight: 700;
+      text-align: center;
+      text-decoration: none;
+      display: inline-flex; align-items: center; justify-content: center;
+      gap: 5px;
+      transition: all var(--dur-fast) var(--ease);
+    }
+    .cf-btn:hover {
+      border-color: var(--navy);
+      background: var(--navy);
+      color: #fff;
+    }
+    .cf-btn svg { width: 13px; height: 13px; }
+  </style>
+</head>
+<body>
+
+<script src="../shared/js/utils.js"></script>
+<script src="../shared/js/icons.js"></script>
+<script src="../shared/js/shell.js"></script>
+
+<script>
+const TOKEN = localStorage.getItem('apex_token');
+if (!TOKEN) location.href = '../login.html';
+const API_BASE = 'http://localhost:8080';
+
+Shell.render({
+  active: 'children',
+  role: 'PARENT',
+  content: '<div class="loading">Loading children…</div>',
+});
+
+(async function boot() {
+  try {
+    const res = await fetch(API_BASE + '/api/parent/children', {
+      headers: { 'Authorization': 'Bearer ' + TOKEN },
+    });
+    if (res.status === 401 || res.status === 403) {
+      localStorage.removeItem('apex_token');
+      localStorage.removeItem('apex_user');
+      location.href = '../login.html';
+      return;
+    }
+    if (!res.ok) throw new Error('Server returned ' + res.status);
+    const data = await res.json();
+    document.getElementById('app-main').innerHTML = render(data);
+  } catch (err) {
+    document.getElementById('app-main').innerHTML = `
+      <div class="error-box">
+        <h2>Could not load children</h2>
+        <p style="color:var(--text-dim); margin:8px 0 16px;">${Utils.esc(err.message)}</p>
+        <button class="btn btn-primary" onclick="location.reload()">Try again</button>
+      </div>`;
+  }
+})();
+
+const ACCENTS = ['#14213D', '#E9B949', '#175CD3', '#6941C6'];
+
+function initials(name) {
+  return name.split(' ').filter(Boolean).slice(0, 2).map(w => w[0].toUpperCase()).join('');
+}
+
+function render(data) {
+  const { children } = data;
+  const totalSubjects = children.reduce((s, c) => s + c.subjects.length, 0);
+
+  return `
+    <header class="page-header">
+      <div>
+        <div class="page-eyebrow">Your Family</div>
+        <h1 class="page-title">My Children</h1>
+        <p class="page-subtitle">
+          ${children.length} children · ${totalSubjects} total subject enrolments ·
+          linked by your NIC
+        </p>
+      </div>
+    </header>
+
+    ${children.length === 0
+      ? `<div class="card" style="padding: var(--sp-8); text-align:center;">
+           <div style="font-family:'Plus Jakarta Sans',sans-serif; font-size:16px; font-weight:700; color:var(--navy); margin-bottom:6px;">
+             No children linked
+           </div>
+           <p style="font-size:13px; color:var(--text-dim);">
+             Ask an admin to link your NIC to your child's student record.
+           </p>
+         </div>`
+      : `<div class="children-grid">${children.map((c, i) => renderChild(c, i)).join('')}</div>`}
+  `;
+}
+
+function renderChild(c, index) {
+  const accent = ACCENTS[index % ACCENTS.length];
+  return `
+    <div class="child-full" style="--accent: ${accent}">
+      <div class="cf-body">
+        <div class="cf-head">
+          <div class="cf-avatar" style="background:${accent}">${initials(c.fullName)}</div>
+          <div class="cf-head-body">
+            <div class="cf-name">${Utils.esc(c.fullName)}</div>
+            <div class="cf-meta">
+              <span>${Utils.esc(c.studentCode)}</span>
+              <span class="cf-chip">Grade ${Utils.esc(c.grade)}</span>
+            </div>
+          </div>
+        </div>
+
+        <div class="cf-info">
+          <div class="cf-info-item">${Icon.user()}<span>${Utils.esc(c.email)}</span></div>
+          <div class="cf-info-item">${Icon.calendar()}<span>Joined ${Utils.esc(c.joined)}</span></div>
+          <div class="cf-info-item">${Icon.book()}<span>${c.classesCount} subjects</span></div>
+          <div class="cf-info-item">${Icon.pin()}<span>${c.rfidTag ? 'RFID ' + Utils.esc(c.rfidTag) : 'No RFID'}</span></div>
+        </div>
+
+        <div class="cf-stats">
+          <div class="cf-stat">
+            <div class="cf-stat-label">Attendance</div>
+            <div class="cf-stat-value">${c.attendance}<small>%</small></div>
+          </div>
+          <div class="cf-stat">
+            <div class="cf-stat-label">Sessions</div>
+            <div class="cf-stat-value">${c.attendancePresent}<small>/${c.attendanceTotal}</small></div>
+          </div>
+          <div class="cf-stat">
+            <div class="cf-stat-label">Latest</div>
+            <div class="cf-stat-value grade-${c.latestGrade}">${c.latestGrade}</div>
+          </div>
+        </div>
+
+        <div>
+          <div class="cf-stat-label" style="margin-bottom:8px;">Enrolled Subjects</div>
+          <div class="cf-subjects">
+            ${c.subjects.length === 0
+              ? `<span style="font-size:12px; color:var(--text-dim);">Not enrolled in any subjects yet.</span>`
+              : c.subjects.map(s => `<span class="subject-chip" style="--dot:${accent}">${Utils.esc(s)}</span>`).join('')}
+          </div>
+        </div>
+      </div>
+
+      <div class="cf-foot">
+        <a class="cf-btn" href="child.html?id=${c.id}&tab=results">
+          ${Icon.award()} Results
+        </a>
+        <a class="cf-btn" href="child.html?id=${c.id}&tab=attendance">
+          ${Icon.clipboard()} Attendance
+        </a>
+        <a class="cf-btn" href="child.html?id=${c.id}&tab=timetable">
+          ${Icon.calendar()} Timetable
+        </a>
+      </div>
+    </div>`;
+}
+</script>
+</body>
+</html>

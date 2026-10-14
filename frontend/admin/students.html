@@ -1,0 +1,677 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Students — Apex Institute</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Plus+Jakarta+Sans:wght@500;600;700;800&display=swap" rel="stylesheet">
+
+  <link rel="stylesheet" href="../shared/css/tokens.css">
+  <link rel="stylesheet" href="../shared/css/base.css">
+  <link rel="stylesheet" href="../shared/css/layout.css">
+  <link rel="stylesheet" href="../shared/css/components.css">
+
+  <style>
+    .students-toolbar {
+      display: flex; gap: var(--sp-3); margin-bottom: var(--sp-5);
+      align-items: center; flex-wrap: wrap;
+    }
+    .filter-pills { display: flex; gap: 6px; flex-wrap: wrap; }
+    .filter-pill {
+      padding: 7px 14px; border-radius: 100px;
+      border: 1px solid var(--border); background: var(--surface);
+      font-family: 'Plus Jakarta Sans', sans-serif;
+      font-size: 12.5px; font-weight: 600;
+      color: var(--text-dim); cursor: pointer;
+      transition: all var(--dur-fast) var(--ease);
+    }
+    .filter-pill:hover { border-color: var(--border-strong); color: var(--navy); }
+    .filter-pill.active { background: var(--navy); border-color: var(--navy); color: #fff; }
+    .filter-pill .count { opacity: .55; margin-left: 5px; font-weight: 500; }
+    .filter-pill.active .count { opacity: .8; }
+
+    .students-search {
+      position: relative; margin-left: auto;
+      min-width: 260px; flex: 1; max-width: 340px;
+    }
+    .students-search input {
+      width: 100%; padding: 9px 12px 9px 38px;
+      border: 1px solid var(--border); background: var(--surface);
+      border-radius: var(--r-md); font-family: inherit; font-size: 13px;
+      outline: none; transition: all var(--dur) var(--ease);
+    }
+    .students-search input:focus { border-color: var(--navy); box-shadow: 0 0 0 3px rgba(20,33,61,.08); }
+    .students-search svg {
+      position: absolute; left: 12px; top: 50%; transform: translateY(-50%);
+      width: 16px; height: 16px; color: var(--text-faint); pointer-events: none;
+    }
+
+    .students-table-wrap {
+      background: var(--surface); border: 1px solid var(--border);
+      border-radius: var(--r-lg); overflow: hidden; box-shadow: var(--shadow-xs);
+    }
+    .students-table {
+      width: 100%; border-collapse: collapse; font-size: 13.5px;
+    }
+    .students-table th {
+      text-align: left; padding: 13px var(--sp-5);
+      background: var(--surface-alt); color: var(--text-dim);
+      font-family: 'Plus Jakarta Sans', sans-serif;
+      font-size: 11px; font-weight: 700;
+      letter-spacing: 0.06em; text-transform: uppercase;
+      border-bottom: 1px solid var(--border);
+    }
+    .students-table th.right { text-align: right; }
+    .students-table td {
+      padding: 14px var(--sp-5); border-bottom: 1px solid var(--border);
+      vertical-align: middle;
+    }
+    .students-table tr:last-child td { border-bottom: none; }
+    .students-table tbody tr:hover td { background: var(--surface-alt); }
+    .students-table tbody tr.inactive td { opacity: .55; }
+
+    .stu-cell { display: flex; align-items: center; gap: var(--sp-3); }
+    .stu-avatar {
+      width: 38px; height: 38px; border-radius: 50%;
+      background: var(--navy); color: #fff;
+      display: grid; place-items: center;
+      font-family: 'Plus Jakarta Sans', sans-serif;
+      font-weight: 800; font-size: 13px;
+      flex-shrink: 0;
+    }
+    .stu-body { min-width: 0; }
+    .stu-name {
+      font-family: 'Plus Jakarta Sans', sans-serif;
+      font-size: 13.5px; font-weight: 700;
+      color: var(--navy); margin-bottom: 2px;
+    }
+    .stu-email { font-size: 12px; color: var(--text-dim); }
+
+    .id-chip {
+      display: inline-flex; padding: 3px 10px; border-radius: 100px;
+      background: var(--bg); color: var(--navy);
+      font-family: 'Plus Jakarta Sans', sans-serif;
+      font-size: 11.5px; font-weight: 800;
+      letter-spacing: 0.03em;
+    }
+    .grade-chip {
+      display: inline-flex; padding: 3px 10px; border-radius: 100px;
+      background: var(--gold-soft); color: #8F6B0F;
+      font-size: 11.5px; font-weight: 700;
+      letter-spacing: 0.02em;
+    }
+    .rfid-chip {
+      display: inline-flex; padding: 3px 10px; border-radius: 100px;
+      background: var(--info-bg); color: var(--info);
+      font-family: ui-monospace, monospace;
+      font-size: 11px; font-weight: 600;
+    }
+    .rfid-chip.none { background: var(--bg); color: var(--text-faint); }
+
+    .row-actions { display: flex; gap: 6px; justify-content: flex-end; }
+    .row-btn {
+      padding: 6px 12px; border-radius: var(--r-sm);
+      border: 1px solid var(--border); background: var(--surface);
+      color: var(--navy);
+      font-family: 'Plus Jakarta Sans', sans-serif;
+      font-size: 11.5px; font-weight: 700;
+      cursor: pointer; transition: all var(--dur-fast) var(--ease);
+    }
+    .row-btn:hover { border-color: var(--navy); background: var(--bg); }
+    .row-btn.danger { color: var(--danger); border-color: rgba(180,35,24,.3); }
+    .row-btn.danger:hover { background: var(--danger-bg); border-color: var(--danger); }
+
+    .students-empty {
+      padding: var(--sp-8) var(--sp-5); text-align: center;
+    }
+    .students-empty-icon {
+      width: 56px; height: 56px; margin: 0 auto var(--sp-4);
+      border-radius: 50%; background: var(--bg);
+      display: grid; place-items: center; color: var(--text-faint);
+    }
+    .students-empty-icon svg { width: 26px; height: 26px; }
+    .students-empty h3 { font-size: 16px; color: var(--navy); margin-bottom: 6px; }
+    .students-empty p { font-size: 13px; color: var(--text-dim); }
+  </style>
+</head>
+<body>
+
+<script src="../shared/js/utils.js"></script>
+<script src="../shared/js/icons.js"></script>
+<script src="../shared/js/shell.js"></script>
+<script src="../shared/js/modal.js"></script>
+
+<script>
+const TOKEN = localStorage.getItem('apex_token');
+if (!TOKEN) location.href = '../login.html';
+const API_BASE = 'http://localhost:8080';
+
+let DATA = null;
+let activeGrade = 'all';
+let query = '';
+
+Shell.render({
+  active: 'students',
+  role: 'ADMIN',
+  content: '<div class="loading">Loading students…</div>',
+});
+
+(async function boot() {
+  try {
+    const res = await fetch(API_BASE + '/api/admin/students', {
+      headers: { 'Authorization': 'Bearer ' + TOKEN },
+    });
+    if (res.status === 401 || res.status === 403) {
+      localStorage.removeItem('apex_token');
+      localStorage.removeItem('apex_user');
+      location.href = '../login.html';
+      return;
+    }
+    if (!res.ok) throw new Error('Server returned ' + res.status);
+    DATA = await res.json();
+    rerender();
+  } catch (err) {
+    document.getElementById('app-main').innerHTML = `
+      <div class="error-box">
+        <h2>Could not load students</h2>
+        <p style="color:var(--text-dim); margin:8px 0 16px;">${Utils.esc(err.message)}</p>
+        <button class="btn btn-primary" onclick="location.reload()">Try again</button>
+      </div>`;
+  }
+})();
+
+function initials(name) {
+  return name.split(' ').filter(Boolean).slice(0, 2).map(w => w[0].toUpperCase()).join('');
+}
+
+function filtered() {
+  return DATA.students.filter(s => {
+    if (activeGrade !== 'all' && s.grade !== activeGrade) return false;
+    if (query) {
+      const q = query.toLowerCase();
+      if (!s.fullName.toLowerCase().includes(q)
+       && !s.studentCode.toLowerCase().includes(q)
+       && !s.email.toLowerCase().includes(q)) return false;
+    }
+    return true;
+  });
+}
+
+/* ============================================================
+   RENDER
+   ============================================================ */
+function rerender() {
+  document.getElementById('app-main').innerHTML = renderPage();
+  wireAll();
+}
+
+function renderPage() {
+  return `
+    <header class="page-header">
+      <div>
+        <div class="page-eyebrow">People</div>
+        <h1 class="page-title">Students</h1>
+        <p class="page-subtitle">
+          ${DATA.stats.total} students · ${DATA.stats.active} active ·
+          ${DATA.stats.withRfid} RFID issued
+        </p>
+      </div>
+      <div class="page-actions">
+        <button class="btn btn-primary" id="new-btn">${Icon.award()} New Student</button>
+      </div>
+    </header>
+
+    <div id="toolbar-host">${renderToolbar()}</div>
+    <div id="table-host">${renderTable()}</div>
+  `;
+}
+
+function renderToolbar() {
+  const grades = ['10','11','12','13'];
+  const counts = { all: DATA.students.length };
+  grades.forEach(g => counts[g] = DATA.students.filter(s => s.grade === g).length);
+
+  const pill = (k, l) => `
+    <button class="filter-pill ${activeGrade === k ? 'active' : ''}" data-grade="${k}">
+      ${l}<span class="count">${counts[k] || 0}</span>
+    </button>`;
+
+  return `
+    <div class="students-toolbar">
+      <div class="filter-pills">
+        ${pill('all', 'All Grades')}
+        ${grades.map(g => pill(g, 'Grade ' + g)).join('')}
+      </div>
+      <div class="students-search">
+        ${Icon.search()}
+        <input type="text" id="search-input" placeholder="Search by name, ID, or email…" value="${Utils.esc(query)}">
+      </div>
+    </div>`;
+}
+
+function renderTable() {
+  const rows = filtered();
+  if (rows.length === 0) {
+    return `
+      <div class="students-table-wrap">
+        <div class="students-empty">
+          <div class="students-empty-icon">${Icon.user()}</div>
+          <h3>No students found</h3>
+          <p>Try a different filter or search term.</p>
+        </div>
+      </div>`;
+  }
+  return `
+    <div class="students-table-wrap">
+      <table class="students-table">
+        <thead>
+          <tr>
+            <th>Student</th>
+            <th>Student ID</th>
+            <th>Grade</th>
+            <th>RFID Tag</th>
+            <th>Enrolled</th>
+            <th class="right">Actions</th>
+          </tr>
+        </thead>
+        <tbody>${rows.map(renderRow).join('')}</tbody>
+      </table>
+    </div>`;
+}
+
+function renderRow(s) {
+  return `
+    <tr class="${s.isActive ? '' : 'inactive'}" data-sid="${s.id}">
+      <td>
+        <div class="stu-cell">
+          <div class="stu-avatar">${initials(s.fullName)}</div>
+          <div class="stu-body">
+            <div class="stu-name">${Utils.esc(s.fullName)}</div>
+            <div class="stu-email">${Utils.esc(s.email)}</div>
+          </div>
+        </div>
+      </td>
+      <td><span class="id-chip">${Utils.esc(s.studentCode)}</span></td>
+      <td><span class="grade-chip">Grade ${Utils.esc(s.grade)}</span></td>
+      <td>
+        ${s.rfidTag
+          ? `<span class="rfid-chip">${Utils.esc(s.rfidTag)}</span>`
+          : `<span class="rfid-chip none">Not issued</span>`}
+      </td>
+      <td style="font-size:12.5px; color:var(--text-dim);">${s.enrolledClasses} classes</td>
+      <td>
+        <div class="row-actions">
+          <button class="row-btn" data-rfid="${s.id}">
+            ${s.rfidTag ? 'Reissue RFID' : 'Issue RFID'}
+          </button>
+          <button class="row-btn ${s.isActive ? 'danger' : ''}" data-toggle="${s.id}">
+            ${s.isActive ? 'Deactivate' : 'Activate'}
+          </button>
+          <button class="row-btn danger" data-delete="${s.id}">Delete</button>
+        </div>
+      </td>
+    </tr>`;
+}
+
+/* ============================================================
+   CREATE MODAL
+   ============================================================ */
+function openCreateModal() {
+  const maxNum = DATA.students
+    .map(s => parseInt(s.studentCode.replace(/\D/g, ''), 10) || 0)
+    .reduce((a, b) => Math.max(a, b), 0);
+  const suggested = 'S' + String(maxNum + 1).padStart(4, '0');
+
+  const body = `
+    <div class="form-field">
+      <label>Student ID</label>
+      <input type="text" id="cs-code" value="${suggested}" required>
+      <div class="form-help">Format: S0001. Used by the student to log in.</div>
+    </div>
+
+    <div class="form-field">
+      <label>Full Name</label>
+      <input type="text" id="cs-name" placeholder="e.g. John Smith" required>
+    </div>
+
+    <div class="form-field">
+      <label>Email</label>
+      <input type="email" id="cs-email" placeholder="student@apex.edu" required>
+    </div>
+
+    <div style="display:grid; grid-template-columns:1fr 1fr; gap:12px;">
+      <div class="form-field">
+        <label>Grade</label>
+        <select id="cs-grade">
+          <option value="10">Grade 10</option>
+          <option value="11">Grade 11</option>
+          <option value="12">Grade 12</option>
+          <option value="13">Grade 13</option>
+        </select>
+      </div>
+      <div class="form-field">
+        <label>Phone</label>
+        <input type="tel" id="cs-phone" placeholder="+94 77 …" required>
+      </div>
+    </div>
+
+    <div class="form-field">
+      <label>RFID Tag</label>
+      <input type="text" id="cs-rfid"
+             placeholder="Leave blank — assign later"
+             autocomplete="off"
+             style="text-transform:uppercase; font-family: ui-monospace, monospace;">
+      <div class="form-help">Optional. You can assign the card later from the row actions.</div>
+    </div>
+
+    <div class="form-field">
+      <label>Student's Password</label>
+      <input type="password" id="cs-password" placeholder="Min 6 characters" required>
+      <div class="form-help">The student can change it after first login.</div>
+    </div>
+
+    <div style="display:flex; align-items:center; gap:10px; margin: 24px 0 16px;">
+      <div style="flex:1; height:1px; background:var(--border);"></div>
+      <div style="font-size:10.5px; font-weight:700; letter-spacing:0.12em; text-transform:uppercase; color:var(--text-faint);">Parent / Guardian</div>
+      <div style="flex:1; height:1px; background:var(--border);"></div>
+    </div>
+
+    <div class="form-field">
+      <label>Parent's Full Name</label>
+      <input type="text" id="cs-parent-name" placeholder="e.g. Michael Smith" required>
+    </div>
+
+    <div style="display:grid; grid-template-columns:1fr 1fr; gap:12px;">
+      <div class="form-field">
+        <label>Parent's Email</label>
+        <input type="email" id="cs-parent-email" placeholder="parent@example.com" required>
+      </div>
+      <div class="form-field">
+        <label>Parent's NIC</label>
+        <input type="text" id="cs-parent-nic" placeholder="e.g. 123456789V" required>
+      </div>
+    </div>
+
+    <div class="form-field">
+      <label>Parent's Starting Password</label>
+      <input type="password" id="cs-parent-password" placeholder="Min 6 characters" required>
+      <div class="form-help" style="color:#8F6B0F;">
+        If a sibling already registered with the same NIC, the existing parent account is reused.
+      </div>
+    </div>
+
+    <div class="form-actions" style="margin-top: var(--sp-4);">
+      <button class="btn btn-ghost" data-cancel>Cancel</button>
+      <button class="btn btn-primary" id="cs-submit">Create Student</button>
+    </div>
+  `;
+
+  const m = Modal.open({ title: 'New Student', body, size: 'sm' });
+
+  m.el.querySelector('[data-cancel]').onclick = () => m.close();
+
+  const rfidInput = m.el.querySelector('#cs-rfid');
+  rfidInput.oninput = () => {
+    const pos = rfidInput.selectionStart;
+    rfidInput.value = rfidInput.value.toUpperCase().replace(/[^0-9A-F]/g, '');
+    rfidInput.setSelectionRange(pos, pos);
+  };
+
+  m.el.querySelector('#cs-submit').onclick = async () => {
+    const studentCode    = m.el.querySelector('#cs-code').value.trim().toUpperCase();
+    const fullName       = m.el.querySelector('#cs-name').value.trim();
+    const email          = m.el.querySelector('#cs-email').value.trim();
+    const grade          = m.el.querySelector('#cs-grade').value;
+    const phone          = m.el.querySelector('#cs-phone').value.trim();
+    const rfidTag        = m.el.querySelector('#cs-rfid').value.trim() || null;
+    const password       = m.el.querySelector('#cs-password').value;
+    const parentFullName = m.el.querySelector('#cs-parent-name').value.trim();
+    const parentEmail    = m.el.querySelector('#cs-parent-email').value.trim();
+    const parentNic      = m.el.querySelector('#cs-parent-nic').value.trim();
+    const parentPassword = m.el.querySelector('#cs-parent-password').value;
+
+    if (!/^S\d{4,6}$/.test(studentCode))
+      return showToast('Student ID must look like S0001', 'error');
+    if (!fullName) return showToast('Please enter a name', 'error');
+    if (!email || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email))
+      return showToast('Please enter a valid student email', 'error');
+    if (!phone) return showToast('Please enter a phone number', 'error');
+
+    if (rfidTag && !/^[0-9A-F]{4,20}$/.test(rfidTag))
+      return showToast('RFID UID must be hex characters (0-9, A-F)', 'error');
+
+    if (!password || password.length < 6)
+      return showToast("Student's password must be at least 6 characters", 'error');
+
+    if (!parentFullName) return showToast("Please enter the parent's full name", 'error');
+    if (!parentEmail || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(parentEmail))
+      return showToast("Please enter a valid parent email", 'error');
+    if (!/^(\d{9}[VXvx]|\d{12})$/.test(parentNic))
+      return showToast("Parent's NIC must be 9 digits + V/X, or 12 digits", 'error');
+    if (!parentPassword || parentPassword.length < 6)
+      return showToast("Parent's password must be at least 6 characters", 'error');
+
+    const btn = m.el.querySelector('#cs-submit');
+    btn.disabled = true;
+    btn.textContent = 'Creating…';
+
+    try {
+      const res = await fetch(API_BASE + '/api/admin/students', {
+        method: 'POST',
+        headers: { 'Authorization': 'Bearer ' + TOKEN, 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          studentCode, fullName, email, grade, phone, rfidTag,
+          password,
+          parentFullName, parentEmail, parentNic, parentPassword,
+        }),
+      });
+      const data = await res.json().catch(() => ({}));
+      if (!res.ok) {
+        showToast(data.message || 'Create failed', 'error');
+        btn.disabled = false;
+        btn.textContent = 'Create Student';
+        return;
+      }
+      m.close();
+      await reload();
+      showToast(`${fullName} created with ID ${studentCode}`);
+    } catch (err) {
+      showToast('Network error: ' + err.message, 'error');
+      btn.disabled = false;
+      btn.textContent = 'Create Student';
+    }
+  };
+}
+
+/* ============================================================
+   ISSUE RFID MODAL
+   ============================================================ */
+function openRfidModal(id) {
+  const s = DATA.students.find(x => x.id === id);
+  if (!s) return;
+
+  const body = `
+    <p style="font-size:13.5px; color:var(--text-dim); line-height:1.55; margin-bottom:var(--sp-4);">
+      Assign an RFID card to <strong style="color:var(--navy);">${Utils.esc(s.fullName)}</strong>
+      (${Utils.esc(s.studentCode)}).
+    </p>
+
+    <div class="form-field">
+      <label>Card UID</label>
+      <input type="text" id="ir-rfid"
+             placeholder="e.g. 5B8CF90B"
+             value="${Utils.esc(s.rfidTag || '')}"
+             maxlength="20"
+             autocomplete="off"
+             style="text-transform:uppercase; font-family: ui-monospace, monospace; letter-spacing: 0.05em;"
+             required>
+      <div class="form-help">
+        Tap the card on the reader and copy the UID from the Serial Monitor.
+        Usually 8 hex characters, e.g. <code>5B8CF90B</code>.
+      </div>
+    </div>
+
+    <div class="form-actions" style="margin-top: var(--sp-5);">
+      <button class="btn btn-ghost" data-cancel>Cancel</button>
+      <button class="btn btn-primary" id="ir-submit">${s.rfidTag ? 'Update Tag' : 'Issue Tag'}</button>
+    </div>
+  `;
+
+  const m = Modal.open({ title: s.rfidTag ? 'Reissue RFID' : 'Issue RFID Tag', body, size: 'sm' });
+
+  m.el.querySelector('[data-cancel]').onclick = () => m.close();
+
+  const input = m.el.querySelector('#ir-rfid');
+  input.oninput = () => {
+    const pos = input.selectionStart;
+    input.value = input.value.toUpperCase().replace(/[^0-9A-F]/g, '');
+    input.setSelectionRange(pos, pos);
+  };
+  input.focus();
+
+  m.el.querySelector('#ir-submit').onclick = async () => {
+    const rfidTag = input.value.trim().toUpperCase();
+
+    if (!rfidTag) return showToast('Please enter the card UID', 'error');
+    if (!/^[0-9A-F]{4,20}$/.test(rfidTag))
+      return showToast('UID must be hex characters (0-9, A-F)', 'error');
+
+    const btn = m.el.querySelector('#ir-submit');
+    btn.disabled = true;
+    btn.textContent = 'Saving…';
+
+    try {
+      const res = await fetch(`${API_BASE}/api/admin/students/${id}/rfid`, {
+        method: 'PATCH',
+        headers: { 'Authorization': 'Bearer ' + TOKEN, 'Content-Type': 'application/json' },
+        body: JSON.stringify({ rfidTag }),
+      });
+      const data = await res.json().catch(() => ({}));
+      if (!res.ok) {
+        showToast(data.message || 'Failed', 'error');
+        btn.disabled = false;
+        btn.textContent = s.rfidTag ? 'Update Tag' : 'Issue Tag';
+        return;
+      }
+      m.close();
+      await reload();
+      showToast(`Card ${rfidTag} assigned to ${s.fullName}`);
+    } catch (err) {
+      showToast('Network error: ' + err.message, 'error');
+      btn.disabled = false;
+      btn.textContent = s.rfidTag ? 'Update Tag' : 'Issue Tag';
+    }
+  };
+}
+
+/* ============================================================
+   TOGGLE
+   ============================================================ */
+async function toggleStudent(id) {
+  const s = DATA.students.find(x => x.id === id);
+  if (!s) return;
+
+  const verb = s.isActive ? 'Deactivate' : 'Activate';
+  if (!confirm(`${verb} ${s.fullName}?`)) return;
+
+  try {
+    const res = await fetch(`${API_BASE}/api/admin/students/${id}/toggle`, {
+      method: 'PATCH',
+      headers: { 'Authorization': 'Bearer ' + TOKEN },
+    });
+    const data = await res.json().catch(() => ({}));
+    if (!res.ok) { showToast(data.message || 'Toggle failed', 'error'); return; }
+    await reload();
+    showToast(`${s.fullName} ${s.isActive ? 'deactivated' : 'activated'}`);
+  } catch (err) { showToast('Network error: ' + err.message, 'error'); }
+}
+
+/* ============================================================
+   DELETE
+   ============================================================ */
+async function deleteStudent(id) {
+  const s = DATA.students.find(x => x.id === id);
+  if (!s) return;
+
+  let msg = `Permanently delete ${s.fullName} (${s.studentCode})?\n\nThis removes:\n• Their login and profile\n• Attendance records\n• Exam results\n• Class enrollments\n\nThe parent account is kept, but unlinked from this student.`;
+
+  if (s.enrolledClasses > 0) {
+    msg += `\n\n⚠️ This student is enrolled in ${s.enrolledClasses} class${s.enrolledClasses !== 1 ? 'es' : ''}.`;
+  }
+
+  if (!confirm(msg)) return;
+
+  try {
+    const res = await fetch(`${API_BASE}/api/admin/students/${id}`, {
+      method: 'DELETE',
+      headers: { 'Authorization': 'Bearer ' + TOKEN },
+    });
+    const data = await res.json().catch(() => ({}));
+    if (!res.ok) { showToast(data.message || 'Delete failed', 'error'); return; }
+    await reload();
+    showToast(`${s.fullName} deleted`);
+  } catch (err) {
+    showToast('Network error: ' + err.message, 'error');
+  }
+}
+
+/* ============================================================
+   RELOAD + WIRING
+   ============================================================ */
+async function reload() {
+  const res = await fetch(API_BASE + '/api/admin/students', {
+    headers: { 'Authorization': 'Bearer ' + TOKEN },
+  });
+  if (res.ok) {
+    DATA = await res.json();
+    rerender();
+  }
+}
+
+function wireAll() {
+  document.getElementById('new-btn').onclick = openCreateModal;
+
+  document.querySelectorAll('.filter-pill').forEach(b => {
+    b.onclick = () => { activeGrade = b.dataset.grade; rerender(); };
+  });
+
+  const search = document.getElementById('search-input');
+  if (search) {
+    search.oninput = (e) => {
+      query = e.target.value;
+      document.getElementById('table-host').innerHTML = renderTable();
+      wireRowActions();
+    };
+  }
+
+  wireRowActions();
+}
+
+function wireRowActions() {
+  document.querySelectorAll('[data-rfid]').forEach(b => {
+    b.onclick = () => openRfidModal(parseInt(b.dataset.rfid, 10));
+  });
+  document.querySelectorAll('[data-toggle]').forEach(b => {
+    b.onclick = () => toggleStudent(parseInt(b.dataset.toggle, 10));
+  });
+  // NEW — this was missing
+  document.querySelectorAll('[data-delete]').forEach(b => {
+    b.onclick = () => deleteStudent(parseInt(b.dataset.delete, 10));
+  });
+}
+
+function showToast(message, type = 'success') {
+  let host = document.querySelector('.toast-host');
+  if (!host) { host = document.createElement('div'); host.className = 'toast-host'; document.body.appendChild(host); }
+  const el = document.createElement('div');
+  el.className = 'toast ' + (type === 'error' ? 'toast-error' : 'toast-success');
+  el.textContent = message;
+  host.appendChild(el);
+  void el.offsetWidth; el.classList.add('toast-in');
+  setTimeout(() => { el.classList.remove('toast-in'); setTimeout(() => el.remove(), 200); }, 3000);
+}
+</script>
+</body>
+</html>

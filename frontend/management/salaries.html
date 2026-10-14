@@ -1,0 +1,370 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Teacher Salaries — Apex Institute</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Plus+Jakarta+Sans:wght@500;600;700;800&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="../shared/css/tokens.css">
+  <link rel="stylesheet" href="../shared/css/base.css">
+  <link rel="stylesheet" href="../shared/css/layout.css">
+  <link rel="stylesheet" href="../shared/css/components.css">
+  <style>
+    .sal-toolbar { display:flex; gap:var(--sp-3); margin-bottom:var(--sp-5); align-items:center; flex-wrap:wrap; }
+    .filter-pills { display:flex; gap:6px; flex-wrap:wrap; }
+    .filter-pill { padding:7px 14px; border-radius:100px; border:1px solid var(--border); background:var(--surface);
+      font-family:'Plus Jakarta Sans',sans-serif; font-size:12.5px; font-weight:600; color:var(--text-dim);
+      cursor:pointer; transition:all var(--dur-fast) var(--ease); }
+    .filter-pill:hover { border-color:var(--border-strong); color:var(--navy); }
+    .filter-pill.active { background:var(--navy); border-color:var(--navy); color:#fff; }
+    .filter-pill .count { opacity:.55; margin-left:5px; font-weight:500; }
+
+    .summary-grid { display:grid; grid-template-columns:repeat(3,1fr); gap:var(--sp-4); margin-bottom:var(--sp-5); }
+    .summary-tile { background:var(--surface); border:1px solid var(--border); border-radius:var(--r-lg);
+      padding:var(--sp-4) var(--sp-5); box-shadow:var(--shadow-xs); position:relative; overflow:hidden; }
+    .summary-tile .bar { position:absolute; top:0; left:0; width:4px; height:100%; }
+    .summary-label { font-size:11px; font-weight:700; color:var(--text-dim); text-transform:uppercase;
+      letter-spacing:.08em; margin-bottom:6px; }
+    .summary-value { font-family:'Plus Jakarta Sans',sans-serif; font-size:24px; font-weight:800;
+      color:var(--navy); letter-spacing:-.02em; line-height:1.1; }
+    .summary-meta { font-size:12px; color:var(--text-dim); margin-top:4px; }
+
+    .sal-list { background:var(--surface); border:1px solid var(--border);
+      border-radius:var(--r-lg); box-shadow:var(--shadow-xs); overflow:hidden; }
+    .sal-row { display:grid; grid-template-columns:44px 1fr auto auto auto;
+      align-items:center; gap:var(--sp-4);
+      padding:var(--sp-4) var(--sp-5);
+      border-bottom:1px solid var(--border); }
+    .sal-row:last-child { border-bottom:none; }
+    .sal-row:hover { background:var(--surface-alt); }
+
+    .sal-icon { width:44px; height:44px; border-radius:50%;
+      display:grid; place-items:center; flex-shrink:0;
+      background: var(--navy); color:#fff;
+      font-family:'Plus Jakarta Sans',sans-serif;
+      font-weight:800; font-size:14px; letter-spacing:-.01em; }
+
+    .sal-title { font-family:'Plus Jakarta Sans',sans-serif;
+      font-size:13.5px; font-weight:700; color:var(--navy); margin-bottom:2px; }
+    .sal-meta { font-size:12px; color:var(--text-dim);
+      display:flex; gap:12px; flex-wrap:wrap; }
+    .sal-meta span { display:inline-flex; align-items:center; gap:4px; }
+    .sal-meta svg { width:12px; height:12px; color:var(--text-faint); }
+
+    .period-chip { display:inline-flex; padding:3px 9px; border-radius:100px;
+      background: var(--bg); font-family:'Plus Jakarta Sans',sans-serif;
+      font-size:11.5px; font-weight:700; color:var(--navy); letter-spacing:.02em; }
+
+    .sal-amount { font-family:'Plus Jakarta Sans',sans-serif;
+      font-size:15px; font-weight:800; color:var(--navy);
+      font-variant-numeric:tabular-nums; text-align:right; }
+
+    .sal-status { display:inline-flex; align-items:center; gap:6px;
+      padding:5px 11px; border-radius:100px;
+      font-size:11.5px; font-weight:700; }
+    .sal-status.paid    { background:var(--success-bg); color:var(--success); }
+    .sal-status.pending { background:var(--warning-bg); color:var(--warning); }
+    .sal-status::before { content:''; width:6px; height:6px; border-radius:50%; background:currentColor; }
+
+    .sal-actions { display:flex; gap:6px; }
+    .row-btn { padding:6px 12px; border-radius:var(--r-sm);
+      border:1px solid var(--border); background:var(--surface);
+      color:var(--navy); font-family:'Plus Jakarta Sans',sans-serif;
+      font-size:11.5px; font-weight:700; cursor:pointer;
+      transition: all var(--dur-fast) var(--ease); }
+    .row-btn:hover { border-color:var(--navy); background:var(--bg); }
+    .row-btn.primary { background:var(--navy); border-color:var(--navy); color:#fff; }
+    .row-btn.primary:hover { background:var(--navy-700); }
+
+    .sal-empty { padding:var(--sp-8) var(--sp-5); text-align:center; }
+    .sal-empty-icon { width:56px; height:56px; margin:0 auto var(--sp-4); border-radius:50%;
+      background:var(--bg); display:grid; place-items:center; color:var(--text-faint); }
+    .sal-empty-icon svg { width:26px; height:26px; }
+    .sal-empty h3 { font-size:16px; color:var(--navy); margin-bottom:6px; }
+    .sal-empty p { font-size:13px; color:var(--text-dim); }
+  </style>
+</head>
+<body>
+
+<script src="../shared/js/utils.js"></script>
+<script src="../shared/js/icons.js"></script>
+<script src="../shared/js/shell.js"></script>
+<script src="../shared/js/modal.js"></script>
+
+<script>
+const TOKEN = localStorage.getItem('apex_token');
+if (!TOKEN) location.href = '../login.html';
+const API_BASE = 'http://localhost:8080';
+
+let DATA = null;
+let activeStatus = 'all';
+
+const MONTHS = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
+
+Shell.render({
+  active: 'salaries',
+  role: Shell.currentRole ? (Shell.currentRole() || 'MANAGEMENT') : 'MANAGEMENT',
+  content: '<div class="loading">Loading salaries…</div>',
+});
+
+(async function boot() {
+  try {
+    const res = await fetch(API_BASE + '/api/management/salaries', {
+      headers: { 'Authorization': 'Bearer ' + TOKEN },
+    });
+    if (res.status === 401 || res.status === 403) {
+      localStorage.removeItem('apex_token');
+      localStorage.removeItem('apex_user');
+      location.href = '../login.html';
+      return;
+    }
+    if (!res.ok) throw new Error('Server returned ' + res.status);
+    DATA = await res.json();
+    rerender();
+  } catch (err) {
+    document.getElementById('app-main').innerHTML = `
+      <div class="error-box">
+        <h2>Could not load salaries</h2>
+        <p style="color:var(--text-dim); margin:8px 0 16px;">${Utils.esc(err.message)}</p>
+        <button class="btn btn-primary" onclick="location.reload()">Try again</button>
+      </div>`;
+  }
+})();
+
+function filtered() {
+  if (activeStatus === 'all') return DATA.salaries;
+  return DATA.salaries.filter(s => s.status === activeStatus);
+}
+
+function initials(name) {
+  return name.split(' ').filter(Boolean).slice(-2).map(w => w[0].toUpperCase()).join('');
+}
+
+function rerender() {
+  document.getElementById('app-main').innerHTML = renderPage();
+  wireAll();
+}
+
+function renderPage() {
+  return `
+    <header class="page-header">
+      <div>
+        <div class="page-eyebrow">Finance</div>
+        <h1 class="page-title">Teacher Salaries</h1>
+        <p class="page-subtitle">
+          ${DATA.salaries.length} salary record${DATA.salaries.length !== 1 ? 's' : ''} ·
+          ${DATA.stats.pendingCount} pending
+        </p>
+      </div>
+      <div class="page-actions">
+        <button class="btn btn-primary" id="new-btn">${Icon.money()} New Salary Record</button>
+      </div>
+    </header>
+
+    ${renderSummary()}
+    ${renderToolbar()}
+    ${renderList()}
+  `;
+}
+
+function renderSummary() {
+  const s = DATA.stats;
+  const tile = ({ accent, label, value, meta }) => `
+    <div class="summary-tile" style="border-left: 3px solid ${accent}">
+      <div class="summary-label">${Utils.esc(label)}</div>
+      <div class="summary-value">${Utils.esc(value)}</div>
+      <div class="summary-meta">${Utils.esc(meta)}</div>
+    </div>`;
+  return `
+    <div class="summary-grid">
+      ${tile({ accent: 'var(--navy)',    label: 'Total Payroll', value: 'Rs. ' + s.total.toFixed(0),    meta: DATA.salaries.length + ' records' })}
+      ${tile({ accent: 'var(--success)', label: 'Paid',          value: 'Rs. ' + s.paid.toFixed(0),     meta: s.paidCount + ' settled' })}
+      ${tile({ accent: 'var(--warning)', label: 'Pending',       value: 'Rs. ' + s.pending.toFixed(0),  meta: s.pendingCount + ' awaiting' })}
+    </div>`;
+}
+
+function renderToolbar() {
+  const c = {
+    all: DATA.salaries.length,
+    paid: DATA.stats.paidCount,
+    pending: DATA.stats.pendingCount,
+  };
+  const pill = (k, l) => `
+    <button class="filter-pill ${activeStatus === k ? 'active' : ''}" data-status="${k}">
+      ${l}<span class="count">${c[k]}</span>
+    </button>`;
+  return `
+    <div class="sal-toolbar">
+      <div class="filter-pills">
+        ${pill('all', 'All')}
+        ${pill('paid', 'Paid')}
+        ${pill('pending', 'Pending')}
+      </div>
+    </div>`;
+}
+
+function renderList() {
+  const rows = filtered();
+  if (rows.length === 0) {
+    return `
+      <div class="sal-list">
+        <div style="padding:var(--sp-8); text-align:center; color:var(--text-dim); font-size:13px;">
+          Nothing matches this filter.
+        </div>
+      </div>`;
+  }
+  return `<div class="sal-list">${rows.map(renderRow).join('')}</div>`;
+}
+
+function renderRow(s) {
+  const isPending = s.status === 'pending';
+  const monthShort = s.month.substring(0, 3);
+  return `
+    <div class="sal-row">
+      <div class="sal-icon">${initials(s.teacherName)}</div>
+      <div>
+        <div class="sal-title">${Utils.esc(s.teacherName)}</div>
+        <div class="sal-meta">
+          <span>${Icon.calendar()} ${Utils.esc(s.month)} ${s.year}</span>
+          <span>${Icon.money()} ${Utils.esc(s.method)}</span>
+          ${s.paidOn ? `<span>${Icon.check()} Paid ${Utils.esc(s.paidOn)}</span>` : ''}
+        </div>
+      </div>
+      <span class="period-chip">${monthShort} ${s.year}</span>
+      <div class="sal-amount">Rs. ${s.amount.toFixed(2)}</div>
+      <div class="sal-actions">
+        ${isPending
+          ? `<button class="row-btn primary" data-mark="${s.id}">Mark Paid</button>`
+          : `<span class="sal-status paid">Paid</span>`}
+      </div>
+    </div>`;
+}
+
+function openCreateModal() {
+  const teacherOpts = DATA.teachers.map(t => `
+    <option value="${t.id}">${Utils.esc(t.name)}</option>`).join('');
+
+  const body = `
+    <div class="form-field">
+      <label>Teacher</label>
+      <select id="ns-teacher">${teacherOpts}</select>
+    </div>
+
+    <div style="display:grid; grid-template-columns:1fr 1fr; gap:12px;">
+      <div class="form-field">
+        <label>Month</label>
+        <select id="ns-month">
+          ${MONTHS.map((m, i) => `
+            <option value="${i+1}" ${i === new Date().getMonth() ? 'selected' : ''}>${m}</option>
+          `).join('')}
+        </select>
+      </div>
+      <div class="form-field">
+        <label>Year</label>
+        <input type="number" id="ns-year" value="${new Date().getFullYear()}" min="2020" max="2100">
+      </div>
+    </div>
+
+    <div class="form-field">
+      <label>Amount (Rs.)</label>
+      <input type="number" id="ns-amount" step="0.01" min="0" placeholder="1200.00" required>
+    </div>
+
+    <div class="form-field">
+      <label>Method</label>
+      <select id="ns-method">
+        <option value="Bank Transfer">Bank Transfer</option>
+        <option value="Cash">Cash</option>
+        <option value="Cheque">Cheque</option>
+      </select>
+    </div>
+
+    <div class="form-field">
+      <label style="display:flex; align-items:center; gap:8px; cursor:pointer; text-transform:none; letter-spacing:0; font-size:13px; font-weight:500;">
+        <input type="checkbox" id="ns-markpaid" style="width:auto; padding:0;">
+        Mark as paid now
+      </label>
+    </div>
+
+    <div class="form-actions" style="margin-top:var(--sp-5);">
+      <button class="btn btn-ghost" data-cancel>Cancel</button>
+      <button class="btn btn-primary" id="ns-submit">Add Salary Record</button>
+    </div>
+  `;
+
+  const m = Modal.open({ title: 'New Salary Record', body, size: 'sm' });
+
+  m.el.querySelector('[data-cancel]').onclick = () => m.close();
+  m.el.querySelector('#ns-submit').onclick = async () => {
+    const teacherId = parseInt(m.el.querySelector('#ns-teacher').value, 10);
+    const month = parseInt(m.el.querySelector('#ns-month').value, 10);
+    const year = parseInt(m.el.querySelector('#ns-year').value, 10);
+    const amount = parseFloat(m.el.querySelector('#ns-amount').value);
+    const method = m.el.querySelector('#ns-method').value;
+    const markPaid = m.el.querySelector('#ns-markpaid').checked;
+
+    if (isNaN(amount) || amount <= 0) return showToast('Please enter a valid amount');
+
+    try {
+      const res = await fetch(API_BASE + '/api/management/salaries', {
+        method: 'POST',
+        headers: { 'Authorization': 'Bearer ' + TOKEN, 'Content-Type': 'application/json' },
+        body: JSON.stringify({ teacherId, month, year, amount, method, markPaid }),
+      });
+      const data = await res.json().catch(() => ({}));
+      if (!res.ok) { showToast(data.message || 'Create failed'); return; }
+      m.close();
+      await reload();
+      showToast('Salary record added');
+    } catch (err) { showToast('Network error: ' + err.message); }
+  };
+}
+
+async function markPaid(id) {
+  try {
+    const res = await fetch(`${API_BASE}/api/management/salaries/${id}/mark-paid`, {
+      method: 'PATCH',
+      headers: { 'Authorization': 'Bearer ' + TOKEN },
+    });
+    const data = await res.json().catch(() => ({}));
+    if (!res.ok) { showToast(data.message || 'Failed'); return; }
+    await reload();
+    showToast('Salary marked paid');
+  } catch (err) { showToast('Network error: ' + err.message); }
+}
+
+async function reload() {
+  const res = await fetch(API_BASE + '/api/management/salaries', {
+    headers: { 'Authorization': 'Bearer ' + TOKEN },
+  });
+  if (res.ok) {
+    DATA = await res.json();
+    rerender();
+  }
+}
+
+function wireAll() {
+  document.getElementById('new-btn').onclick = openCreateModal;
+  document.querySelectorAll('.filter-pill').forEach(b => {
+    b.onclick = () => { activeStatus = b.dataset.status; rerender(); };
+  });
+  document.querySelectorAll('[data-mark]').forEach(b => {
+    b.onclick = () => markPaid(parseInt(b.dataset.mark, 10));
+  });
+}
+
+function showToast(message) {
+  let host = document.querySelector('.toast-host');
+  if (!host) { host = document.createElement('div'); host.className = 'toast-host'; document.body.appendChild(host); }
+  const el = document.createElement('div');
+  el.className = 'toast toast-success';
+  el.textContent = message;
+  host.appendChild(el);
+  void el.offsetWidth; el.classList.add('toast-in');
+  setTimeout(() => { el.classList.remove('toast-in'); setTimeout(() => el.remove(), 200); }, 3000);
+}
+</script>
+</body>
+</html>

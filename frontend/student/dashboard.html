@@ -1,0 +1,415 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Dashboard — Apex Institute</title>
+
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Plus+Jakarta+Sans:wght@500;600;700;800&display=swap" rel="stylesheet">
+
+  <link rel="stylesheet" href="../shared/css/tokens.css">
+  <link rel="stylesheet" href="../shared/css/base.css">
+  <link rel="stylesheet" href="../shared/css/layout.css">
+  <link rel="stylesheet" href="../shared/css/components.css">
+
+  <style>
+    .schedule-item {
+      display: flex; align-items: center; gap: var(--sp-4);
+      padding: var(--sp-4) var(--sp-5);
+      border-bottom: 1px solid var(--border);
+      position: relative;
+      transition: background var(--dur-fast) var(--ease);
+    }
+    .schedule-item:last-child { border-bottom: none; }
+    .schedule-item:hover { background: var(--surface-alt); }
+    .schedule-item.is-next { background: linear-gradient(90deg, rgba(233,185,73,.07), transparent); }
+    .schedule-item.is-next::before {
+      content: ''; position: absolute; left: 0; top: 12px; bottom: 12px;
+      width: 3px; background: var(--gold); border-radius: 0 3px 3px 0;
+    }
+    .schedule-time {
+      display: flex; flex-direction: column;
+      min-width: 74px; padding-right: var(--sp-4);
+      border-right: 1px solid var(--border);
+    }
+    .schedule-time .t-start {
+      font-family: 'Plus Jakarta Sans', sans-serif;
+      font-size: 15px; font-weight: 700; color: var(--navy);
+    }
+    .schedule-time .t-end { font-size: 11.5px; color: var(--text-dim); margin-top: 1px; }
+    .schedule-body { flex: 1; min-width: 0; }
+    .schedule-body h3 { font-size: 14.5px; font-weight: 700; color: var(--navy); margin-bottom: 3px; }
+    .schedule-body p {
+      font-size: 12.5px; color: var(--text-dim);
+      display: flex; align-items: center; gap: var(--sp-3);
+    }
+    .schedule-body p span { display: inline-flex; align-items: center; gap: 5px; }
+    .schedule-body p svg { width: 13px; height: 13px; color: var(--text-faint); }
+
+    .notif-item {
+      display: flex; gap: var(--sp-3);
+      padding: var(--sp-4) var(--sp-5);
+      border-bottom: 1px solid var(--border);
+      transition: background var(--dur-fast) var(--ease);
+    }
+    .notif-item:last-child { border-bottom: none; }
+    .notif-item:hover { background: var(--surface-alt); }
+    .notif-item.unread { background: rgba(233,185,73,.04); }
+    .notif-icon {
+      width: 34px; height: 34px; border-radius: var(--r-md);
+      background: var(--gold-soft); color: #8F6B0F;
+      display: grid; place-items: center; flex-shrink: 0;
+    }
+    .notif-icon svg { width: 16px; height: 16px; }
+    .notif-icon.info { background: var(--info-bg); color: var(--info); }
+    .notif-icon.success { background: var(--success-bg); color: var(--success); }
+    .notif-body { flex: 1; min-width: 0; }
+    .notif-title {
+      font-family: 'Plus Jakarta Sans', sans-serif;
+      font-size: 13px; font-weight: 700;
+      color: var(--navy); margin-bottom: 3px;
+    }
+    .notif-text {
+      font-size: 12.5px; color: var(--text-dim);
+      line-height: 1.5; display: -webkit-box;
+      line-clamp: 2; -webkit-line-clamp: 2;
+      -webkit-box-orient: vertical; overflow: hidden;
+    }
+    .notif-time { font-size: 11px; color: var(--text-faint); margin-top: 6px; }
+
+    .exam-item {
+      display: flex; align-items: center; gap: var(--sp-3);
+      padding: var(--sp-4) var(--sp-5);
+      border-bottom: 1px solid var(--border);
+      transition: background var(--dur-fast) var(--ease);
+    }
+    .exam-item:last-child { border-bottom: none; }
+    .exam-item:hover { background: var(--surface-alt); }
+    .exam-date {
+      width: 46px; height: 46px; border-radius: var(--r-md);
+      background: var(--navy); color: #fff;
+      display: flex; flex-direction: column;
+      align-items: center; justify-content: center;
+      flex-shrink: 0; line-height: 1;
+    }
+    .exam-date .d-day {
+      font-family: 'Plus Jakarta Sans', sans-serif;
+      font-size: 17px; font-weight: 800; letter-spacing: -.02em;
+    }
+    .exam-date .d-mon {
+      font-size: 9px; text-transform: uppercase;
+      letter-spacing: .08em; opacity: .7; margin-top: 3px;
+    }
+    .exam-date.gold { background: var(--gold); color: var(--navy); }
+    .exam-body { flex: 1; min-width: 0; }
+    .exam-body h4 { font-size: 13.5px; font-weight: 700; color: var(--navy); margin-bottom: 3px; }
+    .exam-body p { font-size: 12px; color: var(--text-dim); }
+
+    .quick-actions { display: grid; grid-template-columns: 1fr 1fr; gap: var(--sp-3); padding: 0 var(--sp-5) var(--sp-5); }
+    .quick-action {
+      display: flex; flex-direction: column; gap: var(--sp-3);
+      padding: var(--sp-4); border: 1px solid var(--border);
+      border-radius: var(--r-md); transition: all var(--dur) var(--ease);
+      color: var(--navy);
+    }
+    .quick-action:hover {
+      border-color: var(--navy); background: var(--surface-alt);
+      color: var(--navy); transform: translateY(-1px);
+    }
+    .quick-action-icon {
+      width: 32px; height: 32px; border-radius: var(--r-sm);
+      background: var(--bg); display: grid; place-items: center; color: var(--navy);
+    }
+    .quick-action-icon svg { width: 16px; height: 16px; }
+    .quick-action span {
+      font-family: 'Plus Jakarta Sans', sans-serif;
+      font-size: 12.5px; font-weight: 700;
+    }
+
+    .empty-state {
+      padding: var(--sp-6) var(--sp-5); text-align: center;
+      color: var(--text-dim); font-size: 13px;
+    }
+    .empty-state-icon {
+      width: 44px; height: 44px; margin: 0 auto var(--sp-3);
+      border-radius: 50%; background: var(--bg);
+      display: grid; place-items: center; color: var(--text-faint);
+    }
+    .empty-state-icon svg { width: 20px; height: 20px; }
+  </style>
+</head>
+<body>
+
+<script src="../shared/js/utils.js"></script>
+<script src="../shared/js/icons.js"></script>
+<script src="../shared/js/shell.js"></script>
+
+<script>
+/* ============================================================
+   AUTH GUARD — redirect to login if no token
+   ============================================================ */
+const TOKEN = localStorage.getItem('apex_token');
+if (!TOKEN) {
+  location.href = '../login.html';
+}
+
+/* ============================================================
+   BOOT: render shell with loading state, then fetch real data
+   ============================================================ */
+Shell.render({
+  active: 'dashboard',
+  role: 'STUDENT',
+  content: '<div class="loading">Loading dashboard…</div>',
+});
+
+(async function loadDashboard() {
+  try {
+    const res = await fetch('http://localhost:8080/api/student/dashboard', {
+      headers: { 'Authorization': 'Bearer ' + TOKEN },
+    });
+
+    if (res.status === 401 || res.status === 403) {
+      // Token invalid or wrong role
+      localStorage.removeItem('apex_token');
+      localStorage.removeItem('apex_user');
+      location.href = '../login.html';
+      return;
+    }
+
+    if (!res.ok) {
+      throw new Error('Server returned ' + res.status);
+    }
+
+    const data = await res.json();
+    document.getElementById('app-main').innerHTML = renderDashboard(data);
+
+  } catch (err) {
+    document.getElementById('app-main').innerHTML = `
+      <div class="error-box">
+        <h2>Could not load dashboard</h2>
+        <p style="color:var(--text-dim); margin:8px 0 16px;">${Utils.esc(err.message)}</p>
+        <button class="btn btn-primary" onclick="location.reload()">Try again</button>
+      </div>`;
+  }
+})();
+
+/* ============================================================
+   RENDER
+   ============================================================ */
+function renderDashboard(data) {
+  const { student, stats, todaySchedule, upcomingExams, notifications } = data;
+
+  const today = new Date();
+  const dayName = today.toLocaleDateString('en-GB', { weekday: 'long' });
+  const dateStr = today.toLocaleDateString('en-GB', { day: 'numeric', month: 'long', year: 'numeric' });
+  const hour = today.getHours();
+  const greeting = hour < 12 ? 'Good morning' : hour < 17 ? 'Good afternoon' : 'Good evening';
+  const firstName = (student.fullName || '').split(' ')[0] || 'Student';
+  const unreadCount = notifications.filter(n => n.unread).length;
+
+  const nextExam = upcomingExams[0];
+
+  return `
+    <header class="page-header">
+      <div>
+        <div class="page-eyebrow">${dayName}, ${dateStr}</div>
+        <h1 class="page-title">${greeting}, ${Utils.esc(firstName)}.</h1>
+        <p class="page-subtitle">Here's your day at a glance.</p>
+      </div>
+      <div class="page-actions">
+        <a href="timetable.html" class="btn btn-ghost">${Icon.calendar()} View Timetable</a>
+        <a href="materials.html" class="btn btn-primary">${Icon.book()} Study Materials</a>
+      </div>
+    </header>
+
+    <section class="stat-grid">
+      ${statCard({
+        icon: 'trend', tone: 'success',
+        label: 'Attendance',
+        value: stats.attendancePct, suffix: '%',
+        meta: stats.attendancePct >= 85 ? 'Above target' : 'Watch out',
+        metaClass: stats.attendancePct >= 85 ? 'stat-meta-positive' : 'stat-meta-warning',
+      })}
+      ${statCard({
+        icon: 'book', tone: 'navy',
+        label: 'Enrolled Classes',
+        value: stats.enrolledClasses,
+        meta: 'Across your subjects',
+        metaClass: 'stat-meta-neutral',
+      })}
+      ${statCard({
+        icon: 'exam', tone: 'gold',
+        label: 'Upcoming Exams',
+        value: stats.upcomingExams,
+        meta: nextExam ? 'Next: ' + Utils.esc(nextExam.date) : 'No exams scheduled',
+        metaClass: 'stat-meta-neutral',
+      })}
+      ${statCard({
+        icon: 'money', tone: 'info',
+        label: 'Fee Status',
+        value: stats.feeStatus,
+        meta: stats.feeStatus === 'Paid' ? 'Annual fees settled' : 'Payment pending',
+        metaClass: stats.feeStatus === 'Paid' ? 'stat-meta-positive' : 'stat-meta-warning',
+      })}
+    </section>
+
+    <div class="content-grid">
+      <div class="content-col">
+
+        <section class="card">
+          <div class="card-header">
+            <div>
+              <h2>Today's Schedule</h2>
+              <div class="card-sub">
+                ${todaySchedule.length === 0
+                  ? 'No classes today'
+                  : todaySchedule.length + ' class' + (todaySchedule.length !== 1 ? 'es' : '') + ' scheduled'}
+              </div>
+            </div>
+            <a href="timetable.html" class="card-link">Full timetable ${Icon.arrowR()}</a>
+          </div>
+          <div>
+            ${todaySchedule.length === 0
+              ? emptyState(Icon.calendar(), 'No classes today', 'Enjoy your day off.')
+              : todaySchedule.map(renderScheduleItem).join('')}
+          </div>
+        </section>
+
+        <section class="card">
+          <div class="card-header">
+            <div>
+              <h2>Recent Notifications</h2>
+              <div class="card-sub">${unreadCount} unread</div>
+            </div>
+            <a href="../notifications.html" class="card-link">View all ${Icon.arrowR()}</a>
+          </div>
+          <div>
+            ${notifications.length === 0
+              ? emptyState(Icon.bell(), 'No notifications yet', 'Nothing to show.')
+              : notifications.map(renderNotif).join('')}
+          </div>
+        </section>
+
+      </div>
+      <div class="content-col">
+
+        <section class="card">
+          <div class="card-header">
+            <div>
+              <h2>Upcoming Exams</h2>
+              <div class="card-sub">Published exams for your classes</div>
+            </div>
+            <a href="exams.html" class="card-link">All ${Icon.arrowR()}</a>
+          </div>
+          <div>
+            ${upcomingExams.length === 0
+              ? emptyState(Icon.exam(), 'No exams scheduled', 'Check back later.')
+              : upcomingExams.slice(0, 4).map(renderExam).join('')}
+          </div>
+        </section>
+
+        <section class="card">
+          <div class="card-header"><h2>Quick Actions</h2></div>
+          <div class="quick-actions">
+            <a class="quick-action" href="materials.html">
+              <div class="quick-action-icon">${Icon.file()}</div>
+              <span>Browse Materials</span>
+            </a>
+            <a class="quick-action" href="classes.html">
+              <div class="quick-action-icon">${Icon.book()}</div>
+              <span>My Classes</span>
+            </a>
+            <a class="quick-action" href="attendance.html">
+              <div class="quick-action-icon">${Icon.clipboard()}</div>
+              <span>Attendance</span>
+            </a>
+            <a class="quick-action" href="exams.html">
+              <div class="quick-action-icon">${Icon.award()}</div>
+              <span>My Results</span>
+            </a>
+          </div>
+        </section>
+
+      </div>
+    </div>
+  `;
+}
+
+/* ============================================================
+   RENDER HELPERS
+   ============================================================ */
+function statCard({ icon, tone, label, value, suffix = '', meta, metaClass }) {
+  return `
+    <div class="stat-card">
+      <div class="stat-icon stat-icon-${tone}">${Icon[icon]()}</div>
+      <div class="stat-body">
+        <div class="stat-label">${Utils.esc(label)}</div>
+        <div class="stat-value">${Utils.esc(String(value))}${suffix ? `<small>${suffix}</small>` : ''}</div>
+        <div class="stat-meta ${metaClass || ''}">${meta}</div>
+      </div>
+    </div>`;
+}
+
+function renderScheduleItem(c) {
+  const isNext = c.status === 'next';
+  return `
+    <div class="schedule-item ${isNext ? 'is-next' : ''}">
+      <div class="schedule-time">
+        <span class="t-start">${Utils.esc(c.start)}</span>
+        <span class="t-end">${Utils.esc(c.end)}</span>
+      </div>
+      <div class="schedule-body">
+        <h3>${Utils.esc(c.subject)}</h3>
+        <p>
+          <span>${Icon.user()} ${Utils.esc(c.teacher)}</span>
+          <span>${Icon.pin()} ${Utils.esc(c.room)}</span>
+        </p>
+      </div>
+      ${isNext ? '<span class="badge badge-gold">Up next</span>' : ''}
+    </div>`;
+}
+
+function renderNotif(n) {
+  const cls = n.kind === 'success' ? 'success' : n.kind === 'info' ? 'info' : '';
+  const iconFn = n.kind === 'success' ? Icon.check : n.kind === 'info' ? Icon.bell : Icon.award;
+  return `
+    <div class="notif-item ${n.unread ? 'unread' : ''}">
+      <div class="notif-icon ${cls}">${iconFn()}</div>
+      <div class="notif-body">
+        <div class="notif-title">${Utils.esc(n.title)}</div>
+        <div class="notif-text">${Utils.esc(n.text)}</div>
+        <div class="notif-time">${Utils.esc(n.time)}</div>
+      </div>
+    </div>`;
+}
+
+function renderExam(e) {
+  return `
+    <div class="exam-item">
+      <div class="exam-date gold">
+        <span class="d-day">${Utils.esc(e.day)}</span>
+        <span class="d-mon">${Utils.esc(e.mon)}</span>
+      </div>
+      <div class="exam-body">
+        <h4>${Utils.esc(e.subject)}</h4>
+        <p>${Utils.esc(e.title)}</p>
+      </div>
+      <span class="badge badge-neutral">${Utils.esc(e.room)}</span>
+    </div>`;
+}
+
+function emptyState(iconSvg, title, sub) {
+  return `
+    <div class="empty-state">
+      <div class="empty-state-icon">${iconSvg}</div>
+      <div style="font-family:'Plus Jakarta Sans',sans-serif; font-weight:700; color:var(--navy); font-size:13.5px; margin-bottom:3px;">
+        ${Utils.esc(title)}
+      </div>
+      <div>${Utils.esc(sub)}</div>
+    </div>`;
+}
+</script>
+</body>
+</html>

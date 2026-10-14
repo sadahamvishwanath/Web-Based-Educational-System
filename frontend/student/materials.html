@@ -1,0 +1,510 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Materials — Apex Institute</title>
+
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Plus+Jakarta+Sans:wght@500;600;700;800&display=swap" rel="stylesheet">
+
+  <link rel="stylesheet" href="../shared/css/tokens.css">
+  <link rel="stylesheet" href="../shared/css/base.css">
+  <link rel="stylesheet" href="../shared/css/layout.css">
+  <link rel="stylesheet" href="../shared/css/components.css">
+
+  <style>
+    /* ============================================================
+       Toolbar: filter pills + search
+       ============================================================ */
+    .materials-toolbar {
+      display: flex;
+      align-items: center;
+      gap: var(--sp-3);
+      margin-bottom: var(--sp-5);
+      flex-wrap: wrap;
+    }
+    .filter-pills { display: flex; gap: 6px; flex-wrap: wrap; }
+    .filter-pill {
+      padding: 7px 14px;
+      border-radius: 100px;
+      border: 1px solid var(--border);
+      background: var(--surface);
+      font-family: 'Plus Jakarta Sans', sans-serif;
+      font-size: 12.5px;
+      font-weight: 600;
+      color: var(--text-dim);
+      cursor: pointer;
+      transition: all var(--dur-fast) var(--ease);
+    }
+    .filter-pill:hover { border-color: var(--border-strong); color: var(--navy); }
+    .filter-pill.active {
+      background: var(--navy);
+      border-color: var(--navy);
+      color: #fff;
+    }
+    .filter-pill .count {
+      opacity: .55;
+      margin-left: 5px;
+      font-weight: 500;
+    }
+    .filter-pill.active .count { opacity: .75; }
+
+    .materials-search {
+      position: relative;
+      margin-left: auto;
+      min-width: 260px;
+      flex: 1;
+      max-width: 340px;
+    }
+    .materials-search input {
+      width: 100%;
+      padding: 9px 12px 9px 38px;
+      border: 1px solid var(--border);
+      background: var(--surface);
+      border-radius: var(--r-md);
+      font-family: inherit;
+      font-size: 13px;
+      color: var(--text);
+      outline: none;
+      transition: all var(--dur) var(--ease);
+    }
+    .materials-search input:focus {
+      border-color: var(--navy);
+      box-shadow: 0 0 0 3px rgba(20,33,61,.08);
+    }
+    .materials-search svg {
+      position: absolute;
+      left: 12px;
+      top: 50%;
+      transform: translateY(-50%);
+      width: 16px;
+      height: 16px;
+      color: var(--text-faint);
+      pointer-events: none;
+    }
+
+    /* ============================================================
+       Grid
+       ============================================================ */
+    .materials-grid {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: var(--sp-4);
+    }
+    @media (max-width: 1100px) { .materials-grid { grid-template-columns: repeat(2, 1fr); } }
+    @media (max-width: 700px)  { .materials-grid { grid-template-columns: 1fr; } }
+
+    /* ============================================================
+       Material card
+       ============================================================ */
+    .material-card {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: var(--r-lg);
+      padding: var(--sp-5);
+      display: flex;
+      flex-direction: column;
+      gap: var(--sp-4);
+      cursor: pointer;
+      transition: all var(--dur) var(--ease);
+      box-shadow: var(--shadow-xs);
+    }
+    .material-card:hover {
+      transform: translateY(-3px);
+      box-shadow: var(--shadow-md);
+      border-color: var(--border-strong);
+    }
+
+    .mc-top {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+    }
+    .mc-type {
+      width: 44px;
+      height: 44px;
+      border-radius: var(--r-md);
+      display: grid;
+      place-items: center;
+      flex-shrink: 0;
+    }
+    .mc-type svg { width: 22px; height: 22px; }
+    .mc-type.pdf   { background: #FEECEC; color: #B42318; }
+    .mc-type.video { background: #EAF1FE; color: #175CD3; }
+
+    .mc-size {
+      font-size: 11.5px;
+      font-weight: 600;
+      color: var(--text-dim);
+      background: var(--bg);
+      padding: 3px 9px;
+      border-radius: 100px;
+      font-variant-numeric: tabular-nums;
+    }
+
+    .mc-name {
+      font-family: 'Plus Jakarta Sans', sans-serif;
+      font-size: 14px;
+      font-weight: 700;
+      color: var(--navy);
+      line-height: 1.35;
+      letter-spacing: -0.01em;
+      word-break: break-word;
+    }
+    .mc-meta {
+      font-size: 12.5px;
+      color: var(--text-dim);
+      margin-top: 4px;
+    }
+
+    .mc-foot {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: var(--sp-3);
+      padding-top: var(--sp-3);
+      border-top: 1px solid var(--border);
+      margin-top: auto;
+      font-size: 12px;
+      color: var(--text-dim);
+    }
+    .mc-teacher {
+      display: inline-flex;
+      align-items: center;
+      gap: 5px;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      white-space: nowrap;
+      min-width: 0;
+    }
+    .mc-teacher svg { width: 13px; height: 13px; color: var(--text-faint); flex-shrink: 0; }
+    .mc-date { color: var(--text-faint); flex-shrink: 0; }
+
+    /* ============================================================
+       Empty state
+       ============================================================ */
+    .materials-empty {
+      grid-column: 1 / -1;
+      padding: var(--sp-8) var(--sp-5);
+      text-align: center;
+      background: var(--surface);
+      border: 1px dashed var(--border-strong);
+      border-radius: var(--r-lg);
+    }
+    .materials-empty .empty-icon {
+      width: 56px;
+      height: 56px;
+      margin: 0 auto var(--sp-4);
+      border-radius: 50%;
+      background: var(--bg);
+      display: grid;
+      place-items: center;
+      color: var(--text-faint);
+    }
+    .materials-empty .empty-icon svg { width: 26px; height: 26px; }
+    .materials-empty h3 {
+      font-size: 16px;
+      color: var(--navy);
+      margin-bottom: 6px;
+    }
+    .materials-empty p {
+      font-size: 13px;
+      color: var(--text-dim);
+    }
+
+    /* ============================================================
+       Viewer (inside modal)
+       ============================================================ */
+    .viewer-wrap {
+      background: #0B1220;
+      overflow: hidden;
+      height: 68vh;
+      position: relative;
+    }
+    .pdf-frame {
+      width: 100%;
+      height: 100%;
+      border: none;
+      background: #fff;
+      display: block;
+    }
+    .viewer-video {
+      display: flex;
+      flex-direction: column;
+    }
+    .video-stage {
+      flex: 1;
+      display: grid;
+      place-items: center;
+      background: radial-gradient(circle at 50% 40%, #1F2937 0%, #0B1220 100%);
+    }
+    .video-play {
+      width: 78px;
+      height: 78px;
+      border-radius: 50%;
+      background: rgba(233,185,73,.95);
+      color: var(--navy);
+      display: grid;
+      place-items: center;
+      box-shadow: 0 10px 28px rgba(233,185,73,.35);
+      transition: all var(--dur) var(--ease);
+    }
+    .video-play:hover { transform: scale(1.06); }
+    .video-play svg { width: 30px; height: 30px; margin-left: 4px; }
+
+    .video-controls {
+      padding: 14px 20px 18px;
+      background: rgba(0,0,0,.45);
+      border-top: 1px solid rgba(255,255,255,.08);
+      display: flex;
+      flex-direction: column;
+      gap: 8px;
+    }
+    .video-bar {
+      height: 4px;
+      background: rgba(255,255,255,.15);
+      border-radius: 2px;
+      position: relative;
+    }
+    .video-bar-fill {
+      position: absolute;
+      left: 0; top: 0; bottom: 0;
+      width: 0%;
+      background: var(--gold);
+      border-radius: 2px;
+    }
+    .video-time {
+      display: flex;
+      justify-content: space-between;
+      font-size: 11.5px;
+      color: rgba(255,255,255,.7);
+      font-variant-numeric: tabular-nums;
+    }
+  </style>
+</head>
+<body>
+
+<script src="../shared/js/utils.js"></script>
+<script src="../shared/js/icons.js"></script>
+<script src="../shared/js/shell.js"></script>
+<script src="../shared/js/modal.js"></script>
+
+<script>
+/* ============================================================
+   AUTH + BOOT
+   ============================================================ */
+const TOKEN = localStorage.getItem('apex_token');
+if (!TOKEN) location.href = '../login.html';
+const API_BASE = 'http://localhost:8080';
+
+let DATA = null;
+let activeSubject = 'all';
+let query = '';
+
+Shell.render({
+  active: 'materials',
+  role: 'STUDENT',
+  content: '<div class="loading">Loading materials…</div>',
+});
+
+(async function loadMaterials() {
+  try {
+    const res = await fetch(API_BASE + '/api/student/materials', {
+      headers: { 'Authorization': 'Bearer ' + TOKEN },
+    });
+
+    if (res.status === 401 || res.status === 403) {
+      localStorage.removeItem('apex_token');
+      localStorage.removeItem('apex_user');
+      location.href = '../login.html';
+      return;
+    }
+    if (!res.ok) throw new Error('Server returned ' + res.status);
+
+    DATA = await res.json();
+    rerender();
+
+  } catch (err) {
+    document.getElementById('app-main').innerHTML = `
+      <div class="error-box">
+        <h2>Could not load materials</h2>
+        <p style="color:var(--text-dim); margin:8px 0 16px;">${Utils.esc(err.message)}</p>
+        <button class="btn btn-primary" onclick="location.reload()">Try again</button>
+      </div>`;
+  }
+})();
+
+/* ============================================================
+   FILE ICONS
+   ============================================================ */
+const FileIcon = {
+  note: () => `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="9" y1="13" x2="15" y2="13"/><line x1="9" y1="17" x2="15" y2="17"/></svg>`,
+  video: () => `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><polygon points="23 7 16 12 23 17 23 7"/><rect x="1" y="5" width="15" height="14" rx="2" ry="2"/></svg>`,
+};
+
+/* ============================================================
+   FILTER + SEARCH
+   ============================================================ */
+function filtered() {
+  return DATA.materials.filter(m => {
+    if (activeSubject !== 'all' && m.subject !== activeSubject) return false;
+    if (query && !m.name.toLowerCase().includes(query.toLowerCase())) return false;
+    return true;
+  });
+}
+
+/* ============================================================
+   RENDER
+   ============================================================ */
+function rerender() {
+  document.getElementById('app-main').innerHTML = renderPage();
+  wireAll();
+}
+
+function renderPage() {
+  const s = DATA.stats;
+  return `
+    <header class="page-header">
+      <div>
+        <div class="page-eyebrow">Learning Resources</div>
+        <h1 class="page-title">Study Materials</h1>
+        <p class="page-subtitle">
+          ${s.totalFiles} file${s.totalFiles !== 1 ? 's' : ''} ·
+          ${s.notes} note${s.notes !== 1 ? 's' : ''} ·
+          ${s.videos} video${s.videos !== 1 ? 's' : ''}
+        </p>
+      </div>
+    </header>
+
+    <div id="toolbar-host">${renderToolbar()}</div>
+    <div class="materials-grid" id="grid-host">${renderGrid()}</div>
+  `;
+}
+
+function renderToolbar() {
+  const counts = { all: DATA.materials.length };
+  DATA.subjects.forEach(s => counts[s.subject] = s.count);
+
+  const pill = (key, label, count) => `
+    <button class="filter-pill ${activeSubject === key ? 'active' : ''}" data-subject="${Utils.esc(key)}">
+      ${Utils.esc(label)}<span class="count">${count}</span>
+    </button>`;
+
+  return `
+    <div class="materials-toolbar">
+      <div class="filter-pills">
+        ${pill('all', 'All', counts.all)}
+        ${DATA.subjects.map(s => pill(s.subject, s.subject, s.count)).join('')}
+      </div>
+      <div class="materials-search">
+        ${Icon.search()}
+        <input type="text" id="search-input" placeholder="Search by file name…" value="${Utils.esc(query)}">
+      </div>
+    </div>`;
+}
+
+function renderGrid() {
+  const rows = filtered();
+  if (rows.length === 0) {
+    return `
+      <div class="materials-empty">
+        <div class="empty-icon">${Icon.search()}</div>
+        <h3>No materials found</h3>
+        <p>Try a different class filter or search term.</p>
+      </div>`;
+  }
+  return rows.map(renderCard).join('');
+}
+
+function renderCard(m) {
+  return `
+    <div class="material-card" data-id="${m.id}">
+      <div class="mc-top">
+        <div class="mc-type ${m.type === 'note' ? 'pdf' : 'video'}">
+          ${FileIcon[m.type]()}
+        </div>
+        <span class="mc-size">${m.type === 'note' ? 'PDF' : 'Video'}</span>
+      </div>
+      <div>
+        <div class="mc-name">${Utils.esc(m.name)}</div>
+        <div class="mc-meta">${Utils.esc(m.subject)} · ${Utils.esc(m.className)}</div>
+      </div>
+      <div class="mc-foot">
+        <span class="mc-teacher">${Icon.user()} ${Utils.esc(m.uploader)}</span>
+        <span class="mc-date">${Utils.esc(m.uploaded)}</span>
+      </div>
+    </div>`;
+}
+
+/* ============================================================
+   VIEWER MODAL
+   ============================================================ */
+function openViewer(material) {
+  const url = API_BASE + material.url;
+
+  const preview = material.type === 'note'
+    ? `<div class="viewer-wrap">
+         <iframe class="pdf-frame" src="${url}"></iframe>
+       </div>`
+    : `<div class="viewer-wrap viewer-video">
+         <video controls style="width:100%; height:100%; background:#000;">
+           <source src="${url}">
+           Your browser does not support video playback.
+         </video>
+       </div>`;
+
+  const body = `
+    ${preview}
+    <div style="padding: var(--sp-4) var(--sp-5); display:flex; justify-content:space-between; align-items:center; border-top:1px solid var(--border);">
+      <div>
+        <div style="font-family:'Plus Jakarta Sans',sans-serif; font-size:13px; font-weight:700; color:var(--navy);">${Utils.esc(material.name)}</div>
+        <div style="font-size:12px; color:var(--text-dim); margin-top:2px;">
+          ${Utils.esc(material.subject)} · ${Utils.esc(material.className)} · Uploaded by ${Utils.esc(material.uploader)}
+        </div>
+      </div>
+      <a href="${url}" target="_blank" class="btn btn-ghost btn-sm">Open in new tab</a>
+    </div>`;
+
+  Modal.open({
+    title: material.name,
+    body,
+    size: 'lg',
+    noPad: true,
+  });
+}
+
+/* ============================================================
+   WIRING
+   ============================================================ */
+function wireAll() {
+  document.querySelectorAll('.filter-pill').forEach(b => {
+    b.onclick = () => { activeSubject = b.dataset.subject; rerender(); };
+  });
+
+  const search = document.getElementById('search-input');
+  if (search) {
+    search.oninput = (e) => {
+      query = e.target.value;
+      // Only re-render the grid, keep focus in the search box
+      document.getElementById('grid-host').innerHTML = renderGrid();
+      wireCards();
+    };
+  }
+
+  wireCards();
+}
+
+function wireCards() {
+  document.querySelectorAll('.material-card').forEach(card => {
+    card.onclick = () => {
+      const id = parseInt(card.dataset.id, 10);
+      const m = DATA.materials.find(x => x.id === id);
+      if (m) openViewer(m);
+    };
+  });
+}
+</script>
+</body>
+</html>

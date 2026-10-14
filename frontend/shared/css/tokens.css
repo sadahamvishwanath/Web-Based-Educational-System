@@ -1,0 +1,21 @@
+:root {
+  --navy:#1a1c17; --navy-700:#0c0a09; --gold:#E9B949; --gold-hover:#C99524; --gold-soft:#FBF3DC;
+  --bg:#faf8f3; --surface:#FFFFFF; --surface-alt:#f5f2eb;
+  --text:#20242D; --text-dim:#667085; --text-faint:#98A2B3;
+  --border:#e5e1d8; --border-strong:#d0cabc;
+  --success:#198754; --success-bg:#E7F4EE;
+  --warning:#B54708; --warning-bg:#FEF3E7;
+  --info:#175CD3;    --info-bg:#EAF1FE;
+  --danger:#B42318;  --danger-bg:#FEECEC;
+
+  --r-sm:6px; --r-md:10px; --r-lg:14px; --r-xl:20px;
+  --sp-1:4px; --sp-2:8px; --sp-3:12px; --sp-4:16px; --sp-5:24px; --sp-6:32px; --sp-7:48px;
+  --sidebar-w:260px; --header-h:68px;
+
+  --shadow-xs:0 1px 2px rgba(16,24,40,.05);
+  --shadow-sm:0 1px 3px rgba(16,24,40,.08),0 1px 2px rgba(16,24,40,.04);
+  --shadow-md:0 4px 8px -2px rgba(16,24,40,.08),0 2px 4px -2px rgba(16,24,40,.04);
+  --shadow-lg:0 12px 20px -6px rgba(16,24,40,.10),0 4px 8px -4px rgba(16,24,40,.05);
+
+  --ease:cubic-bezier(.4,0,.2,1); --dur-fast:140ms; --dur:200ms;
+}

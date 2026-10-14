@@ -1,0 +1,785 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Create Account — Apex Institute</title>
+
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Plus+Jakarta+Sans:wght@500;600;700;800&display=swap" rel="stylesheet">
+
+  <link rel="stylesheet" href="../shared/css/tokens.css">
+  <link rel="stylesheet" href="../shared/css/base.css">
+
+  <style>
+    /* ============================================================
+       Shell
+       ============================================================ */
+    .reg-shell {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      min-height: 100vh;
+    }
+    @media (max-width: 900px) {
+      .reg-shell { grid-template-columns: 1fr; }
+      .brand-panel { display: none; }
+    }
+
+    /* ============================================================
+       Brand panel (left) — same as login
+       ============================================================ */
+    .brand-panel {
+      background: var(--navy);
+      color: #fff;
+      padding: 48px 56px;
+      display: flex;
+      flex-direction: column;
+      position: relative;
+      overflow: hidden;
+    }
+    .brand-panel::before {
+      content: '';
+      position: absolute;
+      top: -30%; right: -30%;
+      width: 90%; height: 90%;
+      background: radial-gradient(circle, rgba(233,185,73,.14), transparent 65%);
+      pointer-events: none;
+    }
+    .brand-panel::after {
+      content: '';
+      position: absolute;
+      bottom: -20%; left: -20%;
+      width: 70%; height: 70%;
+      background: radial-gradient(circle, rgba(233,185,73,.06), transparent 70%);
+      pointer-events: none;
+    }
+
+    .brand-top {
+      display: flex;
+      align-items: center;
+      gap: 14px;
+      position: relative;
+      z-index: 1;
+    }
+    .brand-mark {
+      width: 44px; height: 44px; border-radius: 10px;
+      background: var(--gold); color: var(--navy);
+      display: grid; place-items: center;
+      font-family: 'Plus Jakarta Sans', sans-serif;
+      font-weight: 800; font-size: 20px; letter-spacing: -0.03em;
+    }
+    .brand-name {
+      font-family: 'Plus Jakarta Sans', sans-serif;
+      font-weight: 700; font-size: 17px; color: #fff;
+      letter-spacing: -0.01em;
+    }
+    .brand-sub {
+      font-size: 11.5px; color: rgba(255,255,255,.55);
+      letter-spacing: 0.02em; margin-top: -1px;
+    }
+
+    .brand-hero {
+      margin-top: auto;
+      margin-bottom: auto;
+      max-width: 520px;
+      position: relative;
+      z-index: 1;
+    }
+    .brand-eyebrow {
+      font-size: 11.5px; font-weight: 700;
+      letter-spacing: 0.16em; text-transform: uppercase;
+      color: var(--gold); margin-bottom: 20px;
+    }
+    .brand-hero h1 {
+      font-family: 'Plus Jakarta Sans', sans-serif;
+      font-size: 40px; font-weight: 800; color: #fff;
+      letter-spacing: -0.03em; line-height: 1.15;
+      margin: 0 0 20px;
+    }
+    .brand-hero p {
+      font-size: 15px; color: rgba(255,255,255,.65);
+      line-height: 1.65; max-width: 440px;
+    }
+
+    .steps-list {
+      list-style: none; padding: 0; margin: 36px 0 0;
+      display: flex; flex-direction: column; gap: 18px;
+      position: relative; z-index: 1;
+    }
+    .steps-list li {
+      display: flex; align-items: flex-start; gap: 14px;
+      font-size: 14px; color: rgba(255,255,255,.85);
+      line-height: 1.5;
+    }
+    .step-num {
+      width: 26px; height: 26px; border-radius: 50%;
+      background: rgba(233,185,73,.16);
+      color: var(--gold);
+      display: grid; place-items: center;
+      font-family: 'Plus Jakarta Sans', sans-serif;
+      font-weight: 800; font-size: 12px;
+      flex-shrink: 0; margin-top: 1px;
+    }
+    .steps-list li strong { color: #fff; font-weight: 600; }
+
+    .brand-footer {
+      font-size: 11.5px; color: rgba(255,255,255,.35);
+      position: relative; z-index: 1;
+    }
+
+    /* ============================================================
+       Form panel (right)
+       ============================================================ */
+    .form-panel {
+      background: var(--bg);
+      display: flex;
+      justify-content: center;
+      padding: 48px 40px;
+      overflow-y: auto;
+    }
+    .form-wrap { width: 100%; max-width: 560px; }
+
+    .form-brand-mobile {
+      display: none;
+      align-items: center; gap: 12px; margin-bottom: 28px;
+    }
+    @media (max-width: 900px) {
+      .form-brand-mobile { display: flex; }
+      .form-brand-mobile .brand-mark { width: 38px; height: 38px; font-size: 17px; }
+      .form-brand-mobile .brand-name { color: var(--navy); }
+      .form-brand-mobile .brand-sub { color: var(--text-dim); }
+    }
+
+    .back-link {
+      display: inline-flex; align-items: center; gap: 6px;
+      font-size: 12.5px; font-weight: 600; color: var(--text-dim);
+      margin-bottom: 28px;
+      transition: color 160ms;
+    }
+    .back-link:hover { color: var(--navy); }
+    .back-link svg { width: 14px; height: 14px; }
+
+    .form-head { margin-bottom: 30px; }
+    .form-head h2 {
+      font-family: 'Plus Jakarta Sans', sans-serif;
+      font-size: 26px; font-weight: 800; color: var(--navy);
+      letter-spacing: -0.025em; margin: 0 0 8px;
+    }
+    .form-head p {
+      font-size: 14px; color: var(--text-dim); line-height: 1.55;
+    }
+
+    /* ============================================================
+       Section header (Student / Parent)
+       ============================================================ */
+    .section-head {
+      display: flex; align-items: center; gap: 12px;
+      margin: 0 0 20px;
+    }
+    .section-num {
+      width: 26px; height: 26px; border-radius: 50%;
+      background: var(--navy); color: #fff;
+      display: grid; place-items: center;
+      font-family: 'Plus Jakarta Sans', sans-serif;
+      font-weight: 800; font-size: 12px;
+      flex-shrink: 0;
+    }
+    .section-head h3 {
+      font-family: 'Plus Jakarta Sans', sans-serif;
+      font-size: 15px; font-weight: 700; color: var(--navy);
+      letter-spacing: -0.01em; margin: 0;
+    }
+    .section-head .section-sub {
+      font-size: 12.5px; color: var(--text-dim);
+      font-weight: 400; margin-top: 2px;
+    }
+
+    /* Divider between sections */
+    .section-divide {
+      display: flex; align-items: center; gap: 12px;
+      margin: 34px 0 24px;
+      color: var(--text-faint); font-size: 11px;
+      font-weight: 700; letter-spacing: 0.12em;
+      text-transform: uppercase;
+    }
+    .section-divide::before,
+    .section-divide::after {
+      content: ''; flex: 1; height: 1px; background: var(--border);
+    }
+
+    /* ============================================================
+       Fields
+       ============================================================ */
+    .field { margin-bottom: 16px; }
+    .field label {
+      display: block;
+      font-family: 'Plus Jakarta Sans', sans-serif;
+      font-size: 12.5px; font-weight: 600; color: var(--navy);
+      margin-bottom: 7px; letter-spacing: -0.005em;
+    }
+    .field label .req { color: var(--danger); margin-left: 2px; }
+    .field input,
+    .field select {
+      width: 100%;
+      padding: 11px 14px;
+      border: 1px solid var(--border);
+      border-radius: 10px;
+      font-family: inherit;
+      font-size: 14px;
+      color: var(--text);
+      background: var(--surface);
+      outline: none;
+      transition: all 160ms cubic-bezier(.4,0,.2,1);
+      appearance: none;
+    }
+    .field select {
+      background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 24 24' fill='none' stroke='%23667085' stroke-width='2.5' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpolyline points='6 9 12 15 18 9'/%3E%3C/svg%3E");
+      background-repeat: no-repeat;
+      background-position: right 14px center;
+      padding-right: 38px;
+      cursor: pointer;
+    }
+    .field input::placeholder { color: var(--text-faint); }
+    .field input:focus,
+    .field select:focus {
+      border-color: var(--navy);
+      box-shadow: 0 0 0 3px rgba(20,33,61,.08);
+    }
+    .field input.invalid {
+      border-color: var(--danger);
+      box-shadow: 0 0 0 3px rgba(180,35,24,.08);
+    }
+    .field-help {
+      font-size: 11.5px; color: var(--text-dim);
+      margin-top: 5px; line-height: 1.5;
+    }
+    .field-help.hint-gold { color: #8F6B0F; }
+
+    /* Two-column rows */
+    .field-row {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 12px;
+    }
+    @media (max-width: 600px) { .field-row { grid-template-columns: 1fr; } }
+
+    /* ============================================================
+       Submit
+       ============================================================ */
+    .terms {
+      display: flex; align-items: flex-start; gap: 10px;
+      margin: 24px 0 20px;
+      font-size: 12.5px; color: var(--text-dim); line-height: 1.55;
+    }
+    .terms input {
+      width: 16px; height: 16px; accent-color: var(--navy);
+      cursor: pointer; margin-top: 2px; flex-shrink: 0;
+    }
+    .terms a { color: var(--navy); font-weight: 600; }
+    .terms a:hover { color: var(--gold-hover); }
+
+    .btn-register {
+      width: 100%;
+      padding: 14px 20px;
+      border-radius: 10px;
+      background: var(--navy);
+      color: #fff;
+      font-family: 'Plus Jakarta Sans', sans-serif;
+      font-size: 14px; font-weight: 700; letter-spacing: -0.005em;
+      cursor: pointer; border: none;
+      transition: all 180ms cubic-bezier(.4,0,.2,1);
+      display: flex; align-items: center; justify-content: center; gap: 8px;
+    }
+    .btn-register:hover {
+      background: var(--navy-700);
+      box-shadow: 0 6px 16px rgba(20,33,61,.18);
+    }
+    .btn-register:active { transform: translateY(1px); }
+    .btn-register:disabled { opacity: .6; cursor: not-allowed; }
+    .btn-register svg { width: 16px; height: 16px; }
+
+    .bottom-link {
+      text-align: center; margin-top: 24px;
+      font-size: 13.5px; color: var(--text-dim);
+    }
+    .bottom-link a { font-weight: 600; color: var(--navy); }
+    .bottom-link a:hover { color: var(--gold-hover); }
+
+    /* ============================================================
+       Error banner
+       ============================================================ */
+    .error-banner {
+      padding: 12px 14px;
+      background: var(--danger-bg);
+      border: 1px solid rgba(180,35,24,.2);
+      border-radius: 10px;
+      color: var(--danger);
+      font-size: 13px; font-weight: 500;
+      margin-bottom: 20px;
+      display: none;
+      align-items: flex-start; gap: 10px;
+      line-height: 1.5;
+    }
+    .error-banner.show { display: flex; }
+    .error-banner svg { width: 16px; height: 16px; flex-shrink: 0; margin-top: 1px; }
+
+    /* ============================================================
+       Success state
+       ============================================================ */
+    .success-card {
+      text-align: center;
+      padding: 48px 24px;
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: 16px;
+      box-shadow: 0 8px 24px rgba(16,24,40,.06);
+    }
+    .success-icon {
+      width: 72px; height: 72px;
+      margin: 0 auto 24px;
+      border-radius: 50%;
+      background: var(--success-bg);
+      color: var(--success);
+      display: grid; place-items: center;
+      animation: pop 400ms cubic-bezier(.34,1.56,.64,1);
+    }
+    .success-icon svg { width: 34px; height: 34px; }
+    @keyframes pop {
+      0% { transform: scale(0); }
+      100% { transform: scale(1); }
+    }
+    .success-card h2 {
+      font-family: 'Plus Jakarta Sans', sans-serif;
+      font-size: 22px; font-weight: 800; color: var(--navy);
+      letter-spacing: -0.02em;
+      margin: 0 0 10px;
+    }
+    .success-card p {
+      font-size: 14px; color: var(--text-dim);
+      line-height: 1.6; max-width: 340px; margin: 0 auto 28px;
+    }
+    .spinner {
+      width: 20px; height: 20px;
+      border: 2.5px solid var(--border);
+      border-top-color: var(--navy);
+      border-radius: 50%;
+      animation: spin 700ms linear infinite;
+      margin: 0 auto;
+    }
+    @keyframes spin {
+      to { transform: rotate(360deg); }
+    }
+  </style>
+</head>
+<body>
+
+<div class="reg-shell">
+
+  <!-- ============================================================
+       Left: brand panel
+       ============================================================ -->
+  <aside class="brand-panel">
+    <div class="brand-top">
+      <div class="brand-mark">A</div>
+      <div>
+        <div class="brand-name">Apex Institute</div>
+        <div class="brand-sub">Learning Platform</div>
+      </div>
+    </div>
+
+    <div class="brand-hero">
+      <div class="brand-eyebrow">Join Apex</div>
+      <h1>Start your learning journey.</h1>
+      <p>
+        Create your student account in a minute. Your parent or guardian
+        gets linked automatically, so everyone stays in the loop.
+      </p>
+
+      <ul class="steps-list">
+        <li>
+          <span class="step-num">1</span>
+          <span>Enter your <strong>Student ID</strong> issued by the institute</span>
+        </li>
+        <li>
+          <span class="step-num">2</span>
+          <span>Fill in your details and pick your <strong>grade</strong></span>
+        </li>
+        <li>
+          <span class="step-num">3</span>
+          <span>Add your <strong>parent or guardian</strong> — one NIC, all siblings linked</span>
+        </li>
+      </ul>
+    </div>
+
+    <div class="brand-footer">© 2026 Apex Institute · All rights reserved</div>
+  </aside>
+
+  <!-- ============================================================
+       Right: form panel
+       ============================================================ -->
+  <main class="form-panel">
+    <div class="form-wrap" id="form-wrap">
+
+      <div class="form-brand-mobile">
+        <div class="brand-mark">A</div>
+        <div>
+          <div class="brand-name">Apex Institute</div>
+          <div class="brand-sub">Learning Platform</div>
+        </div>
+      </div>
+
+      <a href="../login.html" class="back-link">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><line x1="19" y1="12" x2="5" y2="12"/><polyline points="12 19 5 12 12 5"/></svg>
+        Back to sign in
+      </a>
+
+      <header class="form-head">
+        <h2>Create your account</h2>
+        <p>Student self-registration. Your parent will be linked using their NIC.</p>
+      </header>
+
+      <form id="register-form" autocomplete="on" novalidate>
+
+        <div class="error-banner" id="error-banner">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>
+          <span id="error-text">Something went wrong.</span>
+        </div>
+
+        <!-- ====================================================
+             Section 1: Student details
+             ==================================================== -->
+        <div class="section-head">
+          <span class="section-num">1</span>
+          <div>
+            <h3>Student details</h3>
+            <div class="section-sub">Your personal information</div>
+          </div>
+        </div>
+
+        <div class="field">
+          <label for="studentId">Student ID <span class="req">*</span></label>
+          <input type="text" id="studentId" name="studentId"
+                 placeholder="S0001" autocomplete="off" required>
+          <div class="field-help">The ID issued by the institute when you joined.</div>
+        </div>
+
+        <div class="field">
+          <label for="fullName">Full Name <span class="req">*</span></label>
+          <input type="text" id="fullName" name="fullName"
+                 placeholder="e.g. John Smith" autocomplete="name" required>
+        </div>
+
+        <div class="field-row">
+          <div class="field">
+            <label for="email">Email <span class="req">*</span></label>
+            <input type="email" id="email" name="email"
+                   placeholder="you@example.com" autocomplete="email" required>
+          </div>
+          <div class="field">
+            <label for="phone">Phone <span class="req">*</span></label>
+            <input type="tel" id="phone" name="phone"
+                   placeholder="+94 77 …" autocomplete="tel" required>
+          </div>
+        </div>
+
+        <div class="field-row">
+          <div class="field">
+            <label for="grade">Grade <span class="req">*</span></label>
+            <select id="grade" name="grade" required>
+              <option value="" disabled selected>Select your grade</option>
+              <option value="10">Grade 10</option>
+              <option value="11">Grade 11</option>
+              <option value="12">Grade 12</option>
+              <option value="13">Grade 13</option>
+            </select>
+            <div class="field-help">Your current school grade.</div>
+          </div>
+          <div class="field">
+            <label for="rfidTag">RFID Tag</label>
+            <input type="text" id="rfidTag" name="rfidTag"
+                   placeholder="Optional" autocomplete="off">
+            <div class="field-help">Leave blank if not issued yet.</div>
+          </div>
+        </div>
+
+        <div class="field-row">
+          <div class="field">
+            <label for="password">Password <span class="req">*</span></label>
+            <input type="password" id="password" name="password"
+                   placeholder="Min 6 characters" autocomplete="new-password"
+                   minlength="6" required>
+          </div>
+          <div class="field">
+            <label for="confirmPassword">Confirm Password <span class="req">*</span></label>
+            <input type="password" id="confirmPassword" name="confirmPassword"
+                   placeholder="Repeat password" autocomplete="new-password"
+                   minlength="6" required>
+          </div>
+        </div>
+
+        <!-- ====================================================
+             Section 2: Parent details
+             ==================================================== -->
+        <div class="section-divide">Parent or Guardian</div>
+
+        <div class="section-head">
+          <span class="section-num">2</span>
+          <div>
+            <h3>Parent account</h3>
+            <div class="section-sub">Linked to you automatically</div>
+          </div>
+        </div>
+
+        <div class="field">
+          <label for="parentFullName">Parent's Full Name <span class="req">*</span></label>
+          <input type="text" id="parentFullName" name="parentFullName"
+                 placeholder="e.g. Michael Smith" autocomplete="off" required>
+        </div>
+
+        <div class="field-row">
+          <div class="field">
+            <label for="parentEmail">Parent's Email <span class="req">*</span></label>
+            <input type="email" id="parentEmail" name="parentEmail"
+                   placeholder="parent@example.com" autocomplete="off" required>
+          </div>
+          <div class="field">
+            <label for="parentNic">Parent's NIC <span class="req">*</span></label>
+            <input type="text" id="parentNic" name="parentNic"
+                   placeholder="e.g. 123456789V" autocomplete="off" required>
+          </div>
+        </div>
+
+        <div class="field">
+          <label for="parentPassword">Parent's Starting Password <span class="req">*</span></label>
+          <input type="password" id="parentPassword" name="parentPassword"
+                 placeholder="They can change this later" autocomplete="new-password"
+                 minlength="6" required>
+          <div class="field-help hint-gold">
+            If your sibling already registered with the same NIC, that parent account
+            is reused — you don't create a new one.
+          </div>
+        </div>
+
+        <!-- ====================================================
+             Terms + submit
+             ==================================================== -->
+        <label class="terms">
+          <input type="checkbox" id="terms" name="terms" required>
+          <span>
+            I agree to the <a href="#">Terms of Use</a> and
+            <a href="#">Privacy Policy</a>, and confirm the information
+            above is accurate.
+          </span>
+        </label>
+
+        <button type="submit" class="btn-register" id="register-btn">
+          <span>Create Account</span>
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><line x1="5" y1="12" x2="19" y2="12"/><polyline points="12 5 19 12 12 19"/></svg>
+        </button>
+
+      </form>
+
+      <p class="bottom-link">
+        Already have an account? <a href="../login.html">Sign in</a>
+      </p>
+
+    </div>
+  </main>
+
+</div>
+
+<script>
+/* ============================================================
+   BACKEND
+   ============================================================ */
+const API_BASE = 'http://localhost:8080';
+const REGISTER_ENDPOINT = API_BASE + '/api/auth/register';   // matches AuthController
+
+/* ============================================================
+   ELEMENTS
+   ============================================================ */
+const form        = document.getElementById('register-form');
+const formWrap    = document.getElementById('form-wrap');
+const errorBanner = document.getElementById('error-banner');
+const errorText   = document.getElementById('error-text');
+const registerBtn = document.getElementById('register-btn');
+
+/* ============================================================
+   ERROR DISPLAY
+   ============================================================ */
+function showError(msg) {
+  errorText.textContent = msg;
+  errorBanner.classList.add('show');
+  window.scrollTo({ top: 0, behavior: 'smooth' });
+}
+function hideError() {
+  errorBanner.classList.remove('show');
+}
+
+/* ============================================================
+   VALIDATION HELPERS
+   ============================================================ */
+function isEmail(v)     { return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(v); }
+function isStudentId(v) { return /^S\d{4,6}$/i.test(v); }
+function isNic(v)       { return /^(\d{9}[VXvx]|\d{12})$/.test(v); }
+
+/* ============================================================
+   MARK FIELD INVALID
+   ============================================================ */
+function markInvalid(el, on = true) {
+  if (!el) return;
+  el.classList.toggle('invalid', on);
+}
+
+/* ============================================================
+   LIVE VALIDATION — clears red border on input
+   ============================================================ */
+document.querySelectorAll('#register-form input, #register-form select')
+  .forEach(el => el.addEventListener('input', () => markInvalid(el, false)));
+
+/* ============================================================
+   SUBMIT
+   ============================================================ */
+form.addEventListener('submit', async (e) => {
+  e.preventDefault();
+  hideError();
+
+  // ---------- Gather values ----------
+  const v = {
+    studentId:      document.getElementById('studentId').value.trim(),
+    fullName:       document.getElementById('fullName').value.trim(),
+    email:          document.getElementById('email').value.trim(),
+    phone:          document.getElementById('phone').value.trim(),
+    grade:          document.getElementById('grade').value,
+    rfidTag:        document.getElementById('rfidTag').value.trim(),
+    password:       document.getElementById('password').value,
+    confirmPassword:document.getElementById('confirmPassword').value,
+    parentFullName: document.getElementById('parentFullName').value.trim(),
+    parentEmail:    document.getElementById('parentEmail').value.trim(),
+    parentNic:      document.getElementById('parentNic').value.trim(),
+    parentPassword: document.getElementById('parentPassword').value,
+    terms:          document.getElementById('terms').checked,
+  };
+
+  // ---------- Field-by-field validation ----------
+  if (!v.studentId)             return focusField('studentId',       'Please enter your Student ID.');
+  if (!isStudentId(v.studentId))return focusField('studentId',       'Student ID must look like S0001 (S + digits).');
+  if (!v.fullName)              return focusField('fullName',        'Please enter your full name.');
+  if (!isEmail(v.email))        return focusField('email',           'Please enter a valid email address.');
+  if (!v.phone)                 return focusField('phone',           'Please enter your phone number.');
+  if (!v.grade)                 return focusField('grade',           'Please select your grade.');
+  if (!v.password || v.password.length < 6)
+                                return focusField('password',        'Password must be at least 6 characters.');
+  if (v.password !== v.confirmPassword)
+                                return focusField('confirmPassword', 'Passwords do not match.');
+
+  if (!v.parentFullName)        return focusField('parentFullName',  "Please enter your parent's full name.");
+  if (!isEmail(v.parentEmail))  return focusField('parentEmail',     "Please enter a valid parent email address.");
+  if (!isNic(v.parentNic))      return focusField('parentNic',       "Parent's NIC must be 9 digits + V/X, or 12 digits.");
+  if (!v.parentPassword || v.parentPassword.length < 6)
+                                return focusField('parentPassword',  "Parent's password must be at least 6 characters.");
+
+  if (!v.terms)                 return showError('Please accept the Terms of Use and Privacy Policy to continue.');
+
+  // ---------- Submit to backend ----------
+  registerBtn.disabled = true;
+  const originalLabel = registerBtn.querySelector('span').textContent;
+  registerBtn.querySelector('span').textContent = 'Creating account…';
+
+  function resetButton() {
+    registerBtn.disabled = false;
+    registerBtn.querySelector('span').textContent = originalLabel;
+  }
+
+  try {
+    const res = await fetch(REGISTER_ENDPOINT, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        // ⚠️ These key names must match RegisterRequest DTO fields exactly
+        studentId:      v.studentId,
+        fullName:       v.fullName,
+        email:          v.email,
+        phone:          v.phone,
+        grade:          v.grade,
+        rfidTag:        v.rfidTag || null,
+        password:       v.password,
+        parentFullName: v.parentFullName,
+        parentEmail:    v.parentEmail,
+        parentNic:      v.parentNic,
+        parentPassword: v.parentPassword,
+      }),
+    });
+
+    const data = await res.json().catch(() => ({}));
+
+    if (!res.ok) {
+      // Backend returns ApiError { message } on 400
+      showError(data.message || data.error || 'Registration failed. Please try again.');
+      resetButton();
+      return;
+    }
+
+    // Persist session if backend returned one
+    try {
+      if (data.user)  localStorage.setItem('apex_user',  JSON.stringify(data.user));
+      if (data.token) localStorage.setItem('apex_token', data.token);
+      if (data.user && data.user.role) localStorage.setItem('apex_role', data.user.role);
+    } catch (err) { /* private mode */ }
+
+    renderSuccess(v);
+
+  } catch (err) {
+    showError('Cannot reach the server. Is the backend running on port 8080?');
+    resetButton();
+  }
+});
+
+/* ============================================================
+   FOCUS A FIELD + SHOW ERROR
+   ============================================================ */
+function focusField(id, msg) {
+  const el = document.getElementById(id);
+  markInvalid(el, true);
+  el.focus();
+  showError(msg);
+}
+
+/* ============================================================
+   SUCCESS STATE
+   ============================================================ */
+function renderSuccess(v) {
+  formWrap.innerHTML = `
+    <div class="success-card">
+      <div class="success-icon">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg>
+      </div>
+      <h2>Welcome, ${escapeHtml(v.fullName.split(' ')[0])}!</h2>
+      <p>
+        Your student account has been created and linked to your parent.
+        Taking you to your dashboard…
+      </p>
+      <div class="spinner"></div>
+    </div>
+  `;
+
+  setTimeout(() => {
+    window.location.href = 'dashboard.html';
+  }, 1600);
+}
+
+function escapeHtml(str) {
+  if (str == null) return '';
+  return String(str).replace(/[&<>"']/g, c => ({
+    '&':'&amp;', '<':'&lt;', '>':'&gt;', '"':'&quot;', "'":'&#39;'
+  }[c]));
+}
+
+/* ============================================================
+   FOCUS FIRST FIELD
+   ============================================================ */
+document.getElementById('studentId').focus();
+</script>
+</body>
+</html>

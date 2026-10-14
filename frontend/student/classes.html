@@ -1,0 +1,616 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>My Classes — Apex Institute</title>
+
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Plus+Jakarta+Sans:wght@500;600;700;800&display=swap" rel="stylesheet">
+
+  <link rel="stylesheet" href="../shared/css/tokens.css">
+  <link rel="stylesheet" href="../shared/css/base.css">
+  <link rel="stylesheet" href="../shared/css/layout.css">
+  <link rel="stylesheet" href="../shared/css/components.css">
+
+  <style>
+    /* ============================================================
+       Summary strip (above the grid)
+       ============================================================ */
+    .classes-summary {
+      display: grid;
+      grid-template-columns: repeat(4, 1fr);
+      gap: var(--sp-4);
+      margin-bottom: var(--sp-6);
+    }
+    @media (max-width: 900px) { .classes-summary { grid-template-columns: repeat(2, 1fr); } }
+
+    .summary-tile {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: var(--r-lg);
+      padding: var(--sp-4) var(--sp-5);
+      box-shadow: var(--shadow-xs);
+    }
+    .summary-label {
+      font-size: 11px;
+      font-weight: 700;
+      color: var(--text-dim);
+      text-transform: uppercase;
+      letter-spacing: 0.08em;
+      margin-bottom: 6px;
+    }
+    .summary-value {
+      font-family: 'Plus Jakarta Sans', sans-serif;
+      font-size: 24px;
+      font-weight: 800;
+      color: var(--navy);
+      letter-spacing: -0.02em;
+      line-height: 1.1;
+    }
+    .summary-value small {
+      font-size: 13px;
+      font-weight: 600;
+      color: var(--text-dim);
+      margin-left: 3px;
+    }
+
+    /* ============================================================
+       Class cards grid
+       ============================================================ */
+    .classes-grid {
+      display: grid;
+      grid-template-columns: repeat(2, 1fr);
+      gap: var(--sp-4);
+    }
+    @media (max-width: 900px) { .classes-grid { grid-template-columns: 1fr; } }
+
+    .class-card {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: var(--r-lg);
+      box-shadow: var(--shadow-xs);
+      overflow: hidden;
+      display: flex;
+      flex-direction: column;
+      transition: all var(--dur) var(--ease);
+      position: relative;
+    }
+    .class-card:hover {
+      transform: translateY(-2px);
+      box-shadow: var(--shadow-md);
+      border-color: var(--border-strong);
+    }
+
+    /* Colored top strip per subject */
+    .class-card::before {
+      content: '';
+      position: absolute;
+      top: 0; left: 0; right: 0;
+      height: 4px;
+      background: var(--accent, var(--navy));
+    }
+
+    .cc-body {
+      padding: var(--sp-5) var(--sp-5) var(--sp-4);
+      display: flex;
+      flex-direction: column;
+      gap: var(--sp-4);
+    }
+
+    .cc-head {
+      display: flex;
+      align-items: flex-start;
+      justify-content: space-between;
+      gap: var(--sp-3);
+    }
+    .cc-subject-block {
+      display: flex;
+      align-items: center;
+      gap: var(--sp-3);
+      min-width: 0;
+    }
+    .cc-icon {
+      width: 44px;
+      height: 44px;
+      border-radius: var(--r-md);
+      display: grid;
+      place-items: center;
+      flex-shrink: 0;
+      background: var(--accent-bg, rgba(20,33,61,.06));
+      color: var(--accent, var(--navy));
+    }
+    .cc-icon svg { width: 22px; height: 22px; }
+    .cc-title { min-width: 0; }
+    .cc-subject {
+      font-family: 'Plus Jakarta Sans', sans-serif;
+      font-size: 16px;
+      font-weight: 800;
+      color: var(--navy);
+      letter-spacing: -0.015em;
+      line-height: 1.2;
+      margin-bottom: 3px;
+    }
+    .cc-grade {
+      font-size: 12.5px;
+      color: var(--text-dim);
+    }
+
+    /* Info grid */
+    .cc-info {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: var(--sp-3);
+      padding: var(--sp-4);
+      background: var(--surface-alt);
+      border-radius: var(--r-md);
+      border: 1px solid var(--border);
+    }
+    .cc-info-item {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      font-size: 12.5px;
+      color: var(--text);
+      overflow: hidden;
+    }
+    .cc-info-item svg {
+      width: 14px;
+      height: 14px;
+      color: var(--text-faint);
+      flex-shrink: 0;
+    }
+    .cc-info-item span {
+      overflow: hidden;
+      text-overflow: ellipsis;
+      white-space: nowrap;
+    }
+
+    /* Footer */
+    .cc-foot {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: var(--sp-2);
+      padding: var(--sp-4) var(--sp-5);
+      border-top: 1px solid var(--border);
+      background: var(--surface);
+    }
+    .cc-status {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      font-size: 11.5px;
+      font-weight: 600;
+      color: var(--success);
+    }
+    .cc-status .dot-live {
+      width: 7px;
+      height: 7px;
+      border-radius: 50%;
+      background: var(--success);
+      box-shadow: 0 0 0 3px rgba(25,135,84,.15);
+    }
+    .cc-actions {
+      display: flex;
+      gap: 6px;
+    }
+
+    /* ============================================================
+       Enroll modal — list of available classes
+       ============================================================ */
+    .enroll-intro {
+      font-size: 13.5px;
+      color: var(--text-dim);
+      margin-bottom: var(--sp-5);
+      line-height: 1.55;
+    }
+    .enroll-list {
+      display: flex;
+      flex-direction: column;
+      gap: var(--sp-2);
+    }
+    .enroll-row {
+      display: grid;
+      grid-template-columns: 44px 1fr auto;
+      align-items: center;
+      gap: var(--sp-4);
+      padding: var(--sp-4);
+      border: 1px solid var(--border);
+      border-radius: var(--r-md);
+      background: var(--surface);
+      cursor: pointer;
+      transition: all var(--dur-fast) var(--ease);
+    }
+    .enroll-row:hover {
+      border-color: var(--navy);
+      background: var(--surface-alt);
+    }
+    .enroll-row.selected {
+      border-color: var(--navy);
+      background: rgba(20,33,61,.03);
+      box-shadow: 0 0 0 3px rgba(20,33,61,.06);
+    }
+    .enroll-row .er-icon {
+      width: 44px;
+      height: 44px;
+      border-radius: var(--r-md);
+      background: var(--accent-bg, rgba(20,33,61,.06));
+      color: var(--accent, var(--navy));
+      display: grid;
+      place-items: center;
+    }
+    .enroll-row .er-icon svg { width: 20px; height: 20px; }
+    .enroll-row .er-body { min-width: 0; }
+    .enroll-row .er-subject {
+      font-family: 'Plus Jakarta Sans', sans-serif;
+      font-size: 14px;
+      font-weight: 700;
+      color: var(--navy);
+      margin-bottom: 3px;
+    }
+    .enroll-row .er-meta {
+      font-size: 12px;
+      color: var(--text-dim);
+      display: flex;
+      gap: var(--sp-3);
+      flex-wrap: wrap;
+    }
+    .enroll-row .er-meta span { display: inline-flex; align-items: center; gap: 4px; }
+    .enroll-row .er-meta svg { width: 12px; height: 12px; color: var(--text-faint); }
+
+    .enroll-row .er-check {
+      width: 20px;
+      height: 20px;
+      border-radius: 50%;
+      border: 2px solid var(--border-strong);
+      display: grid;
+      place-items: center;
+      transition: all var(--dur-fast) var(--ease);
+    }
+    .enroll-row.selected .er-check {
+      background: var(--navy);
+      border-color: var(--navy);
+      color: #fff;
+    }
+    .enroll-row .er-check svg {
+      width: 12px;
+      height: 12px;
+      opacity: 0;
+      transition: opacity var(--dur-fast) var(--ease);
+    }
+    .enroll-row.selected .er-check svg { opacity: 1; }
+
+    .enroll-foot {
+      display: flex;
+      gap: var(--sp-2);
+      justify-content: flex-end;
+      margin-top: var(--sp-5);
+      padding-top: var(--sp-4);
+      border-top: 1px solid var(--border);
+    }
+  </style>
+</head>
+<body>
+
+<script src="../shared/js/utils.js"></script>
+<script src="../shared/js/icons.js"></script>
+<script src="../shared/js/shell.js"></script>
+<script src="../shared/js/modal.js"></script>
+
+<script>
+/* ============================================================
+   AUTH GUARD
+   ============================================================ */
+const TOKEN = localStorage.getItem('apex_token');
+if (!TOKEN) location.href = '../login.html';
+
+const API_BASE = 'http://localhost:8080';
+
+/* ============================================================
+   BOOT
+   ============================================================ */
+Shell.render({
+  active: 'classes',
+  role: 'STUDENT',
+  content: '<div class="loading">Loading classes…</div>',
+});
+
+let DATA = null;
+
+(async function loadClasses() {
+  try {
+    const res = await fetch(API_BASE + '/api/student/classes', {
+      headers: { 'Authorization': 'Bearer ' + TOKEN },
+    });
+
+    if (res.status === 401 || res.status === 403) {
+      localStorage.removeItem('apex_token');
+      localStorage.removeItem('apex_user');
+      location.href = '../login.html';
+      return;
+    }
+    if (!res.ok) throw new Error('Server returned ' + res.status);
+
+    DATA = await res.json();
+    rerender();
+
+  } catch (err) {
+    document.getElementById('app-main').innerHTML = `
+      <div class="error-box">
+        <h2>Could not load classes</h2>
+        <p style="color:var(--text-dim); margin:8px 0 16px;">${Utils.esc(err.message)}</p>
+        <button class="btn btn-primary" onclick="location.reload()">Try again</button>
+      </div>`;
+  }
+})();
+
+/* ============================================================
+   STYLE MAP
+   ============================================================ */
+const SUBJECT_STYLE = {
+  Mathematics: { accent: '#14213D', bg: 'rgba(20,33,61,.07)' },
+  Science:     { accent: '#198754', bg: 'rgba(25,135,84,.09)' },
+  Physics:     { accent: '#E9B949', bg: 'rgba(233,185,73,.16)' },
+  English:     { accent: '#175CD3', bg: 'rgba(23,92,211,.08)' },
+  ICT:         { accent: '#6941C6', bg: 'rgba(105,65,198,.08)' },
+  Biology:     { accent: '#0E9384', bg: 'rgba(14,147,132,.09)' },
+  Chemistry:   { accent: '#C11574', bg: 'rgba(193,21,116,.08)' },
+};
+function styleFor(s) {
+  return SUBJECT_STYLE[s] || { accent: '#14213D', bg: 'rgba(20,33,61,.07)' };
+}
+
+/* ============================================================
+   RENDER
+   ============================================================ */
+function rerender() {
+  document.getElementById('app-main').innerHTML = renderPage();
+  wireEnroll();
+}
+
+function renderPage() {
+  const { enrolled, available, stats } = DATA;
+
+  return `
+    <header class="page-header">
+      <div>
+        <div class="page-eyebrow">Academics</div>
+        <h1 class="page-title">My Classes</h1>
+        <p class="page-subtitle">
+          You are enrolled in ${enrolled.length} ${enrolled.length === 1 ? 'class' : 'classes'}.
+        </p>
+      </div>
+      <div class="page-actions">
+        <button class="btn btn-primary" id="enroll-btn">
+          ${Icon.award()} Enroll in a Class
+        </button>
+      </div>
+    </header>
+
+    ${renderSummary(stats)}
+    ${renderEnrolled(enrolled)}
+  `;
+}
+
+function renderSummary(s) {
+  return `
+    <div class="classes-summary">
+      <div class="summary-tile">
+        <div class="summary-label">Enrolled Classes</div>
+        <div class="summary-value">${s.enrolledCount}</div>
+      </div>
+      <div class="summary-tile">
+        <div class="summary-label">Subjects</div>
+        <div class="summary-value">${s.subjectCount}</div>
+      </div>
+      <div class="summary-tile">
+        <div class="summary-label">Teachers</div>
+        <div class="summary-value">${s.teacherCount}</div>
+      </div>
+      <div class="summary-tile">
+        <div class="summary-label">Available</div>
+        <div class="summary-value">${s.availableCount}<small>to join</small></div>
+      </div>
+    </div>`;
+}
+
+function renderEnrolled(list) {
+  if (list.length === 0) {
+    return `
+      <div class="class-card" style="padding: var(--sp-8); text-align: center;">
+        <div style="font-family:'Plus Jakarta Sans',sans-serif; font-size:16px; font-weight:700; color:var(--navy); margin-bottom:6px;">
+          No classes yet
+        </div>
+        <p style="font-size:13px; color:var(--text-dim); margin-bottom: 20px;">
+          Enroll in your first class to get started.
+        </p>
+        <button class="btn btn-primary" onclick="openEnrollModal()">
+          ${Icon.award()} Enroll Now
+        </button>
+      </div>`;
+  }
+  return `
+    <div class="classes-grid">
+      ${list.map(renderClassCard).join('')}
+    </div>`;
+}
+
+function renderClassCard(c) {
+  const s = styleFor(c.subject);
+  return `
+    <div class="class-card" style="--accent:${s.accent}; --accent-bg:${s.bg}">
+      <div class="cc-body">
+        <div class="cc-head">
+          <div class="cc-subject-block">
+            <div class="cc-icon">${Icon.book()}</div>
+            <div class="cc-title">
+              <div class="cc-subject">${Utils.esc(c.subject)}</div>
+              <div class="cc-grade">${Utils.esc(c.name)}</div>
+            </div>
+          </div>
+        </div>
+        <div class="cc-info">
+          <div class="cc-info-item">${Icon.user()}<span>${Utils.esc(c.teacher)}</span></div>
+          <div class="cc-info-item">${Icon.pin()}<span>Room ${Utils.esc(c.room)}</span></div>
+          <div class="cc-info-item">${Icon.calendar()}<span>${Utils.esc(c.day)}</span></div>
+          <div class="cc-info-item">${Icon.clock()}<span>${Utils.esc(c.time)}</span></div>
+        </div>
+      </div>
+      <div class="cc-foot">
+        <span class="cc-status">
+          <span class="dot-live"></span>
+          Enrolled ${Utils.esc(c.enrolledOn)}
+        </span>
+        <div class="cc-actions">
+          <a href="materials.html" class="btn btn-sm btn-ghost">${Icon.file()} Materials</a>
+          <a href="timetable.html" class="btn btn-sm btn-ghost">${Icon.calendar()} Timetable</a>
+        </div>
+      </div>
+    </div>`;
+}
+
+/* ============================================================
+   ENROLL MODAL
+   ============================================================ */
+function openEnrollModal() {
+  const avail = DATA.available;
+
+  if (avail.length === 0) {
+    Modal.open({
+      title: 'Enroll in a Class',
+      size: 'sm',
+      body: `
+        <p style="font-size:13.5px; color:var(--text-dim); text-align:center; padding: var(--sp-5) 0;">
+          You are already enrolled in every available class.
+        </p>
+        <div class="form-actions" style="margin-top:0;">
+          <button class="btn btn-primary" data-cancel>OK</button>
+        </div>`,
+    });
+    setTimeout(() => {
+      const btn = document.querySelector('.modal-footer .btn-primary, [data-cancel]');
+      if (btn) btn.onclick = () => document.querySelector('.modal-overlay')?.remove();
+    }, 0);
+    return;
+  }
+
+  let selectedId = null;
+
+  const rowsHtml = avail.map(c => {
+    const s = styleFor(c.subject);
+    return `
+      <div class="enroll-row" data-id="${c.id}"
+           style="--accent:${s.accent}; --accent-bg:${s.bg}">
+        <div class="er-icon">${Icon.book()}</div>
+        <div class="er-body">
+          <div class="er-subject">${Utils.esc(c.subject)} · Grade ${Utils.esc(c.grade)}</div>
+          <div class="er-meta">
+            <span>${Icon.user()} ${Utils.esc(c.teacher)}</span>
+            <span>${Icon.calendar()} ${Utils.esc(c.day)}</span>
+            <span>${Icon.clock()} ${Utils.esc(c.time)}</span>
+            <span>${Icon.pin()} ${Utils.esc(c.room)}</span>
+          </div>
+        </div>
+        <div class="er-check">${Icon.check()}</div>
+      </div>`;
+  }).join('');
+
+  const body = `
+    <p class="enroll-intro">
+      Choose a class to join. Click a row to select, then confirm below.
+    </p>
+    <div class="enroll-list" id="enroll-list">${rowsHtml}</div>
+    <div class="enroll-foot">
+      <button class="btn btn-ghost" data-cancel>Cancel</button>
+      <button class="btn btn-primary" data-confirm disabled style="opacity:.5; cursor:not-allowed;">
+        Confirm Enrollment
+      </button>
+    </div>
+  `;
+
+  const m = Modal.open({ title: 'Enroll in a Class', body, size: 'md' });
+
+  const list = m.el.querySelector('#enroll-list');
+  const confirmBtn = m.el.querySelector('[data-confirm]');
+  const cancelBtn = m.el.querySelector('[data-cancel]');
+
+  list.onclick = (e) => {
+    const row = e.target.closest('.enroll-row');
+    if (!row) return;
+    selectedId = Number(row.dataset.id);
+    list.querySelectorAll('.enroll-row').forEach(r =>
+      r.classList.toggle('selected', Number(r.dataset.id) === selectedId));
+    confirmBtn.disabled = false;
+    confirmBtn.style.opacity = '1';
+    confirmBtn.style.cursor = 'pointer';
+  };
+
+  cancelBtn.onclick = () => m.close();
+
+  confirmBtn.onclick = async () => {
+    if (!selectedId) return;
+    confirmBtn.disabled = true;
+    confirmBtn.textContent = 'Enrolling…';
+
+    try {
+      const res = await fetch(API_BASE + '/api/student/enroll/' + selectedId, {
+        method: 'POST',
+        headers: { 'Authorization': 'Bearer ' + TOKEN },
+      });
+      const data = await res.json().catch(() => ({}));
+
+      if (!res.ok) {
+        showToast(data.message || 'Enroll failed');
+        confirmBtn.disabled = false;
+        confirmBtn.textContent = 'Confirm Enrollment';
+        return;
+      }
+
+      m.close();
+      // Refetch — the class list changed
+      const refreshed = await fetch(API_BASE + '/api/student/classes', {
+        headers: { 'Authorization': 'Bearer ' + TOKEN },
+      });
+      DATA = await refreshed.json();
+      rerender();
+      showToast('Enrolled successfully');
+
+    } catch (err) {
+      showToast('Network error: ' + err.message);
+      confirmBtn.disabled = false;
+      confirmBtn.textContent = 'Confirm Enrollment';
+    }
+  };
+}
+
+/* ============================================================
+   WIRING
+   ============================================================ */
+function wireEnroll() {
+  const btn = document.getElementById('enroll-btn');
+  if (btn) btn.onclick = openEnrollModal;
+}
+
+function showToast(message) {
+  let host = document.querySelector('.toast-host');
+  if (!host) {
+    host = document.createElement('div');
+    host.className = 'toast-host';
+    document.body.appendChild(host);
+  }
+  const el = document.createElement('div');
+  el.className = 'toast toast-success';
+  el.textContent = message;
+  host.appendChild(el);
+  void el.offsetWidth;
+  el.classList.add('toast-in');
+  setTimeout(() => {
+    el.classList.remove('toast-in');
+    setTimeout(() => el.remove(), 200);
+  }, 3000);
+}
+</script>
+</body>
+</html>

@@ -1,0 +1,400 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Notifications — Apex Institute</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Plus+Jakarta+Sans:wght@500;600;700;800&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="../shared/css/tokens.css">
+  <link rel="stylesheet" href="../shared/css/base.css">
+  <link rel="stylesheet" href="../shared/css/layout.css">
+  <link rel="stylesheet" href="../shared/css/components.css">
+  <style>
+    .notif-toolbar { display:flex; gap:var(--sp-3); margin-bottom:var(--sp-5); align-items:center; flex-wrap:wrap; }
+    .filter-pills { display:flex; gap:6px; flex-wrap:wrap; }
+    .filter-pill { padding:7px 14px; border-radius:100px; border:1px solid var(--border); background:var(--surface);
+      font-family:'Plus Jakarta Sans',sans-serif; font-size:12.5px; font-weight:600; color:var(--text-dim);
+      cursor:pointer; transition:all var(--dur-fast) var(--ease); }
+    .filter-pill:hover { border-color:var(--border-strong); color:var(--navy); }
+    .filter-pill.active { background:var(--navy); border-color:var(--navy); color:#fff; }
+    .filter-pill .count { opacity:.55; margin-left:5px; font-weight:500; }
+    .filter-pill.active .count { opacity:.8; }
+
+    .notif-list { background:var(--surface); border:1px solid var(--border); border-radius:var(--r-lg);
+      box-shadow:var(--shadow-xs); overflow:hidden; }
+    .notif-card { padding:var(--sp-5); border-bottom:1px solid var(--border); display:flex; gap:var(--sp-4);
+      transition:background var(--dur-fast) var(--ease); }
+    .notif-card:last-child { border-bottom:none; }
+    .notif-card:hover { background:var(--surface-alt); }
+
+    .n-icon { width:40px; height:40px; border-radius:var(--r-md); display:grid; place-items:center; flex-shrink:0; }
+    .n-icon svg { width:18px; height:18px; }
+    .n-icon.general  { background:var(--info-bg); color:var(--info); }
+    .n-icon.students { background:var(--success-bg); color:var(--success); }
+    .n-icon.parents  { background:var(--gold-soft); color:#8F6B0F; }
+    .n-icon.teachers { background:#F4EBFF; color:#6941C6; }
+    .n-icon.class    { background:var(--navy); color:#fff; }
+
+    .n-body { flex:1; min-width:0; }
+    .n-head { display:flex; align-items:center; gap:10px; margin-bottom:6px; flex-wrap:wrap; }
+    .n-title { font-family:'Plus Jakarta Sans',sans-serif; font-size:14.5px; font-weight:800; color:var(--navy);
+      letter-spacing:-.01em; }
+    .n-audience { display:inline-flex; align-items:center; gap:5px; padding:3px 9px; border-radius:100px;
+      background:var(--bg); font-size:11px; font-weight:700; color:var(--text-dim);
+      text-transform:uppercase; letter-spacing:.04em; }
+    .n-message { font-size:13.5px; color:var(--text); line-height:1.55; }
+    .n-foot { display:flex; gap:var(--sp-4); margin-top:10px; font-size:11.5px; color:var(--text-dim);
+      flex-wrap:wrap; }
+    .n-foot span { display:inline-flex; align-items:center; gap:4px; }
+    .n-foot svg { width:12px; height:12px; color:var(--text-faint); }
+
+    .n-delete { align-self:flex-start; padding:5px 8px; border-radius:var(--r-sm); border:1px solid transparent;
+      background:transparent; color:var(--text-faint); cursor:pointer; transition:all var(--dur-fast) var(--ease); }
+    .n-delete:hover { color:var(--danger); background:var(--danger-bg); }
+    .n-delete svg { width:14px; height:14px; display:block; }
+
+    .notif-empty { padding:var(--sp-8) var(--sp-5); text-align:center; }
+    .notif-empty-icon { width:56px; height:56px; margin:0 auto var(--sp-4); border-radius:50%;
+      background:var(--bg); display:grid; place-items:center; color:var(--text-faint); }
+    .notif-empty-icon svg { width:26px; height:26px; }
+    .notif-empty h3 { font-size:16px; color:var(--navy); margin-bottom:6px; }
+    .notif-empty p { font-size:13px; color:var(--text-dim); }
+
+    /* Audience picker inside create modal */
+    .audience-grid { display:grid; grid-template-columns:repeat(4, 1fr); gap:6px; margin-bottom:var(--sp-4); }
+    .aud-btn { padding:12px 6px; border-radius:var(--r-md); border:1px solid var(--border); background:var(--surface);
+      cursor:pointer; text-align:center; transition:all var(--dur-fast) var(--ease); font-family:'Plus Jakarta Sans',sans-serif; }
+    .aud-btn:hover { border-color:var(--border-strong); }
+    .aud-btn.active { background:var(--navy); border-color:var(--navy); color:#fff; }
+    .aud-btn svg { width:16px; height:16px; margin-bottom:6px; display:block; margin-left:auto; margin-right:auto; }
+    .aud-btn span { font-size:11.5px; font-weight:700; display:block; }
+  </style>
+</head>
+<body>
+
+<script src="../shared/js/utils.js"></script>
+<script src="../shared/js/icons.js"></script>
+<script src="../shared/js/shell.js"></script>
+<script src="../shared/js/modal.js"></script>
+
+<script>
+const TOKEN = localStorage.getItem('apex_token');
+if (!TOKEN) location.href = '../login.html';
+const API_BASE = 'http://localhost:8080';
+
+let DATA = null;
+let CLASSES = [];
+let activeAudience = 'all';
+
+const AUDIENCE_META = {
+  general:  { label: 'General',  icon: () => Icon.bell() },
+  students: { label: 'Students', icon: () => Icon.award() },
+  parents:  { label: 'Parents',  icon: () => Icon.user() },
+  teachers: { label: 'Teachers', icon: () => Icon.book() },
+  class:    { label: 'Class',    icon: () => Icon.calendar() },
+};
+
+Shell.render({
+  active: 'notifications',
+  role: 'ADMIN',
+  content: '<div class="loading">Loading notifications…</div>',
+});
+
+(async function boot() {
+  try {
+    const [notifs, classes] = await Promise.all([
+      fetch(API_BASE + '/api/admin/notifications', {
+        headers: { 'Authorization': 'Bearer ' + TOKEN },
+      }),
+      fetch(API_BASE + '/api/admin/classes', {
+        headers: { 'Authorization': 'Bearer ' + TOKEN },
+      }),
+    ]);
+
+    if (notifs.status === 401 || notifs.status === 403) {
+      localStorage.removeItem('apex_token');
+      localStorage.removeItem('apex_user');
+      location.href = '../login.html';
+      return;
+    }
+
+    DATA = await notifs.json();
+    const classData = await classes.json();
+    CLASSES = (classData.classes || []).filter(c => c.isActive);
+
+    rerender();
+  } catch (err) {
+    document.getElementById('app-main').innerHTML = `
+      <div class="error-box">
+        <h2>Could not load notifications</h2>
+        <p style="color:var(--text-dim); margin:8px 0 16px;">${Utils.esc(err.message)}</p>
+        <button class="btn btn-primary" onclick="location.reload()">Try again</button>
+      </div>`;
+  }
+})();
+
+function audienceLabel(n) {
+  if (n.audience === 'class') return n.classLabel || 'Class';
+  return AUDIENCE_META[n.audience]?.label || n.audience;
+}
+
+function filtered() {
+  if (activeAudience === 'all') return DATA.notifications;
+  return DATA.notifications.filter(n => n.audience === activeAudience);
+}
+
+/* ============================================================
+   RENDER
+   ============================================================ */
+function rerender() {
+  document.getElementById('app-main').innerHTML = renderPage();
+  wireAll();
+}
+
+function renderPage() {
+  return `
+    <header class="page-header">
+      <div>
+        <div class="page-eyebrow">Communication</div>
+        <h1 class="page-title">Notifications</h1>
+        <p class="page-subtitle">
+          ${DATA.stats.total} notice${DATA.stats.total !== 1 ? 's' : ''} posted ·
+          visible to each audience instantly
+        </p>
+      </div>
+      <div class="page-actions">
+        <button class="btn btn-primary" id="new-btn">${Icon.bell()} Post Notification</button>
+      </div>
+    </header>
+
+    <div id="toolbar-host">${renderToolbar()}</div>
+    <div id="list-host">${renderList()}</div>
+  `;
+}
+
+function renderToolbar() {
+  const c = {
+    all:      DATA.stats.total,
+    general:  DATA.stats.general,
+    students: DATA.stats.students,
+    parents:  DATA.stats.parents,
+    teachers: DATA.stats.teachers,
+    class:    DATA.stats.classScoped,
+  };
+  const pill = (k, l) => `
+    <button class="filter-pill ${activeAudience === k ? 'active' : ''}" data-aud="${k}">
+      ${l}<span class="count">${c[k]}</span>
+    </button>`;
+  return `
+    <div class="notif-toolbar">
+      <div class="filter-pills">
+        ${pill('all', 'All')}
+        ${pill('general', 'General')}
+        ${pill('students', 'Students')}
+        ${pill('parents', 'Parents')}
+        ${pill('teachers', 'Teachers')}
+        ${pill('class', 'Classes')}
+      </div>
+    </div>`;
+}
+
+function renderList() {
+  const list = filtered();
+  if (list.length === 0) {
+    return `
+      <div class="notif-list">
+        <div class="notif-empty">
+          <div class="notif-empty-icon">${Icon.bell()}</div>
+          <h3>No notifications</h3>
+          <p>Nothing posted to this audience yet.</p>
+        </div>
+      </div>`;
+  }
+  return `<div class="notif-list">${list.map(renderCard).join('')}</div>`;
+}
+
+function renderCard(n) {
+  const meta = AUDIENCE_META[n.audience] || AUDIENCE_META.general;
+  return `
+    <div class="notif-card" data-id="${n.id}">
+      <div class="n-icon ${n.audience}">${meta.icon()}</div>
+      <div class="n-body">
+        <div class="n-head">
+          <div class="n-title">${Utils.esc(n.title)}</div>
+          <span class="n-audience">${Utils.esc(audienceLabel(n))}</span>
+        </div>
+        <div class="n-message">${Utils.esc(n.message)}</div>
+        <div class="n-foot">
+          <span>${Icon.user()} ${Utils.esc(n.author)}</span>
+          <span>${Icon.calendar()} ${Utils.esc(n.when)} · ${Utils.esc(n.time)}</span>
+          <span>${Icon.award()} ${n.recipientCount} recipient${n.recipientCount !== 1 ? 's' : ''}</span>
+        </div>
+      </div>
+      <button class="n-delete" data-delete="${n.id}" title="Delete">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+          <polyline points="3 6 5 6 21 6"/>
+          <path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/>
+        </svg>
+      </button>
+    </div>`;
+}
+
+/* ============================================================
+   CREATE MODAL
+   ============================================================ */
+function openCreateModal() {
+  let audience = 'general';
+
+  const body = `
+    <div class="form-field">
+      <label>Audience</label>
+      <div class="audience-grid" id="aud-grid">
+        ${Object.entries(AUDIENCE_META).map(([key, meta]) => `
+          <button type="button" class="aud-btn ${key === 'general' ? 'active' : ''}" data-aud="${key}">
+            ${meta.icon()}<span>${meta.label}</span>
+          </button>
+        `).join('')}
+      </div>
+    </div>
+
+    <div class="form-field" id="class-picker" style="display:none;">
+      <label>Target Class</label>
+      <select id="nt-class">
+        ${CLASSES.map(c => `
+          <option value="${c.id}">${Utils.esc(c.name)} · G${Utils.esc(c.grade)}</option>
+        `).join('')}
+      </select>
+    </div>
+
+    <div class="form-field">
+      <label>Title</label>
+      <input type="text" id="nt-title" placeholder="e.g. Exam Results Published" required>
+    </div>
+
+    <div class="form-field">
+      <label>Message</label>
+      <textarea id="nt-message" rows="4" placeholder="Write the notification text…"
+                style="resize:vertical; font-family:inherit; padding:10px 12px;
+                       border:1px solid var(--border); border-radius:10px;
+                       font-size:13.5px; outline:none;"></textarea>
+    </div>
+
+    <div class="form-actions" style="margin-top: var(--sp-5);">
+      <button class="btn btn-ghost" data-cancel>Cancel</button>
+      <button class="btn btn-primary" id="nt-submit">${Icon.bell()} Post Notification</button>
+    </div>
+  `;
+
+  const m = Modal.open({ title: 'New Notification', body, size: 'md' });
+
+  const grid = m.el.querySelector('#aud-grid');
+  const classPicker = m.el.querySelector('#class-picker');
+
+  grid.onclick = (e) => {
+    const btn = e.target.closest('.aud-btn');
+    if (!btn) return;
+    audience = btn.dataset.aud;
+    grid.querySelectorAll('.aud-btn').forEach(b => b.classList.toggle('active', b === btn));
+    classPicker.style.display = audience === 'class' ? 'block' : 'none';
+  };
+
+  m.el.querySelector('[data-cancel]').onclick = () => m.close();
+
+  m.el.querySelector('#nt-submit').onclick = async () => {
+    const title = m.el.querySelector('#nt-title').value.trim();
+    const message = m.el.querySelector('#nt-message').value.trim();
+    const classId = audience === 'class'
+      ? parseInt(m.el.querySelector('#nt-class').value, 10)
+      : null;
+
+    if (!title) return showToast('Please enter a title');
+    if (!message) return showToast('Please enter a message');
+    if (audience === 'class' && (!CLASSES.length || !classId))
+      return showToast('No active classes to target');
+
+    const btn = m.el.querySelector('#nt-submit');
+    btn.disabled = true;
+    btn.textContent = 'Posting…';
+
+    try {
+      const res = await fetch(API_BASE + '/api/admin/notifications', {
+        method: 'POST',
+        headers: { 'Authorization': 'Bearer ' + TOKEN, 'Content-Type': 'application/json' },
+        body: JSON.stringify({ title, message, audience, classId }),
+      });
+      const data = await res.json().catch(() => ({}));
+      if (!res.ok) {
+        showToast(data.message || 'Post failed');
+        btn.disabled = false;
+        btn.textContent = 'Post Notification';
+        return;
+      }
+      m.close();
+      await reload();
+      showToast('Notification posted');
+    } catch (err) {
+      showToast('Network error: ' + err.message);
+      btn.disabled = false;
+      btn.textContent = 'Post Notification';
+    }
+  };
+}
+
+/* ============================================================
+   DELETE
+   ============================================================ */
+async function deleteNotification(id) {
+  if (!confirm('Delete this notification? Recipients will lose it.')) return;
+  try {
+    const res = await fetch(`${API_BASE}/api/admin/notifications/${id}`, {
+      method: 'DELETE',
+      headers: { 'Authorization': 'Bearer ' + TOKEN },
+    });
+    const data = await res.json().catch(() => ({}));
+    if (!res.ok) { showToast(data.message || 'Delete failed'); return; }
+    await reload();
+    showToast('Notification removed');
+  } catch (err) { showToast('Network error: ' + err.message); }
+}
+
+/* ============================================================
+   RELOAD + WIRING
+   ============================================================ */
+async function reload() {
+  const res = await fetch(API_BASE + '/api/admin/notifications', {
+    headers: { 'Authorization': 'Bearer ' + TOKEN },
+  });
+  if (res.ok) {
+    DATA = await res.json();
+    rerender();
+  }
+}
+
+function wireAll() {
+  document.getElementById('new-btn').onclick = openCreateModal;
+  document.querySelectorAll('.filter-pill').forEach(b => {
+    b.onclick = () => { activeAudience = b.dataset.aud; rerender(); };
+  });
+  document.querySelectorAll('[data-delete]').forEach(b => {
+    b.onclick = (e) => {
+      e.stopPropagation();
+      deleteNotification(parseInt(b.dataset.delete, 10));
+    };
+  });
+}
+
+function showToast(message) {
+  let host = document.querySelector('.toast-host');
+  if (!host) { host = document.createElement('div'); host.className = 'toast-host'; document.body.appendChild(host); }
+  const el = document.createElement('div');
+  el.className = 'toast toast-success';
+  el.textContent = message;
+  host.appendChild(el);
+  void el.offsetWidth; el.classList.add('toast-in');
+  setTimeout(() => { el.classList.remove('toast-in'); setTimeout(() => el.remove(), 200); }, 3000);
+}
+</script>
+</body>
+</html>

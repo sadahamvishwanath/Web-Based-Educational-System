@@ -1,0 +1,585 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Attendance — Apex Institute</title>
+
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Plus+Jakarta+Sans:wght@500;600;700;800&display=swap" rel="stylesheet">
+
+  <link rel="stylesheet" href="../shared/css/tokens.css">
+  <link rel="stylesheet" href="../shared/css/base.css">
+  <link rel="stylesheet" href="../shared/css/layout.css">
+  <link rel="stylesheet" href="../shared/css/components.css">
+
+  <style>
+    /* ---------- Toolbar ---------- */
+    .att-toolbar {
+      display: grid;
+      grid-template-columns: 1.3fr 1fr auto;
+      gap: var(--sp-3);
+      padding: var(--sp-4);
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: var(--r-lg);
+      box-shadow: var(--shadow-xs);
+      margin-bottom: var(--sp-5);
+      align-items: end;
+    }
+    @media (max-width: 900px) {
+      .att-toolbar { grid-template-columns: 1fr; }
+    }
+
+    .att-field { display: flex; flex-direction: column; gap: 6px; }
+    .att-field label {
+      font-family: 'Plus Jakarta Sans', sans-serif;
+      font-size: 11.5px; font-weight: 700;
+      color: var(--navy);
+      text-transform: uppercase;
+      letter-spacing: 0.06em;
+    }
+    .att-field select,
+    .att-field input {
+      padding: 10px 12px;
+      border: 1px solid var(--border);
+      border-radius: var(--r-md);
+      background: var(--surface);
+      font-family: inherit; font-size: 13.5px;
+      color: var(--text); outline: none;
+      transition: all var(--dur-fast) var(--ease);
+    }
+    .att-field select:focus,
+    .att-field input:focus {
+      border-color: var(--navy);
+      box-shadow: 0 0 0 3px rgba(20,33,61,.08);
+    }
+
+    /* ---------- Legend / quick actions ---------- */
+    .att-legend {
+      display: flex; align-items: center;
+      gap: var(--sp-2);
+      padding: var(--sp-3) var(--sp-5);
+      background: var(--surface-alt);
+      border-bottom: 1px solid var(--border);
+      flex-wrap: wrap;
+    }
+    .att-legend .lbl {
+      font-size: 11.5px; font-weight: 700;
+      color: var(--text-dim);
+      text-transform: uppercase;
+      letter-spacing: 0.06em;
+      margin-right: var(--sp-3);
+    }
+    .att-chip {
+      display: inline-flex; align-items: center; gap: 6px;
+      padding: 5px 11px;
+      border-radius: 100px;
+      border: 1px solid var(--border);
+      background: var(--surface);
+      font-family: 'Plus Jakarta Sans', sans-serif;
+      font-size: 11.5px; font-weight: 700;
+      color: var(--text-dim);
+      cursor: pointer;
+      transition: all var(--dur-fast) var(--ease);
+    }
+    .att-chip:hover { border-color: var(--border-strong); color: var(--navy); }
+    .att-chip svg { width: 13px; height: 13px; }
+
+    /* ---------- Roster ---------- */
+    .roster-list { display: flex; flex-direction: column; }
+
+    .roster-row {
+      display: grid;
+      grid-template-columns: 48px 1fr auto;
+      gap: var(--sp-4);
+      align-items: center;
+      padding: var(--sp-4) var(--sp-5);
+      border-bottom: 1px solid var(--border);
+      transition: background var(--dur-fast) var(--ease);
+    }
+    .roster-row:last-child { border-bottom: none; }
+    .roster-row:hover { background: var(--surface-alt); }
+
+    .r-avatar {
+      width: 44px; height: 44px;
+      border-radius: 50%;
+      background: var(--navy); color: #fff;
+      display: grid; place-items: center;
+      font-family: 'Plus Jakarta Sans', sans-serif;
+      font-weight: 800; font-size: 14px;
+      letter-spacing: -0.01em;
+      flex-shrink: 0;
+    }
+    .r-body { min-width: 0; }
+    .r-name {
+      font-family: 'Plus Jakarta Sans', sans-serif;
+      font-size: 14px; font-weight: 700;
+      color: var(--navy); margin-bottom: 2px;
+    }
+    .r-meta {
+      font-size: 12px; color: var(--text-dim);
+      display: flex; gap: 10px; flex-wrap: wrap;
+    }
+    .r-meta span { display: inline-flex; align-items: center; gap: 4px; }
+    .r-meta svg { width: 12px; height: 12px; color: var(--text-faint); }
+
+    /* ---------- Status toggle group ---------- */
+    .status-toggle {
+      display: inline-flex;
+      border: 1px solid var(--border);
+      border-radius: var(--r-md);
+      overflow: hidden;
+      background: var(--surface);
+      flex-shrink: 0;
+    }
+    .status-toggle button {
+      padding: 8px 14px;
+      font-family: 'Plus Jakarta Sans', sans-serif;
+      font-size: 12px; font-weight: 700;
+      color: var(--text-dim);
+      border: none;
+      background: transparent;
+      cursor: pointer;
+      transition: all var(--dur-fast) var(--ease);
+      border-right: 1px solid var(--border);
+      display: inline-flex; align-items: center; gap: 5px;
+    }
+    .status-toggle button:last-child { border-right: none; }
+    .status-toggle button:hover { background: var(--bg); color: var(--navy); }
+
+    .status-toggle button.active[data-status="Present"] {
+      background: var(--success); color: #fff;
+    }
+    .status-toggle button.active[data-status="Late"] {
+      background: var(--gold); color: var(--navy);
+    }
+    .status-toggle button.active[data-status="Absent"] {
+      background: var(--danger); color: #fff;
+    }
+
+    /* ---------- Save footer ---------- */
+    .att-footer {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      gap: var(--sp-3);
+      padding: var(--sp-4) var(--sp-5);
+      border-top: 1px solid var(--border);
+      background: var(--surface-alt);
+      flex-wrap: wrap;
+    }
+    .att-footer-info {
+      font-size: 13px; color: var(--text-dim);
+      display: flex; gap: var(--sp-5);
+    }
+    .att-footer-info strong { color: var(--navy); font-weight: 700; }
+
+    /* ---------- Existing record notice ---------- */
+    .edit-notice {
+      display: none;
+      align-items: flex-start; gap: 10px;
+      padding: 12px 14px;
+      background: var(--gold-soft);
+      border: 1px solid rgba(233,185,73,.4);
+      border-radius: 10px;
+      margin: 0 var(--sp-5) var(--sp-3);
+      font-size: 12.5px;
+      color: #7A5B10;
+      line-height: 1.5;
+    }
+    .edit-notice.show { display: flex; }
+    .edit-notice svg { width: 15px; height: 15px; flex-shrink: 0; margin-top: 1px; }
+
+    /* ---------- Empty state ---------- */
+    .roster-empty {
+      padding: var(--sp-8) var(--sp-5);
+      text-align: center;
+    }
+    .roster-empty-icon {
+      width: 56px; height: 56px;
+      margin: 0 auto var(--sp-4);
+      border-radius: 50%;
+      background: var(--bg);
+      display: grid; place-items: center;
+      color: var(--text-faint);
+    }
+    .roster-empty-icon svg { width: 26px; height: 26px; }
+    .roster-empty h3 { font-size: 16px; color: var(--navy); margin-bottom: 6px; }
+    .roster-empty p { font-size: 13px; color: var(--text-dim); }
+  </style>
+</head>
+<body>
+
+<script src="../shared/js/utils.js"></script>
+<script src="../shared/js/icons.js"></script>
+<script src="../shared/js/shell.js"></script>
+
+<script>
+/* ============================================================
+   AUTH GUARD
+   ============================================================ */
+const TOKEN = localStorage.getItem('apex_token');
+if (!TOKEN) location.href = '../login.html';
+const API_BASE = 'http://localhost:8080';
+
+/* ============================================================
+   STATE
+   ============================================================ */
+let CLASSES = [];
+let rosterData = null;
+let statuses = {};   // { studentId: 'Present' | 'Late' | 'Absent' }
+let selectedClassId = null;
+let selectedDate = new Date().toISOString().slice(0, 10);
+
+/* ============================================================
+   BOOT
+   ============================================================ */
+Shell.render({
+  active: 'attendance',
+  role: 'TEACHER',
+  content: '<div class="loading">Loading classes…</div>',
+});
+
+(async function boot() {
+  try {
+    const res = await fetch(API_BASE + '/api/teacher/classes', {
+      headers: { 'Authorization': 'Bearer ' + TOKEN },
+    });
+    if (res.status === 401 || res.status === 403) {
+      localStorage.removeItem('apex_token');
+      localStorage.removeItem('apex_user');
+      location.href = '../login.html';
+      return;
+    }
+    if (!res.ok) throw new Error('Server returned ' + res.status);
+
+    const data = await res.json();
+    CLASSES = data.classes || [];
+
+    if (CLASSES.length > 0) {
+      selectedClassId = CLASSES[0].id;
+      await loadRoster();
+    } else {
+      renderEmpty();
+    }
+  } catch (err) {
+    document.getElementById('app-main').innerHTML = `
+      <div class="error-box">
+        <h2>Could not load attendance</h2>
+        <p style="color:var(--text-dim); margin:8px 0 16px;">${Utils.esc(err.message)}</p>
+        <button class="btn btn-primary" onclick="location.reload()">Try again</button>
+      </div>`;
+  }
+})();
+
+/* ============================================================
+   FETCH ROSTER
+   ============================================================ */
+async function loadRoster() {
+  const url = `${API_BASE}/api/teacher/attendance/roster?classId=${selectedClassId}&date=${selectedDate}`;
+  const res = await fetch(url, {
+    headers: { 'Authorization': 'Bearer ' + TOKEN },
+  });
+  const data = await res.json().catch(() => ({}));
+
+  if (!res.ok) {
+    showToast(data.message || 'Failed to load roster');
+    return;
+  }
+
+  rosterData = data;
+
+  // Reset local state from the server's values
+  statuses = {};
+  data.roster.forEach(s => { statuses[s.studentId] = s.status; });
+
+  rerender();
+}
+
+/* ============================================================
+   RENDER
+   ============================================================ */
+function rerender() {
+  document.getElementById('app-main').innerHTML = renderPage();
+  wireAll();
+}
+
+function renderPage() {
+  return `
+    <header class="page-header">
+      <div>
+        <div class="page-eyebrow">Attendance</div>
+        <h1 class="page-title">Mark Attendance</h1>
+        <p class="page-subtitle">Pick a class and date, then record each student.</p>
+      </div>
+    </header>
+
+    ${renderToolbar()}
+    ${renderRoster()}
+  `;
+}
+
+function renderToolbar() {
+  const classOpts = CLASSES.map(c => `
+    <option value="${c.id}" ${c.id === selectedClassId ? 'selected' : ''}>
+      ${Utils.esc(c.name)} · ${Utils.esc(c.day)} ${Utils.esc(c.time)}
+    </option>`).join('');
+
+  return `
+    <div class="att-toolbar">
+      <div class="att-field">
+        <label>Class</label>
+        <select id="class-select">${classOpts}</select>
+      </div>
+      <div class="att-field">
+        <label>Date</label>
+        <input type="date" id="date-input" value="${selectedDate}">
+      </div>
+      <div class="att-field">
+        <button class="btn btn-primary" id="load-btn">
+          ${Icon.clipboard()} Load Roster
+        </button>
+      </div>
+    </div>`;
+}
+
+function renderRoster() {
+  if (!rosterData) {
+    return '<div class="loading">Loading roster…</div>';
+  }
+
+  const { roster, editing, markedBy, markedAt } = rosterData;
+
+  if (roster.length === 0) {
+    return `
+      <section class="card">
+        <div class="roster-empty">
+          <div class="roster-empty-icon">${Icon.user()}</div>
+          <h3>No students enrolled</h3>
+          <p>This class has no students yet.</p>
+        </div>
+      </section>`;
+  }
+
+  const notice = editing
+    ? `<div class="edit-notice show">
+         ${Icon.bell()}
+         <span>
+           An attendance record already exists for this date
+           (marked by <strong>${Utils.esc(markedBy || 'a teacher')}</strong>
+           at ${Utils.esc(markedAt || '')}).
+           Any changes will be logged.
+         </span>
+       </div>`
+    : '';
+
+  return `
+    <section class="card">
+      ${notice}
+      ${renderLegend()}
+      <div class="roster-list">
+        ${roster.map(renderRow).join('')}
+      </div>
+      ${renderFooter()}
+    </section>`;
+}
+
+function renderLegend() {
+  return `
+    <div class="att-legend">
+      <span class="lbl">Quick set all:</span>
+      <button class="att-chip" data-bulk="Present">${Icon.check()} All Present</button>
+      <button class="att-chip" data-bulk="Absent">${Icon.check()} All Absent</button>
+      <button class="att-chip" data-bulk="Present"
+              style="margin-left:auto; border-style:none; color:var(--navy);">
+        ${Icon.user()} ${rosterData.roster.length} students
+      </button>
+    </div>`;
+}
+
+function renderRow(student) {
+  const current = statuses[student.studentId] || 'Present';
+  const btn = (value, label) => `
+    <button data-status="${value}" data-sid="${student.studentId}"
+            class="${current === value ? 'active' : ''}">
+      ${label}
+    </button>`;
+
+  const initials = student.fullName.split(' ')
+    .filter(Boolean).slice(0, 2).map(w => w[0].toUpperCase()).join('');
+
+  return `
+    <div class="roster-row">
+      <div class="r-avatar">${initials}</div>
+      <div class="r-body">
+        <div class="r-name">${Utils.esc(student.fullName)}</div>
+        <div class="r-meta">
+          <span>${Icon.user()} ${Utils.esc(student.studentCode)}</span>
+          ${student.rfid
+            ? `<span>${Icon.check()} ${Utils.esc(student.rfid)}</span>`
+            : `<span style="color:var(--text-faint)">No RFID</span>`}
+        </div>
+      </div>
+      <div class="status-toggle">
+        ${btn('Present', 'Present')}
+        ${btn('Late',    'Late')}
+        ${btn('Absent',  'Absent')}
+      </div>
+    </div>`;
+}
+
+function renderFooter() {
+  const values = Object.values(statuses);
+  const present = values.filter(v => v === 'Present').length;
+  const late    = values.filter(v => v === 'Late').length;
+  const absent  = values.filter(v => v === 'Absent').length;
+
+  return `
+    <div class="att-footer">
+      <div class="att-footer-info">
+        <span><strong>${present}</strong> Present</span>
+        <span><strong>${late}</strong> Late</span>
+        <span><strong>${absent}</strong> Absent</span>
+        <span><strong>${values.length}</strong> Total</span>
+      </div>
+      <div style="display:flex; gap:8px;">
+        <button class="btn btn-ghost" id="reset-btn">Reset</button>
+        <button class="btn btn-primary" id="save-btn">
+          ${Icon.check()} ${rosterData.editing ? 'Save Changes' : 'Save Attendance'}
+        </button>
+      </div>
+    </div>`;
+}
+
+/* ============================================================
+   WIRING
+   ============================================================ */
+function wireAll() {
+  // Toolbar
+  const classSel = document.getElementById('class-select');
+  const dateInp  = document.getElementById('date-input');
+  const loadBtn  = document.getElementById('load-btn');
+
+  if (loadBtn) {
+    loadBtn.onclick = async () => {
+      selectedClassId = parseInt(classSel.value, 10);
+      selectedDate = dateInp.value;
+      await loadRoster();
+    };
+  }
+
+  // Status toggles
+  document.querySelectorAll('.status-toggle button').forEach(btn => {
+    btn.onclick = () => {
+      const sid = parseInt(btn.dataset.sid, 10);
+      statuses[sid] = btn.dataset.status;
+      rerender();
+    };
+  });
+
+  // Bulk actions
+  document.querySelectorAll('[data-bulk]').forEach(chip => {
+    chip.onclick = () => {
+      const s = chip.dataset.bulk;
+      Object.keys(statuses).forEach(k => { statuses[k] = s; });
+      rerender();
+    };
+  });
+
+  // Save
+  const saveBtn = document.getElementById('save-btn');
+  if (saveBtn) {
+    saveBtn.onclick = async () => {
+      saveBtn.disabled = true;
+      const originalText = saveBtn.innerHTML;
+      saveBtn.innerHTML = 'Saving…';
+
+      const entries = Object.entries(statuses).map(([sid, status]) => ({
+        studentId: parseInt(sid, 10),
+        status,
+      }));
+
+      try {
+        const res = await fetch(API_BASE + '/api/teacher/attendance/save', {
+          method: 'POST',
+          headers: {
+            'Authorization': 'Bearer ' + TOKEN,
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify({
+            classId: selectedClassId,
+            date: selectedDate,
+            entries,
+          }),
+        });
+        const data = await res.json().catch(() => ({}));
+
+        if (!res.ok) {
+          showToast(data.message || 'Save failed');
+          saveBtn.disabled = false;
+          saveBtn.innerHTML = originalText;
+          return;
+        }
+
+        showToast(`Saved — ${data.changed} record${data.changed === 1 ? '' : 's'} changed`);
+        await loadRoster();   // refetch to mark as "editing" now
+
+      } catch (err) {
+        showToast('Network error: ' + err.message);
+        saveBtn.disabled = false;
+        saveBtn.innerHTML = originalText;
+      }
+    };
+  }
+
+  // Reset
+  const resetBtn = document.getElementById('reset-btn');
+  if (resetBtn) {
+    resetBtn.onclick = async () => {
+      await loadRoster();
+      showToast('Reset to last saved state');
+    };
+  }
+}
+
+function renderEmpty() {
+  document.getElementById('app-main').innerHTML = `
+    <header class="page-header">
+      <div>
+        <div class="page-eyebrow">Attendance</div>
+        <h1 class="page-title">Mark Attendance</h1>
+      </div>
+    </header>
+    <section class="card" style="padding:var(--sp-8); text-align:center;">
+      <div style="font-family:'Plus Jakarta Sans',sans-serif; font-size:16px; font-weight:700; color:var(--navy); margin-bottom:6px;">
+        No classes assigned
+      </div>
+      <p style="font-size:13px; color:var(--text-dim);">
+        You aren't scheduled to teach any classes yet.
+      </p>
+    </section>`;
+}
+
+function showToast(message) {
+  let host = document.querySelector('.toast-host');
+  if (!host) {
+    host = document.createElement('div');
+    host.className = 'toast-host';
+    document.body.appendChild(host);
+  }
+  const el = document.createElement('div');
+  el.className = 'toast toast-success';
+  el.textContent = message;
+  host.appendChild(el);
+  void el.offsetWidth;
+  el.classList.add('toast-in');
+  setTimeout(() => {
+    el.classList.remove('toast-in');
+    setTimeout(() => el.remove(), 200);
+  }, 3000);
+}
+</script>
+</body>
+</html>

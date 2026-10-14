@@ -1,0 +1,612 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Users — Apex Institute</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Plus+Jakarta+Sans:wght@500;600;700;800&display=swap" rel="stylesheet">
+
+  <link rel="stylesheet" href="../shared/css/tokens.css">
+  <link rel="stylesheet" href="../shared/css/base.css">
+  <link rel="stylesheet" href="../shared/css/layout.css">
+  <link rel="stylesheet" href="../shared/css/components.css">
+
+  <style>
+    .users-toolbar {
+      display: flex; gap: var(--sp-3);
+      margin-bottom: var(--sp-5);
+      align-items: center;
+      flex-wrap: wrap;
+    }
+    .filter-pills { display: flex; gap: 6px; flex-wrap: wrap; }
+    .filter-pill {
+      padding: 7px 14px; border-radius: 100px;
+      border: 1px solid var(--border);
+      background: var(--surface);
+      font-family: 'Plus Jakarta Sans', sans-serif;
+      font-size: 12.5px; font-weight: 600;
+      color: var(--text-dim); cursor: pointer;
+      transition: all var(--dur-fast) var(--ease);
+    }
+    .filter-pill:hover { border-color: var(--border-strong); color: var(--navy); }
+    .filter-pill.active { background: var(--navy); border-color: var(--navy); color: #fff; }
+    .filter-pill .count { opacity: .55; margin-left: 5px; font-weight: 500; }
+    .filter-pill.active .count { opacity: .8; }
+
+    .users-search {
+      position: relative; margin-left: auto;
+      min-width: 260px; flex: 1; max-width: 340px;
+    }
+    .users-search input {
+      width: 100%; padding: 9px 12px 9px 38px;
+      border: 1px solid var(--border);
+      background: var(--surface);
+      border-radius: var(--r-md);
+      font-family: inherit; font-size: 13px; outline: none;
+      transition: all var(--dur) var(--ease);
+    }
+    .users-search input:focus { border-color: var(--navy); box-shadow: 0 0 0 3px rgba(20,33,61,.08); }
+    .users-search svg {
+      position: absolute; left: 12px; top: 50%; transform: translateY(-50%);
+      width: 16px; height: 16px; color: var(--text-faint); pointer-events: none;
+    }
+
+    .users-table-wrap {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: var(--r-lg);
+      overflow: hidden;
+      box-shadow: var(--shadow-xs);
+    }
+    .users-table {
+      width: 100%; border-collapse: collapse;
+      font-size: 13.5px;
+    }
+    .users-table th {
+      text-align: left;
+      padding: 13px var(--sp-5);
+      background: var(--surface-alt);
+      color: var(--text-dim);
+      font-family: 'Plus Jakarta Sans', sans-serif;
+      font-size: 11px; font-weight: 700;
+      letter-spacing: 0.06em; text-transform: uppercase;
+      border-bottom: 1px solid var(--border);
+    }
+    .users-table th.right { text-align: right; }
+    .users-table td {
+      padding: 14px var(--sp-5);
+      border-bottom: 1px solid var(--border);
+      vertical-align: middle;
+    }
+    .users-table tr:last-child td { border-bottom: none; }
+    .users-table tbody tr:hover td { background: var(--surface-alt); }
+    .users-table tbody tr.inactive td { opacity: .55; }
+
+    .user-cell { display: flex; align-items: center; gap: var(--sp-3); }
+    .user-avatar {
+      width: 38px; height: 38px; border-radius: 50%;
+      background: var(--navy); color: #fff;
+      display: grid; place-items: center;
+      font-family: 'Plus Jakarta Sans', sans-serif;
+      font-weight: 800; font-size: 13px;
+      letter-spacing: -0.01em;
+      flex-shrink: 0;
+    }
+    .user-avatar.teacher    { background: var(--info); }
+    .user-avatar.admin      { background: var(--navy); }
+    .user-avatar.management { background: #6941C6; }
+    .user-body { min-width: 0; }
+    .user-name {
+      font-family: 'Plus Jakarta Sans', sans-serif;
+      font-size: 13.5px; font-weight: 700;
+      color: var(--navy); margin-bottom: 2px;
+    }
+    .user-email { font-size: 12px; color: var(--text-dim); }
+
+    .role-badge {
+      display: inline-flex; align-items: center; gap: 6px;
+      padding: 4px 10px; border-radius: 100px;
+      font-size: 11px; font-weight: 700;
+      letter-spacing: 0.02em; text-transform: uppercase;
+    }
+    .role-badge.TEACHER    { background: var(--info-bg); color: var(--info); }
+    .role-badge.ADMIN      { background: var(--navy); color: #fff; }
+    .role-badge.MANAGEMENT { background: #F4EBFF; color: #6941C6; }
+
+    .status-pill {
+      display: inline-flex; align-items: center; gap: 6px;
+      padding: 4px 10px; border-radius: 100px;
+      font-size: 11.5px; font-weight: 700;
+    }
+    .status-pill.active   { background: var(--success-bg); color: var(--success); }
+    .status-pill.inactive { background: var(--danger-bg); color: var(--danger); }
+    .status-pill::before {
+      content: ''; width: 6px; height: 6px;
+      border-radius: 50%; background: currentColor;
+    }
+
+    .row-actions {
+      display: flex; gap: 6px; justify-content: flex-end;
+    }
+    .row-btn {
+      padding: 6px 12px; border-radius: var(--r-sm);
+      border: 1px solid var(--border);
+      background: var(--surface);
+      color: var(--navy);
+      font-family: 'Plus Jakarta Sans', sans-serif;
+      font-size: 11.5px; font-weight: 700;
+      cursor: pointer;
+      transition: all var(--dur-fast) var(--ease);
+    }
+    .row-btn:hover { border-color: var(--navy); background: var(--bg); }
+    .row-btn.danger { color: var(--danger); border-color: rgba(180,35,24,.3); }
+    .row-btn.danger:hover { background: var(--danger-bg); border-color: var(--danger); }
+
+    .users-empty {
+      padding: var(--sp-8) var(--sp-5); text-align: center;
+    }
+    .users-empty-icon {
+      width: 56px; height: 56px; margin: 0 auto var(--sp-4);
+      border-radius: 50%; background: var(--bg);
+      display: grid; place-items: center; color: var(--text-faint);
+    }
+    .users-empty-icon svg { width: 26px; height: 26px; }
+    .users-empty h3 { font-size: 16px; color: var(--navy); margin-bottom: 6px; }
+    .users-empty p { font-size: 13px; color: var(--text-dim); }
+  </style>
+</head>
+<body>
+
+<script src="../shared/js/utils.js"></script>
+<script src="../shared/js/icons.js"></script>
+<script src="../shared/js/shell.js"></script>
+<script src="../shared/js/modal.js"></script>
+
+<script>
+/* ============================================================
+   AUTH + BOOT
+   ============================================================ */
+const TOKEN = localStorage.getItem('apex_token');
+if (!TOKEN) location.href = '../login.html';
+const API_BASE = 'http://localhost:8080';
+
+let DATA = null;
+let activeRole = 'all';
+let query = '';
+
+Shell.render({
+  active: 'users',
+  role: 'ADMIN',
+  content: '<div class="loading">Loading users…</div>',
+});
+
+(async function boot() {
+  try {
+    const res = await fetch(API_BASE + '/api/admin/users', {
+      headers: { 'Authorization': 'Bearer ' + TOKEN },
+    });
+    if (res.status === 401 || res.status === 403) {
+      localStorage.removeItem('apex_token');
+      localStorage.removeItem('apex_user');
+      location.href = '../login.html';
+      return;
+    }
+    if (!res.ok) throw new Error('Server returned ' + res.status);
+    DATA = await res.json();
+    rerender();
+  } catch (err) {
+    document.getElementById('app-main').innerHTML = `
+      <div class="error-box">
+        <h2>Could not load users</h2>
+        <p style="color:var(--text-dim); margin:8px 0 16px;">${Utils.esc(err.message)}</p>
+        <button class="btn btn-primary" onclick="location.reload()">Try again</button>
+      </div>`;
+  }
+})();
+
+/* ============================================================
+   HELPERS
+   ============================================================ */
+function initials(name) {
+  return name.split(' ').filter(Boolean).slice(0, 2).map(w => w[0].toUpperCase()).join('');
+}
+
+function filtered() {
+  return DATA.users.filter(u => {
+    if (activeRole !== 'all' && u.role !== activeRole) return false;
+    if (query) {
+      const q = query.toLowerCase();
+      if (!u.name.toLowerCase().includes(q) && !u.email.toLowerCase().includes(q)) return false;
+    }
+    return true;
+  });
+}
+
+function reload() {
+  return fetch(API_BASE + '/api/admin/users', {
+    headers: { 'Authorization': 'Bearer ' + TOKEN },
+  }).then(r => r.json()).then(d => { DATA = d; rerender(); });
+}
+
+/* ============================================================
+   RENDER
+   ============================================================ */
+function rerender() {
+  document.getElementById('app-main').innerHTML = renderPage();
+  wireAll();
+}
+
+function renderPage() {
+  return `
+    <header class="page-header">
+      <div>
+        <div class="page-eyebrow">People</div>
+        <h1 class="page-title">Users</h1>
+        <p class="page-subtitle">
+          ${DATA.stats.total} staff accounts · ${DATA.stats.active} active
+        </p>
+      </div>
+      <div class="page-actions">
+        <button class="btn btn-primary" id="new-btn">${Icon.user()} New Staff User</button>
+      </div>
+    </header>
+
+    <div id="toolbar-host">${renderToolbar()}</div>
+    <div id="table-host">${renderTable()}</div>
+  `;
+}
+
+function renderToolbar() {
+  const c = {
+    all:        DATA.stats.total,
+    ADMIN:      DATA.stats.admins,
+    MANAGEMENT: DATA.stats.management,
+    TEACHER:    DATA.stats.teachers,
+  };
+  const pill = (k, l) => `
+    <button class="filter-pill ${activeRole === k ? 'active' : ''}" data-role="${k}">
+      ${l}<span class="count">${c[k]}</span>
+    </button>`;
+  return `
+    <div class="users-toolbar">
+      <div class="filter-pills">
+        ${pill('all', 'All Staff')}
+        ${pill('ADMIN', 'Admins')}
+        ${pill('MANAGEMENT', 'Management')}
+        ${pill('TEACHER', 'Teachers')}
+      </div>
+      <div class="users-search">
+        ${Icon.search()}
+        <input type="text" id="search-input" placeholder="Search by name or email…" value="${Utils.esc(query)}">
+      </div>
+    </div>`;
+}
+
+function renderTable() {
+  const rows = filtered();
+  if (rows.length === 0) {
+    return `
+      <div class="users-table-wrap">
+        <div class="users-empty">
+          <div class="users-empty-icon">${Icon.user()}</div>
+          <h3>No users found</h3>
+          <p>Try a different filter or search term.</p>
+        </div>
+      </div>`;
+  }
+  return `
+    <div class="users-table-wrap">
+      <table class="users-table">
+        <thead>
+          <tr>
+            <th>User</th>
+            <th>Role</th>
+            <th>Phone</th>
+            <th>Joined</th>
+            <th>Status</th>
+            <th class="right">Actions</th>
+          </tr>
+        </thead>
+        <tbody>${rows.map(renderRow).join('')}</tbody>
+      </table>
+    </div>`;
+}
+
+function renderRow(u) {
+  const roleClass = u.role.toLowerCase();
+  return `
+    <tr class="${u.isActive ? '' : 'inactive'}" data-uid="${u.id}">
+      <td>
+        <div class="user-cell">
+          <div class="user-avatar ${roleClass}">${initials(u.name)}</div>
+          <div class="user-body">
+            <div class="user-name">${Utils.esc(u.name)}</div>
+            <div class="user-email">${Utils.esc(u.email)}</div>
+          </div>
+        </div>
+      </td>
+      <td>
+        <span class="role-badge ${u.role}">${u.role}</span>
+        ${u.teacherCode ? `<span style="font-size:11px; color:var(--text-dim); margin-left:6px;">${Utils.esc(u.teacherCode)}</span>` : ''}
+      </td>
+      <td style="font-size:12.5px; color:var(--text-dim);">${Utils.esc(u.phone || '—')}</td>
+      <td style="font-size:12.5px; color:var(--text-dim);">${Utils.esc(u.joined)}</td>
+      <td>
+        <span class="status-pill ${u.isActive ? 'active' : 'inactive'}">
+          ${u.isActive ? 'Active' : 'Inactive'}
+        </span>
+      </td>
+      <td>
+        <div class="row-actions">
+          <button class="row-btn" data-edit="${u.id}">Edit</button>
+          <button class="row-btn danger" data-delete="${u.id}">Delete</button>
+        </div>
+      </td>
+    </tr>`;
+}
+
+/* ============================================================
+   CREATE MODAL
+   ============================================================ */
+function openCreateModal() {
+  const body = `
+    <div class="form-field">
+      <label>Role</label>
+      <select id="cu-role">
+        <option value="TEACHER">Teacher</option>
+        <option value="ADMIN">Admin</option>
+        <option value="MANAGEMENT">Management</option>
+      </select>
+      <div class="form-help">Students self-register from the login page.</div>
+    </div>
+
+    <div class="form-field">
+      <label>Full Name</label>
+      <input type="text" id="cu-name" placeholder="e.g. John Doe" required>
+    </div>
+
+    <div class="form-field">
+      <label>Email</label>
+      <input type="email" id="cu-email" placeholder="user@apex.edu" required>
+    </div>
+
+    <div class="form-field">
+      <label>Phone</label>
+      <input type="tel" id="cu-phone" placeholder="+94 77 …">
+    </div>
+
+    <div class="form-field">
+      <label>Starting Password</label>
+      <input type="password" id="cu-password" placeholder="Min 6 characters" minlength="6" required>
+      <div class="form-help">They can change it after first login.</div>
+    </div>
+
+    <div class="form-actions" style="margin-top: var(--sp-5);">
+      <button class="btn btn-ghost" data-cancel>Cancel</button>
+      <button class="btn btn-primary" id="cu-submit">Create User</button>
+    </div>
+  `;
+
+  const m = Modal.open({ title: 'New Staff User', body, size: 'sm' });
+
+  m.el.querySelector('[data-cancel]').onclick = () => m.close();
+
+  m.el.querySelector('#cu-submit').onclick = async () => {
+    const role     = m.el.querySelector('#cu-role').value;
+    const fullName = m.el.querySelector('#cu-name').value.trim();
+    const email    = m.el.querySelector('#cu-email').value.trim();
+    const phone    = m.el.querySelector('#cu-phone').value.trim();
+    const password = m.el.querySelector('#cu-password').value;
+
+    if (!fullName) return showToast('Please enter a name', 'error');
+    if (!email || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email))
+      return showToast('Please enter a valid email', 'error');
+    if (!password || password.length < 6)
+      return showToast('Password must be at least 6 characters', 'error');
+
+    const btn = m.el.querySelector('#cu-submit');
+    btn.disabled = true;
+    btn.textContent = 'Creating…';
+
+    try {
+      const res = await fetch(API_BASE + '/api/admin/users', {
+        method: 'POST',
+        headers: {
+          'Authorization': 'Bearer ' + TOKEN,
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ role, fullName, email, phone, password }),
+      });
+      const data = await res.json().catch(() => ({}));
+      if (!res.ok) {
+        showToast(data.message || 'Create failed', 'error');
+        btn.disabled = false;
+        btn.textContent = 'Create User';
+        return;
+      }
+      m.close();
+      await reload();
+      showToast(`${role} account created for ${fullName}`);
+    } catch (err) {
+      showToast('Network error: ' + err.message, 'error');
+      btn.disabled = false;
+      btn.textContent = 'Create User';
+    }
+  };
+}
+
+/* ============================================================
+   EDIT MODAL
+   ============================================================ */
+function openEditModal(id) {
+  const u = DATA.users.find(x => x.id === id);
+  if (!u) return;
+
+  const body = `
+    <div class="form-field">
+      <label>Full Name</label>
+      <input type="text" id="eu-name" value="${Utils.esc(u.name)}" required>
+    </div>
+    <div class="form-field">
+      <label>Email</label>
+      <input type="email" id="eu-email" value="${Utils.esc(u.email)}" required>
+    </div>
+    <div class="form-field">
+      <label>Phone</label>
+      <input type="tel" id="eu-phone" value="${Utils.esc(u.phone || '')}">
+    </div>
+    <div class="form-field">
+      <label>Reset Password</label>
+      <input type="password" id="eu-password" placeholder="Leave blank to keep current" minlength="6">
+      <div class="form-help">Optional — only fill this to force a password reset.</div>
+    </div>
+    <div class="form-actions" style="margin-top: var(--sp-5);">
+      <button class="btn btn-ghost" data-cancel>Cancel</button>
+      <button class="btn btn-primary" id="eu-submit">Save Changes</button>
+    </div>
+  `;
+
+  const m = Modal.open({ title: `Edit ${u.name}`, body, size: 'sm' });
+
+  m.el.querySelector('[data-cancel]').onclick = () => m.close();
+
+  m.el.querySelector('#eu-submit').onclick = async () => {
+    const fullName    = m.el.querySelector('#eu-name').value.trim();
+    const email       = m.el.querySelector('#eu-email').value.trim();
+    const phone       = m.el.querySelector('#eu-phone').value.trim();
+    const newPassword = m.el.querySelector('#eu-password').value || null;
+
+    if (!fullName) return showToast('Please enter a name', 'error');
+    if (!email) return showToast('Please enter an email', 'error');
+    if (newPassword && newPassword.length < 6)
+      return showToast('Password must be at least 6 characters', 'error');
+
+    const btn = m.el.querySelector('#eu-submit');
+    btn.disabled = true;
+    btn.textContent = 'Saving…';
+
+    try {
+      const res = await fetch(`${API_BASE}/api/admin/users/${id}`, {
+        method: 'PUT',
+        headers: {
+          'Authorization': 'Bearer ' + TOKEN,
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ fullName, email, phone, newPassword }),
+      });
+      const data = await res.json().catch(() => ({}));
+      if (!res.ok) {
+        showToast(data.message || 'Update failed', 'error');
+        btn.disabled = false;
+        btn.textContent = 'Save Changes';
+        return;
+      }
+      m.close();
+      await reload();
+      showToast(`${fullName} updated${newPassword ? ' — password reset' : ''}`);
+    } catch (err) {
+      showToast('Network error: ' + err.message, 'error');
+      btn.disabled = false;
+      btn.textContent = 'Save Changes';
+    }
+  };
+}
+
+/* ============================================================
+   DELETE USER
+   ============================================================ */
+async function deleteUser(id) {
+  const u = DATA.users.find(x => x.id === id);
+  if (!u) return;
+
+  // Build a warning that mentions what's at stake for this role
+  let msg = `Permanently delete ${u.name} (${u.email})?`;
+
+  if (u.role === 'TEACHER') {
+    msg += `\n\nThis will also remove:`;
+    msg += `\n• Their class timetable slots`;
+    msg += `\n• Exams they created`;
+    msg += `\n• Materials they uploaded`;
+    msg += `\n\nThis cannot be undone.`;
+  } else if (u.role === 'MANAGEMENT') {
+    msg += `\n\nThis will remove their finance/management access.`;
+    msg += `\n\nThis cannot be undone.`;
+  } else {
+    msg += `\n\nThis will remove their admin access.`;
+    msg += `\n\nThis cannot be undone.`;
+  }
+
+  if (!confirm(msg)) return;
+
+  try {
+    const res = await fetch(`${API_BASE}/api/admin/users/${id}`, {
+      method: 'DELETE',
+      headers: { 'Authorization': 'Bearer ' + TOKEN },
+    });
+    const data = await res.json().catch(() => ({}));
+    if (!res.ok) {
+      showToast(data.message || 'Delete failed', 'error');
+      return;
+    }
+    await reload();
+    showToast(`${u.name} deleted`);
+  } catch (err) {
+    showToast('Network error: ' + err.message, 'error');
+  }
+}
+
+/* ============================================================
+   WIRING
+   ============================================================ */
+function wireAll() {
+  const btn = document.getElementById('new-btn');
+  if (btn) btn.onclick = openCreateModal;
+
+  document.querySelectorAll('.filter-pill').forEach(b => {
+    b.onclick = () => { activeRole = b.dataset.role; rerender(); };
+  });
+
+  const search = document.getElementById('search-input');
+  if (search) {
+    search.oninput = (e) => {
+      query = e.target.value;
+      document.getElementById('table-host').innerHTML = renderTable();
+      wireRowActions();
+    };
+  }
+
+  wireRowActions();
+}
+
+function wireRowActions() {
+  document.querySelectorAll('[data-edit]').forEach(b => {
+    b.onclick = () => openEditModal(parseInt(b.dataset.edit, 10));
+  });
+  document.querySelectorAll('[data-delete]').forEach(b => {
+    b.onclick = () => deleteUser(parseInt(b.dataset.delete, 10));
+  });
+}
+
+function showToast(message, type = 'success') {
+  let host = document.querySelector('.toast-host');
+  if (!host) {
+    host = document.createElement('div');
+    host.className = 'toast-host';
+    document.body.appendChild(host);
+  }
+  const el = document.createElement('div');
+  el.className = 'toast ' + (type === 'error' ? 'toast-error' : 'toast-success');
+  el.textContent = message;
+  host.appendChild(el);
+  void el.offsetWidth;
+  el.classList.add('toast-in');
+  setTimeout(() => {
+    el.classList.remove('toast-in');
+    setTimeout(() => el.remove(), 200);
+  }, 3000);
+}
+</script>
+</body>
+</html>

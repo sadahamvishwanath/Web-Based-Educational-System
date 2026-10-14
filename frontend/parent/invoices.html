@@ -1,0 +1,577 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Invoices — Apex Institute</title>
+
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Plus+Jakarta+Sans:wght@500;600;700;800&display=swap" rel="stylesheet">
+
+  <link rel="stylesheet" href="../shared/css/tokens.css">
+  <link rel="stylesheet" href="../shared/css/base.css">
+  <link rel="stylesheet" href="../shared/css/layout.css">
+  <link rel="stylesheet" href="../shared/css/components.css">
+
+  <style>
+    /* Toolbar */
+    .inv-toolbar {
+      display: flex; gap: 6px; margin-bottom: var(--sp-5); flex-wrap: wrap;
+    }
+    .filter-pill {
+      padding: 7px 14px; border-radius: 100px;
+      border: 1px solid var(--border);
+      background: var(--surface);
+      font-family: 'Plus Jakarta Sans', sans-serif;
+      font-size: 12.5px; font-weight: 600;
+      color: var(--text-dim); cursor: pointer;
+      transition: all var(--dur-fast) var(--ease);
+    }
+    .filter-pill:hover { border-color: var(--border-strong); color: var(--navy); }
+    .filter-pill.active { background: var(--navy); border-color: var(--navy); color: #fff; }
+    .filter-pill .count { opacity: .55; margin-left: 5px; font-weight: 500; }
+    .filter-pill.active .count { opacity: .8; }
+
+    /* Summary tiles */
+    .inv-summary {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: var(--sp-4);
+      margin-bottom: var(--sp-5);
+    }
+    .summary-tile {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: var(--r-lg);
+      padding: var(--sp-5);
+      position: relative;
+      box-shadow: var(--shadow-xs);
+      overflow: hidden;
+    }
+    .summary-tile .bar {
+      position: absolute;
+      top: 0; left: 0; width: 4px; height: 100%;
+    }
+    .summary-label {
+      font-size: 11px; font-weight: 700;
+      color: var(--text-dim);
+      text-transform: uppercase;
+      letter-spacing: 0.08em;
+      margin-bottom: 6px;
+    }
+    .summary-value {
+      font-family: 'Plus Jakarta Sans', sans-serif;
+      font-size: 24px; font-weight: 800;
+      color: var(--navy);
+      letter-spacing: -0.02em;
+      line-height: 1.1;
+    }
+    .summary-meta {
+      font-size: 12px; color: var(--text-dim);
+      margin-top: 4px;
+    }
+
+    /* Invoice list */
+    .inv-list {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: var(--r-lg);
+      box-shadow: var(--shadow-xs);
+      overflow: hidden;
+    }
+    .inv-row {
+      display: grid;
+      grid-template-columns: 44px 1fr auto auto 110px;
+      align-items: center;
+      gap: var(--sp-4);
+      padding: var(--sp-4) var(--sp-5);
+      border-bottom: 1px solid var(--border);
+      transition: background var(--dur-fast) var(--ease);
+    }
+    .inv-row:last-child { border-bottom: none; }
+    .inv-row:hover { background: var(--surface-alt); }
+    .inv-row.paid  { opacity: 0.85; }
+
+    .inv-icon {
+      width: 44px; height: 44px;
+      border-radius: var(--r-md);
+      display: grid; place-items: center;
+      flex-shrink: 0;
+    }
+    .inv-icon svg { width: 20px; height: 20px; }
+    .inv-icon.unpaid { background: var(--warning-bg); color: var(--warning); }
+    .inv-icon.paid   { background: var(--success-bg); color: var(--success); }
+
+    .inv-body { min-width: 0; }
+    .inv-no {
+      font-family: 'Plus Jakarta Sans', sans-serif;
+      font-size: 13.5px; font-weight: 700;
+      color: var(--navy); margin-bottom: 3px;
+    }
+    .inv-meta {
+      font-size: 12px; color: var(--text-dim);
+      display: flex; gap: 12px; flex-wrap: wrap;
+    }
+    .inv-meta span { display: inline-flex; align-items: center; gap: 4px; }
+    .inv-meta svg { width: 12px; height: 12px; color: var(--text-faint); }
+
+    .inv-date { text-align: right; }
+    .inv-date-label {
+      font-size: 10.5px; font-weight: 700;
+      color: var(--text-dim);
+      text-transform: uppercase;
+      letter-spacing: 0.06em;
+    }
+    .inv-date-value {
+      font-family: 'Plus Jakarta Sans', sans-serif;
+      font-size: 13px; font-weight: 700;
+      color: var(--navy);
+      margin-top: 2px;
+      font-variant-numeric: tabular-nums;
+    }
+
+    .inv-amount {
+      font-family: 'Plus Jakarta Sans', sans-serif;
+      font-size: 15px; font-weight: 800;
+      color: var(--navy);
+      font-variant-numeric: tabular-nums;
+      text-align: right;
+    }
+
+    .inv-status {
+      display: inline-flex; align-items: center; gap: 6px;
+      padding: 5px 11px; border-radius: 100px;
+      font-size: 11.5px; font-weight: 700;
+    }
+    .inv-status.paid   { background: var(--success-bg); color: var(--success); }
+    .inv-status.unpaid { background: var(--warning-bg); color: var(--warning); }
+    .inv-status::before {
+      content: ''; width: 6px; height: 6px;
+      border-radius: 50%; background: currentColor;
+    }
+
+    .inv-action { text-align: right; }
+
+    /* Payment modal */
+    .pay-hero {
+      padding: var(--sp-5);
+      background: var(--navy);
+      border-radius: var(--r-md);
+      color: #fff;
+      margin-bottom: var(--sp-5);
+    }
+    .pay-hero-label {
+      font-size: 11px; font-weight: 700;
+      color: rgba(255,255,255,.5);
+      letter-spacing: 0.1em; text-transform: uppercase;
+      margin-bottom: 8px;
+    }
+    .pay-hero-amount {
+      font-family: 'Plus Jakarta Sans', sans-serif;
+      font-size: 32px; font-weight: 800;
+      letter-spacing: -0.03em;
+      line-height: 1;
+    }
+    .pay-hero-amount small { font-size: 18px; color: rgba(255,255,255,.65); margin-right: 4px; }
+    .pay-hero-meta {
+      font-size: 13px; color: rgba(255,255,255,.7);
+      margin-top: 10px;
+      padding-top: 12px;
+      border-top: 1px solid rgba(255,255,255,.1);
+    }
+
+    .pay-method-list {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 8px;
+      margin-bottom: var(--sp-5);
+    }
+    .pay-method {
+      padding: 12px 10px;
+      border: 1px solid var(--border);
+      border-radius: var(--r-md);
+      background: var(--surface);
+      cursor: pointer;
+      text-align: center;
+      transition: all var(--dur-fast) var(--ease);
+    }
+    .pay-method:hover { border-color: var(--border-strong); }
+    .pay-method.selected {
+      border-color: var(--navy);
+      background: var(--navy);
+      color: #fff;
+    }
+    .pay-method-icon {
+      font-size: 20px; margin-bottom: 6px;
+      display: block;
+    }
+    .pay-method-label {
+      font-family: 'Plus Jakarta Sans', sans-serif;
+      font-size: 11.5px; font-weight: 700;
+    }
+
+    /* Success */
+    .pay-success {
+      text-align: center;
+      padding: 40px 20px;
+    }
+    .pay-success-icon {
+      width: 64px; height: 64px;
+      margin: 0 auto 20px;
+      border-radius: 50%;
+      background: var(--success-bg);
+      color: var(--success);
+      display: grid; place-items: center;
+      animation: pop 400ms cubic-bezier(.34,1.56,.64,1);
+    }
+    .pay-success-icon svg { width: 30px; height: 30px; }
+    @keyframes pop {
+      0% { transform: scale(0); }
+      100% { transform: scale(1); }
+    }
+    .pay-success h3 {
+      font-family: 'Plus Jakarta Sans', sans-serif;
+      font-size: 20px; font-weight: 800;
+      color: var(--navy);
+      margin: 0 0 8px;
+    }
+    .pay-success p {
+      font-size: 13.5px; color: var(--text-dim);
+      max-width: 300px;
+      margin: 0 auto;
+      line-height: 1.55;
+    }
+    .pay-success-ref {
+      display: inline-block;
+      margin-top: 16px;
+      padding: 8px 14px;
+      border-radius: var(--r-md);
+      background: var(--bg);
+      font-family: ui-monospace, monospace;
+      font-size: 12px;
+      color: var(--navy);
+      font-weight: 600;
+    }
+
+    /* Empty state */
+    .inv-empty {
+      padding: var(--sp-8) var(--sp-5);
+      text-align: center;
+    }
+    .inv-empty-icon {
+      width: 56px; height: 56px;
+      margin: 0 auto var(--sp-4);
+      border-radius: 50%;
+      background: var(--bg);
+      display: grid; place-items: center;
+      color: var(--text-faint);
+    }
+    .inv-empty-icon svg { width: 26px; height: 26px; }
+    .inv-empty h3 {
+      font-size: 16px; color: var(--navy);
+      margin-bottom: 6px;
+    }
+    .inv-empty p { font-size: 13px; color: var(--text-dim); }
+  </style>
+</head>
+<body>
+
+<script src="../shared/js/utils.js"></script>
+<script src="../shared/js/icons.js"></script>
+<script src="../shared/js/shell.js"></script>
+<script src="../shared/js/modal.js"></script>
+
+<script>
+const TOKEN = localStorage.getItem('apex_token');
+if (!TOKEN) location.href = '../login.html';
+const API_BASE = 'http://localhost:8080';
+
+let DATA = null;
+let activeFilter = 'all';
+
+Shell.render({
+  active: 'invoices',
+  role: 'PARENT',
+  content: '<div class="loading">Loading invoices…</div>',
+});
+
+(async function boot() {
+  try {
+    const res = await fetch(API_BASE + '/api/parent/invoices', {
+      headers: { 'Authorization': 'Bearer ' + TOKEN },
+    });
+    if (res.status === 401 || res.status === 403) {
+      localStorage.removeItem('apex_token');
+      localStorage.removeItem('apex_user');
+      location.href = '../login.html';
+      return;
+    }
+    if (!res.ok) throw new Error('Server returned ' + res.status);
+    DATA = await res.json();
+    rerender();
+  } catch (err) {
+    document.getElementById('app-main').innerHTML = `
+      <div class="error-box">
+        <h2>Could not load invoices</h2>
+        <p style="color:var(--text-dim); margin:8px 0 16px;">${Utils.esc(err.message)}</p>
+        <button class="btn btn-primary" onclick="location.reload()">Try again</button>
+      </div>`;
+  }
+})();
+
+function filtered() {
+  if (activeFilter === 'all') return DATA.invoices;
+  return DATA.invoices.filter(i => i.status === activeFilter);
+}
+
+function rerender() {
+  document.getElementById('app-main').innerHTML = renderPage();
+  wireAll();
+}
+
+function renderPage() {
+  return `
+    <header class="page-header">
+      <div>
+        <div class="page-eyebrow">Finance</div>
+        <h1 class="page-title">Invoices &amp; Payments</h1>
+        <p class="page-subtitle">All invoices for your children in one place.</p>
+      </div>
+    </header>
+
+    ${renderSummary()}
+    ${renderToolbar()}
+    ${renderList()}
+  `;
+}
+
+function renderSummary() {
+  const s = DATA.stats;
+  return `
+    <div class="inv-summary" style="display:grid; grid-template-columns:repeat(3,1fr); gap:var(--sp-4); margin-bottom:var(--sp-5);">
+      ${sumTile('var(--navy)', 'Total Billed', 'Rs. ' + s.total.toFixed(0), DATA.invoices.length + ' invoice' + (DATA.invoices.length !== 1 ? 's' : ''))}
+      ${sumTile('var(--success)', 'Paid', 'Rs. ' + s.paid.toFixed(0), s.paidCount + ' settled')}
+      ${sumTile('var(--warning)', 'Outstanding', 'Rs. ' + s.unpaid.toFixed(0), s.unpaidCount + ' unpaid')}
+    </div>`;
+}
+
+function sumTile(accent, label, value, meta) {
+  return `
+    <div style="background:var(--surface); border:1px solid var(--border); border-radius:var(--r-lg); padding:var(--sp-4) var(--sp-5); box-shadow:var(--shadow-xs); position:relative; overflow:hidden;">
+      <div style="position:absolute; top:0; left:0; width:4px; height:100%; background:${accent};"></div>
+      <div style="font-size:11px; font-weight:700; color:var(--text-dim); text-transform:uppercase; letter-spacing:.08em; margin-bottom:6px;">${Utils.esc(label)}</div>
+      <div style="font-family:'Plus Jakarta Sans',sans-serif; font-size:24px; font-weight:800; color:var(--navy); letter-spacing:-.02em; line-height:1.1;">${Utils.esc(value)}</div>
+      <div style="font-size:12px; color:var(--text-dim); margin-top:4px;">${Utils.esc(meta)}</div>
+    </div>`;
+}
+
+function renderToolbar() {
+  const counts = {
+    all:    DATA.invoices.length,
+    unpaid: DATA.invoices.filter(i => i.status === 'unpaid').length,
+    paid:   DATA.invoices.filter(i => i.status === 'paid').length,
+  };
+  const pill = (k, l) => `
+    <button class="filter-pill ${activeFilter === k ? 'active' : ''}" data-filter="${k}">
+      ${l}<span class="count">${counts[k]}</span>
+    </button>`;
+  return `
+    <div class="inv-toolbar">
+      <div class="filter-pills">
+        ${pill('all', 'All Invoices')}
+        ${pill('unpaid', 'Unpaid')}
+        ${pill('paid', 'Paid')}
+      </div>
+    </div>`;
+}
+
+function renderList() {
+  const rows = filtered();
+  if (rows.length === 0) {
+    return `
+      <div class="inv-list" style="background:var(--surface); border:1px solid var(--border); border-radius:var(--r-lg); box-shadow:var(--shadow-xs);">
+        <div style="padding: var(--sp-8) var(--sp-5); text-align:center;">
+          <div style="font-family:'Plus Jakarta Sans',sans-serif; font-size:16px; font-weight:700; color:var(--navy); margin-bottom:6px;">
+            No invoices found
+          </div>
+          <p style="font-size:13px; color:var(--text-dim);">Try a different filter.</p>
+        </div>
+      </div>`;
+  }
+
+  return `
+    <div class="inv-list" style="background:var(--surface); border:1px solid var(--border); border-radius:var(--r-lg); box-shadow:var(--shadow-xs); overflow:hidden;">
+      ${rows.map(renderRow).join('')}
+    </div>`;
+}
+
+function renderRow(inv) {
+  const isUnpaid = inv.status === 'unpaid';
+  return `
+    <div style="display:grid; grid-template-columns:44px 1fr auto auto auto; align-items:center; gap:var(--sp-4); padding:var(--sp-4) var(--sp-5); border-bottom:1px solid var(--border);">
+      <div style="width:44px; height:44px; border-radius:var(--r-md); display:grid; place-items:center; flex-shrink:0;
+                  background:${isUnpaid ? 'var(--warning-bg)' : 'var(--success-bg)'};
+                  color:${isUnpaid ? 'var(--warning)' : 'var(--success)'};">
+        ${isUnpaid ? Icon.clock() : Icon.check()}
+      </div>
+      <div style="min-width:0;">
+        <div style="font-family:'Plus Jakarta Sans',sans-serif; font-size:13.5px; font-weight:700; color:var(--navy); margin-bottom:2px;">
+          ${Utils.esc(inv.invoiceNo)}
+        </div>
+        <div style="font-size:12px; color:var(--text-dim); display:flex; gap:12px; flex-wrap:wrap;">
+          <span>${Icon.user()} ${Utils.esc(inv.childName)}</span>
+          <span>${Icon.calendar()} Issued ${Utils.esc(inv.issueDate)}</span>
+        </div>
+      </div>
+      <div style="text-align:right; font-size:11.5px;">
+        <div style="font-weight:700; color:var(--text-dim); text-transform:uppercase; letter-spacing:.06em;">Due</div>
+        <div style="font-family:'Plus Jakarta Sans',sans-serif; font-weight:700; color:var(--navy); margin-top:3px;">${Utils.esc(inv.dueDate)}</div>
+      </div>
+      <div style="font-family:'Plus Jakarta Sans',sans-serif; font-size:15px; font-weight:800; color:var(--navy); font-variant-numeric:tabular-nums; text-align:right;">
+        Rs. ${inv.total.toFixed(2)}
+      </div>
+      <div style="display:flex; gap:6px;">
+        ${isUnpaid
+          ? `<button class="btn btn-primary btn-sm" data-pay="${inv.id}">Pay Now</button>`
+          : `<span style="display:inline-flex; align-items:center; gap:6px; padding:5px 11px; border-radius:100px; background:var(--success-bg); color:var(--success); font-size:11.5px; font-weight:700;">Paid</span>`}
+      </div>
+    </div>`;
+}
+
+function openPayModal(invoiceId) {
+  const inv = DATA.invoices.find(x => x.id === invoiceId);
+  if (!inv) return;
+
+  let method = 'Card';
+
+  const itemsHtml = inv.items.map(it => `
+    <div style="display:flex; justify-content:space-between; font-size:13px; padding:6px 0;">
+      <span style="color:var(--text-dim);">${Utils.esc(it.description)}</span>
+      <span style="font-weight:600; color:var(--navy); font-variant-numeric:tabular-nums;">Rs. ${it.amount.toFixed(2)}</span>
+    </div>`).join('');
+
+  const body = `
+    <div style="padding:var(--sp-5); background:var(--navy); border-radius:var(--r-md); color:#fff; margin-bottom:var(--sp-5);">
+      <div style="font-size:11px; font-weight:700; color:rgba(255,255,255,.5); letter-spacing:.1em; text-transform:uppercase; margin-bottom:8px;">Amount Due</div>
+      <div style="font-family:'Plus Jakarta Sans',sans-serif; font-size:32px; font-weight:800; letter-spacing:-.03em; line-height:1;">
+        <small style="font-size:18px; color:rgba(255,255,255,.65); margin-right:4px;">Rs.</small>${inv.total.toFixed(2)}
+      </div>
+      <div style="font-size:13px; color:rgba(255,255,255,.7); margin-top:10px; padding-top:12px; border-top:1px solid rgba(255,255,255,.1);">
+        ${Utils.esc(inv.invoiceNo)} · ${Utils.esc(inv.childName)} · Due ${Utils.esc(inv.dueDate)}
+      </div>
+    </div>
+
+    <div style="margin-bottom: var(--sp-5);">
+      <div style="font-size:11px; font-weight:700; color:var(--text-dim); text-transform:uppercase; letter-spacing:.08em; margin-bottom:8px;">Invoice Breakdown</div>
+      <div style="padding: 10px 14px; background: var(--surface-alt); border-radius: var(--r-md); border: 1px solid var(--border);">
+        ${itemsHtml}
+      </div>
+    </div>
+
+    <div style="font-size:11px; font-weight:700; color:var(--text-dim); text-transform:uppercase; letter-spacing:.08em; margin-bottom:8px;">Payment Method</div>
+    <div style="display:grid; grid-template-columns:repeat(3,1fr); gap:8px; margin-bottom:var(--sp-5);" id="pay-methods">
+      ${['Card','Bank','Wallet'].map(m => `
+        <button type="button" class="pay-method ${m === 'Card' ? 'selected' : ''}" data-m="${m}"
+                style="padding:12px 10px; border-radius:var(--r-md); border:1px solid var(--border); background:var(--surface); cursor:pointer; text-align:center; font-family:'Plus Jakarta Sans',sans-serif; font-weight:700; font-size:11.5px; color:${m === 'Card' ? '#fff' : 'var(--text-dim)'}; background:${m === 'Card' ? 'var(--navy)' : 'var(--surface)'}; border-color:${m === 'Card' ? 'var(--navy)' : 'var(--border)'};">
+          ${m === 'Card' ? '💳' : m === 'Bank' ? '🏦' : '📱'} ${m}
+        </button>
+      `).join('')}
+    </div>
+
+    <button class="btn btn-primary" id="do-pay" style="width:100%; padding: 13px;">
+      ${Icon.check()} Confirm Payment
+    </button>
+  `;
+
+  const m = Modal.open({ title: 'Pay Invoice', body, size: 'sm' });
+
+  m.el.querySelector('#pay-methods').onclick = (e) => {
+    const btn = e.target.closest('.pay-method');
+    if (!btn) return;
+    method = btn.dataset.m;
+    m.el.querySelectorAll('.pay-method').forEach(x => {
+      const sel = x === btn;
+      x.style.background = sel ? 'var(--navy)' : 'var(--surface)';
+      x.style.color = sel ? '#fff' : 'var(--text-dim)';
+      x.style.borderColor = sel ? 'var(--navy)' : 'var(--border)';
+    });
+  };
+
+  m.el.querySelector('#do-pay').onclick = async () => {
+    const btn = m.el.querySelector('#do-pay');
+    btn.disabled = true;
+    btn.textContent = 'Processing…';
+
+    try {
+      const res = await fetch(`${API_BASE}/api/parent/invoices/${invoiceId}/pay`, {
+        method: 'POST',
+        headers: { 'Authorization': 'Bearer ' + TOKEN, 'Content-Type': 'application/json' },
+        body: JSON.stringify({ method }),
+      });
+      const data = await res.json().catch(() => ({}));
+      if (!res.ok) {
+        showToast(data.message || 'Payment failed');
+        btn.disabled = false;
+        btn.textContent = 'Confirm Payment';
+        return;
+      }
+      showSuccess(m, inv, data.reference || 'ONL-XXXXXXXX');
+    } catch (err) {
+      showToast('Network error: ' + err.message);
+      btn.disabled = false;
+    }
+  };
+}
+
+function showSuccess(m, inv, ref) {
+  m.el.querySelector('.modal-body').innerHTML = `
+    <div style="text-align:center; padding:40px 20px;">
+      <div style="width:64px; height:64px; margin:0 auto 20px; border-radius:50%; background:var(--success-bg); color:var(--success); display:grid; place-items:center; animation:pop 400ms cubic-bezier(.34,1.56,.64,1);">
+        ${Icon.check()}
+      </div>
+      <h3 style="font-family:'Plus Jakarta Sans',sans-serif; font-size:20px; font-weight:800; color:var(--navy); margin:0 0 8px;">
+        Payment Successful
+      </h3>
+      <p style="font-size:13.5px; color:var(--text-dim); max-width:300px; margin:0 auto; line-height:1.55;">
+        Rs. ${inv.total.toFixed(2)} paid for ${Utils.esc(inv.invoiceNo)}.
+      </p>
+      <div style="display:inline-block; margin-top:16px; padding:8px 14px; border-radius:var(--r-md); background:var(--bg); font-family:ui-monospace,monospace; font-size:12px; color:var(--navy); font-weight:600;">
+        Ref: ${ref}
+      </div>
+    </div>`;
+
+  setTimeout(async () => {
+    m.close();
+    const res = await fetch(API_BASE + '/api/parent/invoices', {
+      headers: { 'Authorization': 'Bearer ' + TOKEN },
+    });
+    if (res.ok) {
+      DATA = await res.json();
+      rerender();
+    }
+  }, 1600);
+}
+
+function wireAll() {
+  document.querySelectorAll('.filter-pill').forEach(b => {
+    b.onclick = () => { activeFilter = b.dataset.filter; rerender(); };
+  });
+  document.querySelectorAll('[data-pay]').forEach(b => {
+    b.onclick = () => openPayModal(parseInt(b.dataset.pay, 10));
+  });
+}
+
+function showToast(message) {
+  let host = document.querySelector('.toast-host');
+  if (!host) { host = document.createElement('div'); host.className = 'toast-host'; document.body.appendChild(host); }
+  const el = document.createElement('div');
+  el.className = 'toast toast-success';
+  el.textContent = message;
+  host.appendChild(el);
+  void el.offsetWidth; el.classList.add('toast-in');
+  setTimeout(() => { el.classList.remove('toast-in'); setTimeout(() => el.remove(), 200); }, 3000);
+}
+</script>
+</body>
+</html>

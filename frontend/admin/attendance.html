@@ -1,0 +1,447 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Attendance — Apex Institute</title>
+
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Plus+Jakarta+Sans:wght@500;600;700;800&display=swap" rel="stylesheet">
+
+  <link rel="stylesheet" href="../shared/css/tokens.css">
+  <link rel="stylesheet" href="../shared/css/base.css">
+  <link rel="stylesheet" href="../shared/css/layout.css">
+  <link rel="stylesheet" href="../shared/css/components.css">
+
+  <style>
+    .att-toolbar {
+      display: flex; gap: var(--sp-3); margin-bottom: var(--sp-5);
+      align-items: center; flex-wrap: wrap;
+    }
+    .filter-pills { display: flex; gap: 6px; flex-wrap: wrap; }
+    .filter-pill {
+      padding: 7px 14px; border-radius: 100px;
+      border: 1px solid var(--border); background: var(--surface);
+      font-family: 'Plus Jakarta Sans', sans-serif;
+      font-size: 12.5px; font-weight: 600;
+      color: var(--text-dim); cursor: pointer;
+      transition: all var(--dur-fast) var(--ease);
+    }
+    .filter-pill:hover { border-color: var(--border-strong); color: var(--navy); }
+    .filter-pill.active { background: var(--navy); border-color: var(--navy); color: #fff; }
+
+    .att-search {
+      position: relative; margin-left: auto;
+      min-width: 240px; flex: 1; max-width: 320px;
+    }
+    .att-search input {
+      width: 100%; padding: 9px 12px 9px 38px;
+      border: 1px solid var(--border); background: var(--surface);
+      border-radius: var(--r-md); font-family: inherit; font-size: 13px;
+      outline: none; transition: all var(--dur) var(--ease);
+    }
+    .att-search input:focus { border-color: var(--navy); box-shadow: 0 0 0 3px rgba(20,33,61,.08); }
+    .att-search svg {
+      position: absolute; left: 12px; top: 50%; transform: translateY(-50%);
+      width: 16px; height: 16px; color: var(--text-faint); pointer-events: none;
+    }
+
+    .refresh-btn {
+      display: inline-flex; align-items: center; gap: 6px;
+      padding: 9px 14px;
+      border: 1px solid var(--border); background: var(--surface);
+      border-radius: var(--r-md);
+      font-family: 'Plus Jakarta Sans', sans-serif;
+      font-size: 12.5px; font-weight: 700;
+      color: var(--navy); cursor: pointer;
+      transition: all var(--dur-fast) var(--ease);
+    }
+    .refresh-btn:hover { border-color: var(--navy); background: var(--bg); }
+    .refresh-btn svg { width: 14px; height: 14px; }
+    .refresh-btn.spinning svg { animation: spin 700ms linear infinite; }
+    @keyframes spin { to { transform: rotate(360deg); } }
+
+    .live-dot {
+      display: inline-flex; align-items: center; gap: 6px;
+      font-size: 11.5px; font-weight: 700;
+      color: var(--success); text-transform: uppercase;
+      letter-spacing: 0.08em;
+    }
+    .live-dot::before {
+      content: ''; width: 8px; height: 8px; border-radius: 50%;
+      background: currentColor;
+      box-shadow: 0 0 0 0 rgba(21,128,61,.6);
+      animation: pulse 1.8s infinite;
+    }
+    @keyframes pulse {
+      0%   { box-shadow: 0 0 0 0 rgba(21,128,61,.6); }
+      70%  { box-shadow: 0 0 0 10px rgba(21,128,61,0); }
+      100% { box-shadow: 0 0 0 0 rgba(21,128,61,0); }
+    }
+
+    .att-table-wrap {
+      background: var(--surface); border: 1px solid var(--border);
+      border-radius: var(--r-lg); overflow: hidden; box-shadow: var(--shadow-xs);
+    }
+    .att-table { width: 100%; border-collapse: collapse; font-size: 13.5px; }
+    .att-table th {
+      text-align: left; padding: 13px var(--sp-5);
+      background: var(--surface-alt); color: var(--text-dim);
+      font-family: 'Plus Jakarta Sans', sans-serif;
+      font-size: 11px; font-weight: 700;
+      letter-spacing: 0.06em; text-transform: uppercase;
+      border-bottom: 1px solid var(--border);
+    }
+    .att-table td {
+      padding: 14px var(--sp-5); border-bottom: 1px solid var(--border);
+      vertical-align: middle;
+    }
+    .att-table tr:last-child td { border-bottom: none; }
+    .att-table tbody tr:hover td { background: var(--surface-alt); }
+
+    .stu-cell { display: flex; align-items: center; gap: var(--sp-3); }
+    .stu-avatar {
+      width: 38px; height: 38px; border-radius: 50%;
+      background: var(--navy); color: #fff;
+      display: grid; place-items: center;
+      font-family: 'Plus Jakarta Sans', sans-serif;
+      font-weight: 800; font-size: 13px;
+      flex-shrink: 0;
+    }
+    .stu-body { min-width: 0; }
+    .stu-name {
+      font-family: 'Plus Jakarta Sans', sans-serif;
+      font-size: 13.5px; font-weight: 700;
+      color: var(--navy); margin-bottom: 2px;
+    }
+    .stu-grade { font-size: 12px; color: var(--text-dim); }
+
+    .id-chip {
+      display: inline-flex; padding: 3px 10px; border-radius: 100px;
+      background: var(--bg); color: var(--navy);
+      font-family: 'Plus Jakarta Sans', sans-serif;
+      font-size: 11.5px; font-weight: 800;
+      letter-spacing: 0.03em;
+    }
+
+    .time-cell {
+      font-family: ui-monospace, 'SF Mono', Menlo, monospace;
+      font-size: 13px; font-weight: 600;
+      color: var(--navy);
+    }
+    .time-cell small {
+      display: block; font-family: inherit;
+      font-size: 10.5px; color: var(--text-dim);
+      font-weight: 500; margin-top: 2px;
+    }
+
+    .status-chip {
+      display: inline-flex; align-items: center; gap: 6px;
+      padding: 4px 10px; border-radius: 100px;
+      font-size: 11.5px; font-weight: 700;
+      letter-spacing: 0.02em;
+    }
+    .status-chip::before {
+      content: ''; width: 6px; height: 6px; border-radius: 50%; background: currentColor;
+    }
+    .status-chip.present { background: var(--success-bg); color: var(--success); }
+    .status-chip.late    { background: var(--warning-bg); color: var(--warning); }
+    .status-chip.absent  { background: var(--danger-bg);  color: var(--danger); }
+
+    .source-chip {
+      display: inline-flex; padding: 3px 9px; border-radius: 100px;
+      font-family: ui-monospace, monospace;
+      font-size: 10.5px; font-weight: 700;
+      letter-spacing: 0.05em;
+    }
+    .source-chip.rfid   { background: var(--info-bg); color: var(--info); }
+    .source-chip.manual { background: var(--bg);      color: var(--text-dim); }
+
+    .att-empty {
+      padding: var(--sp-8) var(--sp-5); text-align: center;
+    }
+    .att-empty-icon {
+      width: 64px; height: 64px; margin: 0 auto var(--sp-4);
+      border-radius: 50%; background: var(--bg);
+      display: grid; place-items: center; color: var(--text-faint);
+    }
+    .att-empty-icon svg { width: 30px; height: 30px; }
+    .att-empty h3 { font-size: 16px; color: var(--navy); margin-bottom: 6px; }
+    .att-empty p  { font-size: 13px; color: var(--text-dim); max-width: 360px; margin: 0 auto; line-height: 1.55; }
+
+    .summary-bar {
+      display: grid; grid-template-columns: repeat(3, 1fr); gap: var(--sp-3);
+      margin-bottom: var(--sp-5);
+    }
+    @media (max-width: 700px) { .summary-bar { grid-template-columns: 1fr; } }
+
+    .summary-card {
+      background: var(--surface); border: 1px solid var(--border);
+      border-radius: var(--r-lg); padding: var(--sp-4) var(--sp-5);
+      box-shadow: var(--shadow-xs);
+    }
+    .summary-label {
+      font-size: 10.5px; font-weight: 700;
+      color: var(--text-dim); text-transform: uppercase;
+      letter-spacing: 0.08em; margin-bottom: 6px;
+    }
+    .summary-value {
+      font-family: 'Plus Jakarta Sans', sans-serif;
+      font-size: 22px; font-weight: 800;
+      color: var(--navy); letter-spacing: -0.02em;
+      line-height: 1;
+    }
+    .summary-value small {
+      font-size: 12px; color: var(--text-dim); font-weight: 600;
+      margin-left: 3px;
+    }
+  </style>
+</head>
+<body>
+
+<script src="../shared/js/utils.js"></script>
+<script src="../shared/js/icons.js"></script>
+<script src="../shared/js/shell.js"></script>
+
+<script>
+const TOKEN = localStorage.getItem('apex_token');
+if (!TOKEN) location.href = '../login.html';
+const API_BASE = 'http://localhost:8080';
+
+let DATA = null;
+let activeFilter = 'all';     // 'all' | '10' | '11' | '12' | '13'
+let query = '';
+let refreshTimer = null;
+
+Shell.render({
+  active: 'attendance',
+  role: 'ADMIN',
+  content: '<div class="loading">Loading attendance…</div>',
+});
+
+/* ============================================================
+   BOOT
+   ============================================================ */
+(async function boot() {
+  await loadAttendance();
+  // Auto-refresh every 30 s so new taps appear live
+  refreshTimer = setInterval(loadAttendance, 30000);
+})();
+
+async function loadAttendance() {
+  try {
+    const res = await fetch(API_BASE + '/api/admin/attendance/today', {
+      headers: { 'Authorization': 'Bearer ' + TOKEN },
+    });
+
+    if (res.status === 401 || res.status === 403) {
+      localStorage.removeItem('apex_token');
+      localStorage.removeItem('apex_user');
+      location.href = '../login.html';
+      return;
+    }
+    if (!res.ok) throw new Error('Server returned ' + res.status);
+
+    DATA = await res.json();
+    rerender();
+  } catch (err) {
+    // If we already have data on screen, don't blow it away on a transient
+    // refresh failure — just log it.
+    if (DATA) { console.warn('Refresh failed:', err.message); return; }
+
+    document.getElementById('app-main').innerHTML = `
+      <div class="error-box">
+        <h2>Could not load attendance</h2>
+        <p style="color:var(--text-dim); margin:8px 0 16px;">${Utils.esc(err.message)}</p>
+        <button class="btn btn-primary" onclick="location.reload()">Try again</button>
+      </div>`;
+  }
+}
+
+/* ============================================================
+   RENDER
+   ============================================================ */
+function rerender() {
+  document.getElementById('app-main').innerHTML = renderPage();
+  wireAll();
+}
+
+function renderPage() {
+  const records = DATA.records || [];
+
+  return `
+    <header class="page-header">
+      <div>
+        <div class="page-eyebrow">People</div>
+        <h1 class="page-title">Attendance</h1>
+        <p class="page-subtitle">
+          Live RFID taps · ${Utils.esc(DATA.date || 'today')}
+        </p>
+      </div>
+      <div class="page-actions">
+        <span class="live-dot">Live</span>
+      </div>
+    </header>
+
+    <div class="summary-bar">
+      <div class="summary-card">
+        <div class="summary-label">Total Taps</div>
+        <div class="summary-value">${records.length}</div>
+      </div>
+      <div class="summary-card">
+        <div class="summary-label">Present</div>
+        <div class="summary-value">${records.filter(r => r.status === 'Present').length}</div>
+      </div>
+      <div class="summary-card">
+        <div class="summary-label">Late</div>
+        <div class="summary-value">${records.filter(r => r.status === 'Late').length}</div>
+      </div>
+    </div>
+
+    <div id="toolbar-host">${renderToolbar()}</div>
+    <div id="table-host">${renderTable()}</div>
+  `;
+}
+
+function renderToolbar() {
+  const grades = ['10','11','12','13'];
+  const records = DATA.records || [];
+  const counts = { all: records.length };
+  grades.forEach(g => counts[g] = records.filter(r => r.grade === g).length);
+
+  const pill = (k, l) => `
+    <button class="filter-pill ${activeFilter === k ? 'active' : ''}" data-grade="${k}">
+      ${l}
+    </button>`;
+
+  return `
+    <div class="att-toolbar">
+      <div class="filter-pills">
+        ${pill('all', 'All Grades')}
+        ${grades.map(g => pill(g, 'Grade ' + g)).join('')}
+      </div>
+      <div class="att-search">
+        ${Icon.search()}
+        <input type="text" id="search-input" placeholder="Search by name, ID…" value="${Utils.esc(query)}">
+      </div>
+      <button class="refresh-btn" id="refresh-btn" title="Refresh now">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+          <polyline points="23 4 23 10 17 10"/>
+          <polyline points="1 20 1 14 7 14"/>
+          <path d="M3.51 9a9 9 0 0 1 14.85-3.36L23 10M1 14l4.64 4.36A9 9 0 0 0 20.49 15"/>
+        </svg>
+        Refresh
+      </button>
+    </div>`;
+}
+
+function filtered() {
+  const records = DATA.records || [];
+  return records.filter(r => {
+    if (activeFilter !== 'all' && r.grade !== activeFilter) return false;
+    if (query) {
+      const q = query.toLowerCase();
+      if (!r.fullName.toLowerCase().includes(q)
+       && !r.studentId.toLowerCase().includes(q)) return false;
+    }
+    return true;
+  });
+}
+
+function renderTable() {
+  const rows = filtered();
+  if (rows.length === 0) {
+    return `
+      <div class="att-table-wrap">
+        <div class="att-empty">
+          <div class="att-empty-icon">${Icon.clipboard()}</div>
+          <h3>No taps yet today</h3>
+          <p>As students tap their RFID cards at the reader, they'll appear here in real time.</p>
+        </div>
+      </div>`;
+  }
+
+  return `
+    <div class="att-table-wrap">
+      <table class="att-table">
+        <thead>
+          <tr>
+            <th>Student</th>
+            <th>Student ID</th>
+            <th>Grade</th>
+            <th>Time</th>
+            <th>Attendance</th>
+            <th>Source</th>
+          </tr>
+        </thead>
+        <tbody>${rows.map(renderRow).join('')}</tbody>
+      </table>
+    </div>`;
+}
+
+function renderRow(r) {
+  // time comes back as "HH:MM:SS" — split for a two-line display
+  const [hh, mm] = (r.time || '--:--').split(':');
+  const [y, mo, d] = (DATA.date || '').split('-');
+
+  return `
+    <tr>
+      <td>
+        <div class="stu-cell">
+          <div class="stu-avatar">${Utils.initials(r.fullName)}</div>
+          <div class="stu-body">
+            <div class="stu-name">${Utils.esc(r.fullName)}</div>
+            <div class="stu-grade">${Utils.esc(r.email || '')}</div>
+          </div>
+        </div>
+      </td>
+      <td><span class="id-chip">${Utils.esc(r.studentId)}</span></td>
+      <td><span class="id-chip">Grade ${Utils.esc(r.grade)}</span></td>
+      <td>
+        <div class="time-cell">
+          ${hh}:${mm}
+          <small>${d ? `${d}/${mo}/${y}` : ''}</small>
+        </div>
+      </td>
+      <td>
+        <span class="status-chip ${(r.status || 'present').toLowerCase()}">
+          ${Utils.esc(r.status || 'Present')}
+        </span>
+      </td>
+      <td>
+        <span class="source-chip ${(r.source || 'RFID').toLowerCase()}">
+          ${Utils.esc(r.source || 'RFID')}
+        </span>
+      </td>
+    </tr>`;
+}
+
+/* ============================================================
+   WIRING
+   ============================================================ */
+function wireAll() {
+  document.querySelectorAll('.filter-pill').forEach(b => {
+    b.onclick = () => { activeFilter = b.dataset.grade; rerender(); };
+  });
+
+  const search = document.getElementById('search-input');
+  if (search) {
+    search.oninput = (e) => {
+      query = e.target.value;
+      document.getElementById('table-host').innerHTML = renderTable();
+    };
+  }
+
+  const refresh = document.getElementById('refresh-btn');
+  if (refresh) {
+    refresh.onclick = async () => {
+      refresh.classList.add('spinning');
+      await loadAttendance();
+      setTimeout(() => refresh.classList.remove('spinning'), 400);
+    };
+  }
+}
+</script>
+</body>
+</html>
