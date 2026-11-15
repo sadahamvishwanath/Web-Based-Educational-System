@@ -468,5 +468,5 @@ This project is licensed under the MIT License. See the `LICENSE` file for detai
 **Sadaham Vishwanath**
 
 - GitHub: [@sadahamvishwanath](https://github.com/sadahamvishwanath)
-- LinkedIn: [Your LinkedIn Profile](https://www.linkedin.com/in/sadaham-vishwanath/)
+
 
